@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - Spekto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; --red: #E53935; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: var(--purple); display: flex; flex-direction: column; padding: 28px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .s-mark { width: 36px; height: 36px; background: rgba(255,255,255,0.15); border-radius: 9px; border: 1px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -1.5px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; padding: 20px 12px; flex: 1; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13px; color: rgba(255,255,255,0.6); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.15); color: #fff; }
+    .nav-item i { font-size: 17px; }
+    .sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .user-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .user-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500; }
+    .main { flex: 1; margin-left: 220px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .topbar-title { font-size: 18px; font-weight: 700; color: #0D0D0D; letter-spacing: -0.3px; }
+    .content { padding: 24px 28px; max-width: 720px; }
+    .card { background: #fff; border-radius: 14px; border: 1px solid var(--border); padding: 22px 24px; margin-bottom: 16px; }
+    .card-title { font-size: 14px; font-weight: 700; color: #0D0D0D; display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+    .card-title i { font-size: 17px; color: var(--purple); }
+    .field { margin-bottom: 16px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: #444; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 7px; }
+    .field input, .field select { width: 100%; height: 42px; border: 1.5px solid #E0E0E0; border-radius: 8px; padding: 0 14px; font-size: 14px; color: #0D0D0D; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.15s; background: #fff; }
+    .field input:focus, .field select:focus { border-color: var(--purple); }
+    .field input:disabled { background: #F9F9F9; color: #999; cursor: not-allowed; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .row3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px; }
+    .hint { font-size: 11px; color: #aaa; margin-top: 5px; line-height: 1.5; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #F3F3F3; }
+    .toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .toggle-label { font-size: 14px; font-weight: 500; color: #0D0D0D; }
+    .toggle-sub { font-size: 12px; color: #999; margin-top: 2px; }
+    .toggle { width: 44px; height: 24px; background: #E0E0E0; border-radius: 12px; position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; border: none; }
+    .toggle.on { background: var(--purple); }
+    .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: left 0.2s; }
+    .toggle.on::after { left: 23px; }
+    .profile-hero { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #F3F3F3; }
+    .profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: var(--tint); border: 3px solid #D4B8F5; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: var(--purple); font-family: 'DM Sans', sans-serif; flex-shrink: 0; }
+    .profile-name { font-size: 18px; font-weight: 700; color: #0D0D0D; }
+    .profile-email { font-size: 13px; color: #999; margin-top: 3px; }
+    .profile-member { font-size: 11px; color: #bbb; margin-top: 4px; }
+    .btn-save { height: 44px; background: var(--purple); color: #fff; font-size: 14px; font-weight: 700; border: none; border-radius: 10px; padding: 0 28px; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s; }
+    .btn-save:hover { opacity: 0.9; }
+    .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-secondary { height: 44px; background: #fff; color: var(--purple); font-size: 14px; font-weight: 600; border: 1.5px solid var(--purple); border-radius: 10px; padding: 0 28px; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .btn-logout { height: 44px; background: #fff; color: #991B1B; font-size: 14px; font-weight: 600; border: 1.5px solid #FCA5A5; border-radius: 10px; padding: 0 28px; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; }
+    .btn-logout:hover { background: #FFF8F8; }
+    .switch-role-box { background: var(--tint); border: 1.5px solid #D4B8F5; border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; }
+    .switch-role-icon { width: 40px; height: 40px; background: var(--purple); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .switch-role-icon i { font-size: 18px; color: #fff; }
+    .switch-role-info { flex: 1; }
+    .switch-role-title { font-size: 13px; font-weight: 700; color: var(--purple); }
+    .switch-role-sub { font-size: 12px; color: #8B4FC8; margin-top: 2px; }
+    .btn-switch { height: 36px; background: var(--purple); color: #fff; border: none; border-radius: 8px; padding: 0 16px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap; flex-shrink: 0; }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #1F2937; color: #fff; font-size: 13px; font-weight: 500; padding: 12px 20px; border-radius: 10px; z-index: 999; display: none; }
+    .toast.success { background: #166534; }
+    .toast.error { background: #991B1B; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .row2 { grid-template-columns: 1fr; }
+      .row3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div class="s-name">SPEKTO</div>
+    </div>
+    <nav class="nav">
+      <a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> My Inspections</a>
+      <a class="nav-item" href="new-inspection.html"><i class="ti ti-plus"></i> New Inspection</a>
+      <a class="nav-item" href="property-library.html"><i class="ti ti-video"></i> Property Library</a>
+      <a class="nav-item" href="billing.html"><i class="ti ti-credit-card"></i> Billing</a>
+      <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> My Disputes</a>
+      <a class="nav-item active" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="user-row">
+        <div class="avatar" id="userAvatar">?</div>
+        <div class="user-name" id="userName">Loading...</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">Settings</div>
+    </div>
+    <div class="content" id="mainContent">
+      <div class="loading"><div class="spinner"></div> Loading settings...</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let currentUser = null
+  let userData = null
+  let clientProfile = null
+  let notifEmail = true
+  let notifApp = true
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast')
+    t.textContent = msg
+    t.className = `toast ${type}`
+    t.style.display = 'block'
+    setTimeout(() => { t.style.display = 'none' }, 3000)
+  }
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = '../auth/login.html'; return; }
+    currentUser = user
+
+    const [{ data: uData }, { data: cData }] = await Promise.all([
+      supabase.from('users').select('*').eq('id', user.id).single(),
+      supabase.from('client_profiles').select('*').eq('user_id', user.id).single()
+    ])
+
+    userData = uData
+    clientProfile = cData
+
+    if (userData) {
+      const initials = (userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')
+      document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
+    }
+
+    notifEmail = clientProfile?.notification_email ?? true
+    notifApp = clientProfile?.notification_in_app ?? true
+
+    renderPage()
+  }
+
+  function renderPage() {
+    const initials = (userData?.first_name?.[0] || '') + (userData?.last_name?.[0] || '')
+    const memberSince = userData?.created_at
+      ? new Date(userData.created_at).toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })
+      : ''
+
+    document.getElementById('mainContent').innerHTML = `
+      <div class="card">
+        <div class="profile-hero">
+          <div class="profile-avatar">${initials.toUpperCase()}</div>
+          <div>
+            <div class="profile-name">${userData?.first_name || ''} ${userData?.last_name || ''}</div>
+            <div class="profile-email">${userData?.email || ''}</div>
+            <div class="profile-member">Member since ${memberSince}</div>
+          </div>
+        </div>
+        <div class="card-title"><i class="ti ti-user"></i> Personal details</div>
+        <div class="row2">
+          <div class="field">
+            <label>First name</label>
+            <input type="text" id="firstName" value="${userData?.first_name || ''}">
+          </div>
+          <div class="field">
+            <label>Last name</label>
+            <input type="text" id="lastName" value="${userData?.last_name || ''}">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Email address</label>
+            <input type="email" id="email" value="${userData?.email || ''}" disabled>
+            <div class="hint">Email cannot be changed here. Contact support to update your email.</div>
+          </div>
+          <div class="field">
+            <label>Phone number</label>
+            <input type="tel" id="phone" value="${userData?.phone_number || ''}" placeholder="+61 4XX XXX XXX">
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:6px">
+          <button class="btn-save" id="savePersonalBtn">Save changes</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><i class="ti ti-building"></i> Company details</div>
+        <div class="row2">
+          <div class="field">
+            <label>Company name <span style="font-size:10px;color:#aaa;font-weight:400;text-transform:none">(optional)</span></label>
+            <input type="text" id="companyName" value="${clientProfile?.company_name || ''}" placeholder="Acme Property Group">
+          </div>
+          <div class="field">
+            <label>ABN <span style="font-size:10px;color:#aaa;font-weight:400;text-transform:none">(optional)</span></label>
+            <input type="text" id="abn" value="${clientProfile?.abn || ''}" placeholder="XX XXX XXX XXX">
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:6px">
+          <button class="btn-save" id="saveCompanyBtn">Save changes</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><i class="ti ti-map-pin"></i> Billing address</div>
+        <div class="field">
+          <label>Street address</label>
+          <input type="text" id="billingAddress" value="${clientProfile?.billing_address || ''}" placeholder="123 Main Street">
+        </div>
+        <div class="row3">
+          <div class="field">
+            <label>Suburb</label>
+            <input type="text" id="billingSuburb" value="${clientProfile?.billing_suburb || ''}" placeholder="Sydney">
+          </div>
+          <div class="field">
+            <label>State</label>
+            <select id="billingState">
+              <option value="">Select</option>
+              ${['NSW','VIC','QLD','WA','SA','TAS','ACT','NT'].map(s =>
+                `<option value="${s}" ${clientProfile?.billing_state === s ? 'selected' : ''}>${s}</option>`
+              ).join('')}
+            </select>
+          </div>
+          <div class="field">
+            <label>Postcode</label>
+            <input type="text" id="billingPostcode" value="${clientProfile?.billing_postcode || ''}" placeholder="2000" maxlength="4">
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:6px">
+          <button class="btn-save" id="saveBillingBtn">Save address</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><i class="ti ti-bell"></i> Notifications</div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Email notifications</div>
+            <div class="toggle-sub">Receive inspection updates and alerts by email</div>
+          </div>
+          <button class="toggle ${notifEmail ? 'on' : ''}" id="toggleEmail" onclick="toggleNotif('email')"></button>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">In-app notifications</div>
+            <div class="toggle-sub">Receive alerts inside the Spekto app</div>
+          </div>
+          <button class="toggle ${notifApp ? 'on' : ''}" id="toggleApp" onclick="toggleNotif('app')"></button>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:16px">
+          <button class="btn-save" id="saveNotifBtn">Save preferences</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><i class="ti ti-camera"></i> Switch to Scout mode</div>
+        <div class="switch-role-box">
+          <div class="switch-role-icon"><i class="ti ti-camera"></i></div>
+          <div class="switch-role-info">
+            <div class="switch-role-title">You can also use Spekto as a Scout</div>
+            <div class="switch-role-sub">Accept inspection jobs, record property videos and earn money</div>
+          </div>
+          <button class="btn-switch" id="switchToScoutBtn">Switch to Scout</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><i class="ti ti-lock"></i> Password</div>
+        <div style="font-size:13px;color:#999;margin-bottom:14px">To change your password we will send a reset link to your email address.</div>
+        <button class="btn-secondary" id="resetPasswordBtn">Send password reset email</button>
+      </div>
+
+      <div style="display:flex;justify-content:flex-start;margin-top:8px;margin-bottom:32px">
+        <button class="btn-logout" id="logoutBtn"><i class="ti ti-logout" style="font-size:16px"></i> Log out</button>
+      </div>`
+
+    setupListeners()
+  }
+
+  function setupListeners() {
+    document.getElementById('savePersonalBtn').addEventListener('click', savePersonal)
+    document.getElementById('saveCompanyBtn').addEventListener('click', saveCompany)
+    document.getElementById('saveBillingBtn').addEventListener('click', saveBilling)
+    document.getElementById('saveNotifBtn').addEventListener('click', saveNotifications)
+    document.getElementById('resetPasswordBtn').addEventListener('click', sendPasswordReset)
+    document.getElementById('switchToScoutBtn').addEventListener('click', switchToScout)
+    document.getElementById('logoutBtn').addEventListener('click', handleLogout)
+  }
+
+  window.toggleNotif = (type) => {
+    if (type === 'email') {
+      notifEmail = !notifEmail
+      document.getElementById('toggleEmail').className = `toggle ${notifEmail ? 'on' : ''}`
+    } else {
+      notifApp = !notifApp
+      document.getElementById('toggleApp').className = `toggle ${notifApp ? 'on' : ''}`
+    }
+  }
+
+  async function savePersonal() {
+    const btn = document.getElementById('savePersonalBtn')
+    btn.disabled = true
+    btn.textContent = 'Saving...'
+
+    const firstName = document.getElementById('firstName').value.trim()
+    const lastName = document.getElementById('lastName').value.trim()
+    const phone = document.getElementById('phone').value.trim()
+
+    const { error } = await supabase
+      .from('users')
+      .update({ first_name: firstName, last_name: lastName, phone_number: phone || null, updated_at: new Date().toISOString() })
+      .eq('id', currentUser.id)
+
+    btn.disabled = false
+    btn.textContent = 'Save changes'
+
+    if (error) {
+      showToast('Error saving changes. Please try again.', 'error')
+    } else {
+      const initials = (firstName?.[0] || '') + (lastName?.[0] || '')
+      document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      document.getElementById('userName').textContent = firstName + ' ' + lastName
+      showToast('Personal details saved successfully')
+    }
+  }
+
+  async function saveCompany() {
+    const btn = document.getElementById('saveCompanyBtn')
+    btn.disabled = true
+    btn.textContent = 'Saving...'
+
+    const { error } = await supabase
+      .from('client_profiles')
+      .update({
+        company_name: document.getElementById('companyName').value.trim() || null,
+        abn: document.getElementById('abn').value.trim() || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', currentUser.id)
+
+    btn.disabled = false
+    btn.textContent = 'Save changes'
+
+    if (error) showToast('Error saving company details.', 'error')
+    else showToast('Company details saved successfully')
+  }
+
+  async function saveBilling() {
+    const btn = document.getElementById('saveBillingBtn')
+    btn.disabled = true
+    btn.textContent = 'Saving...'
+
+    const { error } = await supabase
+      .from('client_profiles')
+      .update({
+        billing_address: document.getElementById('billingAddress').value.trim() || null,
+        billing_suburb: document.getElementById('billingSuburb').value.trim() || null,
+        billing_state: document.getElementById('billingState').value || null,
+        billing_postcode: document.getElementById('billingPostcode').value.trim() || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', currentUser.id)
+
+    btn.disabled = false
+    btn.textContent = 'Save address'
+
+    if (error) showToast('Error saving billing address.', 'error')
+    else showToast('Billing address saved successfully')
+  }
+
+  async function saveNotifications() {
+    const btn = document.getElementById('saveNotifBtn')
+    btn.disabled = true
+    btn.textContent = 'Saving...'
+
+    const { error } = await supabase
+      .from('client_profiles')
+      .update({ notification_email: notifEmail, notification_in_app: notifApp, updated_at: new Date().toISOString() })
+      .eq('user_id', currentUser.id)
+
+    btn.disabled = false
+    btn.textContent = 'Save preferences'
+
+    if (error) showToast('Error saving preferences.', 'error')
+    else showToast('Notification preferences saved')
+  }
+
+  async function switchToScout() {
+    const btn = document.getElementById('switchToScoutBtn')
+    btn.disabled = true
+    btn.textContent = 'Switching...'
+
+    const { data: scoutProfile } = await supabase
+      .from('scout_profiles')
+      .select('id')
+      .eq('user_id', currentUser.id)
+      .single()
+
+    if (!scoutProfile) {
+      await supabase.from('scout_profiles').insert({
+        user_id: currentUser.id,
+        scout_status: 'PendingVerification',
+        total_completions: 0,
+        notification_email: true,
+        notification_in_app: true
+      })
+    }
+
+    await supabase
+      .from('users')
+      .update({ active_role: 'scout', updated_at: new Date().toISOString() })
+      .eq('id', currentUser.id)
+
+    window.location.href = '../scout/dashboard.html'
+  }
+
+  async function sendPasswordReset() {
+    const btn = document.getElementById('resetPasswordBtn')
+    btn.disabled = true
+    btn.textContent = 'Sending...'
+
+    const { error } = await supabase.auth.resetPasswordForEmail(currentUser.email, {
+      redirectTo: 'https://maxwelldsouza-eng.github.io/Spekto/auth/reset-password.html'
+    })
+
+    btn.disabled = false
+    btn.textContent = 'Send password reset email'
+
+    if (error) showToast('Error sending reset email.', 'error')
+    else showToast('Password reset email sent to ' + currentUser.email)
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    window.location.href = '../auth/login.html'
+  }
+
+  init()
+</script>
+</body>
+</html>
