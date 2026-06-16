@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inspection Detail - Spekto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #16A34A; --red: #DC2626; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 220px; background: var(--purple);
+      display: flex; flex-direction: column;
+      padding: 28px 0; flex-shrink: 0;
+      position: fixed; top: 0; left: 0; height: 100vh; z-index: 100;
+    }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .s-mark { width: 36px; height: 36px; background: rgba(255,255,255,0.15); border-radius: 9px; border: 1px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -1.5px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; padding: 20px 12px; flex: 1; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.6); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.15); color: #fff; }
+    .nav-item i { font-size: 17px; }
+    .sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .user-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .user-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500; }
+    .main { flex: 1; margin-left: 220px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; position: sticky; top: 0; z-index: 50; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .topbar-title { font-size: 18px; font-weight: 700; color: #0D0D0D; letter-spacing: -0.3px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .badge { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+    .badge-Posted { background: #EDE4F7; color: #560591; }
+    .badge-Accepted { background: #E0F2FE; color: #0369A1; }
+    .badge-InProgress { background: #EDE9FE; color: #5B21B6; }
+    .badge-Completed { background: #DCFCE7; color: #166534; }
+    .badge-PendingPayment { background: #FEF9C3; color: #854D0E; }
+    .badge-Disputed { background: #FEE2E2; color: #991B1B; }
+    .badge-Paid { background: #D1FAE5; color: #065F46; }
+    .badge-Cancelled { background: #F3F4F6; color: #6B7280; }
+    .btn-action { height: 36px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 6px; padding: 0 14px; }
+    .btn-release { background: var(--green); color: #fff; }
+    .btn-dispute { background: var(--red); color: #fff; }
+    .btn-cancel-insp { background: #fff; color: var(--red); border: 1.5px solid var(--red) !important; }
+    .btn-close { background: #fff; color: #444; border: 1.5px solid #E0E0E0; }
+    .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
+    .dispute-panel { background: #FFF8F8; border-bottom: 1px solid #FEE2E2; padding: 14px 28px; display: none; }
+    .dispute-inner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .dispute-select { height: 36px; border: 1.5px solid #FCA5A5; border-radius: 7px; padding: 0 12px; font-size: 13px; color: #333; font-family: 'Inter', sans-serif; background: #fff; outline: none; min-width: 220px; }
+    .btn-confirm-dispute { background: #991B1B; color: #fff; border: none; border-radius: 7px; padding: 0 16px; height: 36px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .btn-cancel-dispute { background: #fff; color: #666; border: 1.5px solid #E0E0E0; border-radius: 7px; padding: 0 14px; height: 36px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .cancel-confirm-panel { background: #FFF8F8; border-bottom: 1px solid #FEE2E2; padding: 14px 28px; display: none; }
+    .cancel-inner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .cancel-msg { font-size: 13px; color: #991B1B; font-weight: 500; }
+    .content { padding: 24px 28px; overflow-y: auto; }
+    .detail-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 20px 24px; margin-bottom: 20px; }
+    .section-label { font-size: 12px; font-weight: 600; color: #888; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 14px; }
+    .detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .det-label { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+    .det-val { font-size: 14px; font-weight: 600; color: #0D0D0D; }
+    .det-val.link { color: var(--purple); text-decoration: none; }
+    .state-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 48px 24px; margin-bottom: 20px; text-align: center; }
+    .state-icon { font-size: 32px; color: var(--purple); margin-bottom: 16px; }
+    .state-heading { font-size: 16px; font-weight: 700; color: #0D0D0D; margin-bottom: 8px; }
+    .state-sub { font-size: 13px; color: #999; line-height: 1.6; max-width: 400px; margin: 0 auto; }
+    .capture-section { background: #fff; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 20px; }
+    .capture-header { padding: 18px 20px; border-bottom: 1px solid #F3F3F3; display: flex; align-items: center; gap: 8px; }
+    .capture-header-label { font-size: 14px; font-weight: 700; color: var(--purple); }
+    .capture-header i { font-size: 17px; color: var(--purple); }
+    .capture-count { font-size: 11px; color: #aaa; font-weight: 600; margin-left: auto; }
+    .video-list { padding: 16px 20px; display: flex; flex-direction: column; gap: 20px; }
+    .video-item { border: 1px solid #F0F0F0; border-radius: 10px; overflow: hidden; }
+    .video-item-num { font-size: 11px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 14px 0; }
+    .video-player { margin: 10px 14px 0; border-radius: 8px; height: 175px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; background: #111; }
+    .play-overlay { position: absolute; width: 46px; height: 46px; background: rgba(255,255,255,0.15); border-radius: 50%; border: 2px solid rgba(255,255,255,0.5); display: flex; align-items: center; justify-content: center; }
+    .play-overlay i { font-size: 20px; color: #fff; margin-left: 3px; }
+    .video-filename { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; font-size: 11px; color: rgba(255,255,255,0.4); }
+    .btn-download { margin: 10px 14px 12px; display: inline-flex; align-items: center; gap: 5px; background: #374151; color: #fff; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; text-decoration: none; }
+    .video-meta-grid { padding: 12px 14px 14px; background: #FAFAFA; border-top: 1px solid #F0F0F0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .meta-item { display: flex; align-items: flex-start; gap: 7px; }
+    .meta-icon { font-size: 14px; color: var(--purple); margin-top: 1px; flex-shrink: 0; }
+    .meta-label { font-size: 10px; color: #aaa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+    .meta-val { font-size: 12px; color: #0D0D0D; font-weight: 500; margin-top: 1px; }
+    .scout-row { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+    .scout-avatar { width: 28px; height: 28px; border-radius: 50%; background: #EDE4F7; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--purple); flex-shrink: 0; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .detail-grid { grid-template-columns: 1fr 1fr; }
+      .video-meta-grid { grid-template-columns: 1fr; }
+      .topbar-right { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div class="s-name">SPEKTO</div>
+    </div>
+    <nav class="nav">
+      <a class="nav-item active" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> My Inspections</a>
+      <a class="nav-item" href="new-inspection.html"><i class="ti ti-plus"></i> New Inspection</a>
+      <a class="nav-item" href="property-library.html"><i class="ti ti-video"></i> Property Library</a>
+      <a class="nav-item" href="billing.html"><i class="ti ti-credit-card"></i> Billing</a>
+      <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> My Disputes</a>
+      <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="user-row">
+        <div class="avatar" id="userAvatar">?</div>
+        <div class="user-name" id="userName">Loading...</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title" id="pageTitle">Inspection</div>
+        <span class="badge" id="statusBadge"></span>
+      </div>
+      <div class="topbar-right" id="topbarActions"></div>
+    </div>
+
+    <div class="dispute-panel" id="disputePanel">
+      <div class="dispute-inner">
+        <select class="dispute-select" id="disputeReason">
+          <option value="">Select a reason...</option>
+          <option>Video is blurry or out of focus</option>
+          <option>Wrong location captured</option>
+          <option>Incomplete walkthrough</option>
+          <option>Video too dark or unviewable</option>
+          <option>Other</option>
+        </select>
+        <button class="btn-confirm-dispute" id="confirmDisputeBtn">Confirm Dispute</button>
+        <button class="btn-cancel-dispute" id="cancelDisputeBtn">Cancel</button>
+      </div>
+    </div>
+
+    <div class="cancel-confirm-panel" id="cancelPanel">
+      <div class="cancel-inner">
+        <span class="cancel-msg"><i class="ti ti-alert-triangle"></i> Are you sure you want to cancel this inspection? This cannot be undone.</span>
+        <button class="btn-confirm-dispute" id="confirmCancelBtn">Yes, cancel it</button>
+        <button class="btn-cancel-dispute" id="dismissCancelBtn">Keep inspection</button>
+      </div>
+    </div>
+
+    <div class="content" id="mainContent">
+      <div class="loading"><div class="spinner"></div> Loading inspection...</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let inspection = null
+  let captures = []
+  let currentUser = null
+
+  const urlParams = new URLSearchParams(window.location.search)
+  const inspectionId = urlParams.get('id')
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = '../auth/login.html'; return; }
+    currentUser = user
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .single()
+
+    if (userData) {
+      const initials = (userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')
+      document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
+    }
+
+    if (!inspectionId) { window.location.href = 'dashboard.html'; return; }
+    await loadInspection()
+  }
+
+  async function loadInspection() {
+    const { data, error } = await supabase
+      .from('inspections')
+      .select('*, instructions(*)')
+      .eq('id', inspectionId)
+      .eq('client_id', currentUser.id)
+      .single()
+
+    if (error || !data) { window.location.href = 'dashboard.html'; return; }
+    inspection = data
+
+    if (inspection.status === 'Completed' || inspection.status === 'PendingPayment' || inspection.status === 'Disputed' || inspection.status === 'Paid') {
+      const { data: captureData } = await supabase
+        .from('captures')
+        .select('*')
+        .eq('inspection_id', inspectionId)
+        .eq('is_deleted', false)
+        .eq('is_replaced', false)
+        .order('capture_type', { ascending: true })
+        .order('recorded_at', { ascending: true })
+      captures = captureData || []
+    }
+
+    render()
+  }
+
+  function render() {
+    const statusClass = inspection.status.replace(' ', '')
+    document.getElementById('pageTitle').textContent = 'Inspection'
+    const badge = document.getElementById('statusBadge')
+    badge.className = `badge badge-${inspection.status}`
+    badge.textContent = inspection.status.replace('PendingPayment', 'Pending Payment').replace('InProgress', 'In Progress')
+    renderActions()
+    renderContent()
+  }
+
+  function renderActions() {
+    const container = document.getElementById('topbarActions')
+    container.innerHTML = ''
+
+    const closeBtn = document.createElement('a')
+    closeBtn.href = 'dashboard.html'
+    closeBtn.className = 'btn-action btn-close'
+    closeBtn.innerHTML = '<i class="ti ti-arrow-left"></i> Close'
+    container.appendChild(closeBtn)
+
+    if (inspection.status === 'Posted') {
+      const cancelBtn = document.createElement('button')
+      cancelBtn.className = 'btn-action btn-cancel-insp'
+      cancelBtn.innerHTML = '<i class="ti ti-x"></i> Cancel Inspection'
+      cancelBtn.addEventListener('click', () => {
+        document.getElementById('cancelPanel').style.display = 'block'
+      })
+      container.insertBefore(cancelBtn, closeBtn)
+    }
+
+    if (inspection.status === 'Completed') {
+      const disputeBtn = document.createElement('button')
+      disputeBtn.className = 'btn-action btn-dispute'
+      disputeBtn.id = 'disputeBtn'
+      disputeBtn.innerHTML = '<i class="ti ti-alert-triangle"></i> Dispute'
+      disputeBtn.addEventListener('click', () => {
+        document.getElementById('disputePanel').style.display = 'block'
+      })
+
+      const releaseBtn = document.createElement('button')
+      releaseBtn.className = 'btn-action btn-release'
+      releaseBtn.id = 'releaseBtn'
+      releaseBtn.innerHTML = '<i class="ti ti-credit-card"></i> Release Payment'
+      releaseBtn.addEventListener('click', handleReleasePayment)
+
+      container.insertBefore(disputeBtn, closeBtn)
+      container.insertBefore(releaseBtn, disputeBtn)
+    }
+  }
+
+  function renderContent() {
+    const content = document.getElementById('mainContent')
+    const typeLabel = inspection.inspection_type === 'external' ? 'External Only'
+      : inspection.inspection_type === 'internal' ? 'Internal Only'
+      : 'Internal & External'
+    const price = inspection.pricing_snapshot?.total
+      ? '$' + parseFloat(inspection.pricing_snapshot.total).toFixed(2) : '—'
+
+    let html = `
+      <div class="detail-card">
+        <div class="section-label">Inspection Details</div>
+        <div class="detail-grid">
+          <div><div class="det-label">Address</div><div class="det-val" style="font-size:13px">${inspection.address}</div></div>
+          <div><div class="det-label">Date</div><div class="det-val">${new Date(inspection.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</div></div>
+          <div><div class="det-label">Time</div><div class="det-val">${inspection.time?.slice(0,5) || '—'}</div></div>
+          <div><div class="det-label">Type</div><div class="det-val">${typeLabel}</div></div>
+          <div><div class="det-label">Total</div><div class="det-val">${price}</div></div>
+          ${inspection.property_link ? `<div><div class="det-label">Property link</div><a class="det-val link" href="${inspection.property_link}" target="_blank">View listing ↗</a></div>` : '<div></div>'}
+        </div>
+      </div>`
+
+    if (inspection.status === 'Completed' || inspection.status === 'PendingPayment' || inspection.status === 'Disputed' || inspection.status === 'Paid') {
+      html += renderCaptureGroups()
+    } else {
+      html += renderStateCard()
+    }
+
+    content.innerHTML = html
+  }
+
+  function renderStateCard() {
+    const states = {
+      Posted: { icon: 'ti-clock', heading: 'Awaiting Scout', sub: 'Your inspection has been posted. A scout in the area will accept and complete the capture shortly.' },
+      Accepted: { icon: 'ti-map-pin', heading: 'Capture in Progress', sub: 'A scout has accepted this inspection and is on their way to the property.' },
+      InProgress: { icon: 'ti-video', heading: 'Recording in Progress', sub: 'The scout is currently recording the property walkthrough.' },
+      Cancelled: { icon: 'ti-x', heading: 'Inspection Cancelled', sub: 'This inspection has been cancelled.' }
+    }
+    const s = states[inspection.status] || { icon: 'ti-clock', heading: inspection.status, sub: '' }
+    return `
+      <div class="state-card">
+        <div class="state-icon"><i class="ti ${s.icon}"></i></div>
+        <div class="state-heading">${s.heading}</div>
+        <div class="state-sub">${s.sub}</div>
+      </div>`
+  }
+
+  function renderCaptureGroups() {
+    const types = inspection.inspection_type === 'external' ? ['external']
+      : inspection.inspection_type === 'internal' ? ['internal']
+      : ['external', 'internal']
+
+    return types.map(type => {
+      const typeCaptures = captures.filter(c => c.capture_type === type)
+      const label = type === 'external' ? 'External Captures' : 'Internal Captures'
+      const icon = type === 'external' ? 'ti-home' : 'ti-door-enter'
+      const count = typeCaptures.length
+
+      if (count === 0) return `
+        <div class="capture-section">
+          <div class="capture-header">
+            <i class="ti ${icon}"></i>
+            <span class="capture-header-label">${label}</span>
+            <span class="capture-count">No videos</span>
+          </div>
+          <div style="padding:24px;text-align:center;font-size:13px;color:#999">No recordings submitted yet</div>
+        </div>`
+
+      const videoItems = typeCaptures.map((cap, idx) => {
+        const scoutInitials = cap.scout_name ? cap.scout_name.split(' ').map(n => n[0]).join('').toUpperCase() : 'SC'
+        const recordedAt = cap.recorded_at ? new Date(cap.recorded_at).toLocaleString('en-AU', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'
+        return `
+          <div class="video-item">
+            <div class="video-item-num">Video ${idx + 1} of ${count}</div>
+            <div class="video-player" onclick="window.open('${cap.video_url}', '_blank')">
+              <div class="play-overlay"><i class="ti ti-player-play"></i></div>
+              <div class="video-filename">${cap.file_name || ''}</div>
+            </div>
+            <a class="btn-download" href="${cap.video_url}" download="${cap.file_name || 'capture'}">
+              <i class="ti ti-download" style="font-size:13px"></i> Download
+            </a>
+            <div class="video-meta-grid">
+              <div class="meta-item">
+                <i class="ti ti-map-pin meta-icon"></i>
+                <div>
+                  <div class="meta-label">GPS Location</div>
+                  <div class="meta-val">${cap.gps_latitude ? cap.gps_latitude.toFixed(4) + '° S, ' + cap.gps_longitude.toFixed(4) + '° E' : 'Not available'}</div>
+                </div>
+              </div>
+              <div class="meta-item">
+                <i class="ti ti-building meta-icon"></i>
+                <div>
+                  <div class="meta-label">Recorded at</div>
+                  <div class="meta-val">${cap.gps_address || inspection.address}</div>
+                </div>
+              </div>
+              <div class="meta-item">
+                <i class="ti ti-calendar meta-icon"></i>
+                <div>
+                  <div class="meta-label">Date & Time</div>
+                  <div class="meta-val">${recordedAt}</div>
+                </div>
+              </div>
+              <div class="meta-item">
+                <i class="ti ti-user meta-icon"></i>
+                <div>
+                  <div class="meta-label">Captured by</div>
+                  <div class="scout-row">
+                    <div class="scout-avatar">${scoutInitials}</div>
+                    <div class="meta-val">${cap.scout_name || 'Scout'}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>`
+      }).join('')
+
+      return `
+        <div class="capture-section">
+          <div class="capture-header">
+            <i class="ti ${icon}"></i>
+            <span class="capture-header-label">${label}</span>
+            <span class="capture-count">${count} video${count !== 1 ? 's' : ''}</span>
+          </div>
+          <div class="video-list">${videoItems}</div>
+        </div>`
+    }).join('')
+  }
+
+  async function handleReleasePayment() {
+    const releaseBtn = document.getElementById('releaseBtn')
+    const disputeBtn = document.getElementById('disputeBtn')
+    if (releaseBtn) { releaseBtn.disabled = true; releaseBtn.textContent = 'Processing...'; }
+    if (disputeBtn) disputeBtn.disabled = true
+
+    const { error } = await supabase
+      .from('inspections')
+      .update({ status: 'PendingPayment', updated_at: new Date().toISOString() })
+      .eq('id', inspectionId)
+      .eq('client_id', currentUser.id)
+
+    if (!error) {
+      inspection.status = 'PendingPayment'
+      const badge = document.getElementById('statusBadge')
+      badge.className = 'badge badge-PendingPayment'
+      badge.textContent = 'Pending Payment'
+      renderActions()
+      renderContent()
+    }
+  }
+
+  document.getElementById('confirmDisputeBtn').addEventListener('click', async () => {
+    const reason = document.getElementById('disputeReason').value
+    if (!reason) { alert('Please select a reason for the dispute.'); return; }
+
+    const { error } = await supabase
+      .from('inspections')
+      .update({ status: 'Disputed', dispute_reason: reason, updated_at: new Date().toISOString() })
+      .eq('id', inspectionId)
+      .eq('client_id', currentUser.id)
+
+    if (!error) {
+      inspection.status = 'Disputed'
+      inspection.dispute_reason = reason
+      document.getElementById('disputePanel').style.display = 'none'
+      const badge = document.getElementById('statusBadge')
+      badge.className = 'badge badge-Disputed'
+      badge.textContent = 'Disputed'
+      renderActions()
+      renderContent()
+    }
+  })
+
+  document.getElementById('cancelDisputeBtn').addEventListener('click', () => {
+    document.getElementById('disputePanel').style.display = 'none'
+  })
+
+  document.getElementById('confirmCancelBtn').addEventListener('click', async () => {
+    const { error } = await supabase
+      .from('inspections')
+      .update({ status: 'Cancelled', cancelled_at: new Date().toISOString(), cancelled_by: currentUser.id, updated_at: new Date().toISOString() })
+      .eq('id', inspectionId)
+      .eq('client_id', currentUser.id)
+      .eq('status', 'Posted')
+
+    if (!error) {
+      inspection.status = 'Cancelled'
+      document.getElementById('cancelPanel').style.display = 'none'
+      const badge = document.getElementById('statusBadge')
+      badge.className = 'badge badge-Cancelled'
+      badge.textContent = 'Cancelled'
+      renderActions()
+      renderContent()
+    }
+  })
+
+  document.getElementById('dismissCancelBtn').addEventListener('click', () => {
+    document.getElementById('cancelPanel').style.display = 'none'
+  })
+
+  init()
+</script>
+</body>
+</html>
