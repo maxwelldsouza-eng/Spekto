@@ -1,0 +1,507 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account - Spekto</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --purple: #560591;
+            --light-tint: #F5EEFF;
+            --green: #22C55E;
+            --background: #F7F5FA;
+            --error-red: #E53935;
+            --text-primary: #111827;
+            --text-secondary: #6B7280;
+            --border-color: #D1D5DB;
+            --font-inter: 'Inter', sans-serif;
+            --font-dm-sans: 'DM Sans', sans-serif;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-inter);
+            background-color: var(--background);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            max-width: 1200px;
+            min-height: 100vh;
+            background-color: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .left-panel {
+            background-color: var(--purple);
+            width: 45%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .spekto-logo svg {
+            width: 150px;
+            height: auto;
+        }
+
+        .right-panel {
+            width: 55%;
+            padding: 3rem 4rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .form-container h1 {
+            font-family: var(--font-dm-sans);
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-container p {
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--purple);
+            box-shadow: 0 0 0 2px var(--light-tint);
+        }
+
+        .name-group {
+            display: flex;
+            gap: 1rem;
+        }
+        .name-group .form-group {
+            flex: 1;
+        }
+
+        .password-hint {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .role-selector {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .role-card {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .role-card.selected {
+            border-color: var(--purple);
+            background-color: var(--light-tint);
+            color: var(--purple);
+        }
+        
+        .role-card:not(.selected):hover {
+            border-color: #A9A9A9;
+        }
+
+        .role-card input[type="radio"] {
+            display: none;
+        }
+        
+        .role-card .role-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.875rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary {
+            background-color: var(--green);
+            color: white;
+            margin-top: 1.5rem;
+        }
+        .btn-primary:hover {
+            background-color: #16a34a;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: var(--text-secondary);
+            margin: 1.5rem 0;
+            font-size: 0.875rem;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .divider:not(:empty)::before {
+            margin-right: .5em;
+        }
+        .divider:not(:empty)::after {
+            margin-left: .5em;
+        }
+
+        .btn-secondary {
+            background-color: white;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        .btn-secondary:hover {
+            background-color: #f9fafb;
+        }
+        .btn-secondary svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .error-message {
+            color: var(--error-red);
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+
+        input.invalid {
+            border-color: var(--error-red);
+        }
+
+        input.invalid:focus {
+            box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.2);
+        }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 900px) {
+            .right-panel {
+                padding: 2rem;
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                min-height: auto;
+            }
+            .container {
+                flex-direction: column;
+                min-height: 100vh;
+                box-shadow: none;
+            }
+            .left-panel {
+                width: 100%;
+                height: 80px;
+                padding: 1rem;
+            }
+            .spekto-logo svg {
+                width: 100px;
+            }
+            .right-panel {
+                width: 100%;
+                padding: 1.5rem;
+                flex-grow: 1;
+            }
+            .form-container h1 {
+                font-size: 1.875rem;
+            }
+            .name-group {
+                flex-direction: column;
+                gap: 0;
+            }
+            .name-group .form-group {
+                margin-bottom: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="container">
+        <section class="left-panel">
+            <div class="spekto-logo">
+                <svg viewBox="0 0 164 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M29.54 13.04C25.46 13.04 22.1 14.72 19.46 18V3.68H14V39.52H19.46V25.76C19.46 20.48 22.1 17.84 26.54 17.84C30.98 17.84 33.62 20.48 33.62 25.76V39.52H39.08V24C39.08 17.36 35.3 13.04 29.54 13.04Z" fill="white"/>
+                    <path d="M60.1831 13.04C52.6231 13.04 46.8631 18.8 46.8631 26.24C46.8631 33.68 52.6231 39.52 60.1831 39.52C64.6231 39.52 68.3231 37.6 70.4231 34.4L66.7231 31.76C65.3431 33.76 63.0631 35.04 60.1831 35.04C55.5831 35.04 52.2231 31.44 52.2231 26.32C52.2231 21.2 55.5831 17.52 60.1831 17.52C63.0631 17.52 65.3431 18.8 66.7231 20.8L70.4231 18.16C68.3231 14.96 64.6231 13.04 60.1831 13.04Z" fill="white"/>
+                    <path d="M86.8787 39.52H92.3387V13.52H86.8787V39.52Z" fill="white"/>
+                    <path d="M110.086 39.52H115.546V29.36L122.986 13.52H116.866L112.786 24.32L108.706 13.52H102.586L110.026 29.36V39.52H110.086Z" fill="white"/>
+                    <path d="M141.677 13.04C134.117 13.04 128.357 18.8 128.357 26.24C128.357 33.68 134.117 39.52 141.677 39.52C149.237 39.52 155.077 33.68 155.077 26.24C155.077 18.8 149.237 13.04 141.677 13.04ZM141.677 35.04C136.997 35.04 133.717 31.2 133.717 26.24C133.717 21.28 136.997 17.52 141.677 17.52C146.357 17.52 149.637 21.28 149.637 26.24C149.637 31.2 146.357 35.04 141.677 35.04Z" fill="white"/>
+                    <path d="M0 20C0 8.95431 8.95431 0 20 0C31.0457 0 40 8.95431 40 20C40 31.0457 31.0457 40 20 40C8.95431 40 0 31.0457 0 20Z" fill="#22C55E"/>
+                    <path d="M23.08 26.44C23.08 29.72 20.44 32.36 17.16 32.36C13.88 32.36 11.24 29.72 11.24 26.44V14.12H16.4V25.8C16.4 26.96 17.24 27.88 18.32 27.88C19.4 27.88 20.24 27.04 20.24 25.88V14.12H23.08L25.36 14.12V26.44Z" fill="white"/>
+                </svg>
+            </div>
+        </section>
+
+        <section class="right-panel">
+            <div class="form-container">
+                <h1>Create an account</h1>
+                <p>Start your journey with Spekto.</p>
+                <form id="registrationForm" novalidate>
+                    <div class="name-group">
+                        <div class="form-group">
+                            <label for="firstName">First name</label>
+                            <input type="text" id="firstName" name="firstName" required>
+                            <div class="error-message" id="firstNameError">First name is required</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last name</label>
+                            <input type="text" id="lastName" name="lastName" required>
+                            <div class="error-message" id="lastNameError">Last name is required</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email address</label>
+                        <input type="email" id="email" name="email" required>
+                        <div class="error-message" id="emailError">Please enter a valid email</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required>
+                        <p class="password-hint">Minimum 8 characters</p>
+                        <div class="error-message" id="passwordError">Password must be at least 8 characters</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Select your role</label>
+                        <div class="role-selector">
+                            <label class="role-card selected" for="role-client">
+                                <input type="radio" id="role-client" name="role" value="Client" checked>
+                                <div class="role-title">Client</div>
+                            </label>
+                            <label class="role-card" for="role-scout">
+                                <input type="radio" id="role-scout" name="role" value="Scout">
+                                <div class="role-title">Scout</div>
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="createAccountBtn">Create account</button>
+                </form>
+
+                <div class="divider">or sign up with</div>
+
+                <button class="btn btn-secondary" id="googleSignInBtn">
+                    <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                        <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
+                        <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
+                        <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.223,0-9.657-3.467-11.303-8H6.306C9.656,39.663,16.318,44,24,44z"/>
+                        <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.901,35.636,44,30.418,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+            </div>
+        </section>
+    </main>
+    
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        const supabase = createClient(
+            'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+            'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+        );
+
+        // DOM Elements
+        const form = document.getElementById('registrationForm');
+        const firstNameInput = document.getElementById('firstName');
+        const lastNameInput = document.getElementById('lastName');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const roleCards = document.querySelectorAll('.role-card');
+        const googleSignInBtn = document.getElementById('googleSignInBtn');
+
+        // Validation Helpers
+        const showError = (input, message) => {
+            const errorDiv = document.getElementById(`${input.id}Error`);
+            input.classList.add('invalid');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        };
+
+        const clearError = (input) => {
+            const errorDiv = document.getElementById(`${input.id}Error`);
+            input.classList.remove('invalid');
+            errorDiv.style.display = 'none';
+        };
+
+        // Event Listeners
+        roleCards.forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelector('.role-card.selected').classList.remove('selected');
+                card.classList.add('selected');
+                card.querySelector('input[type="radio"]').checked = true;
+            });
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const isValid = validateForm();
+            if (!isValid) return;
+
+            const firstName = firstNameInput.value.trim();
+            const lastName = lastNameInput.value.trim();
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+            const role = document.querySelector('input[name="role"]:checked').value;
+            
+            try {
+                // 1. Sign up the user
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: email,
+                    password: password
+                });
+
+                if (authError) throw authError;
+                if (!authData.user) throw new Error("Sign up successful, but no user data returned.");
+
+                const userId = authData.user.id;
+
+                // 2. Insert into 'users' table
+                const { error: userError } = await supabase.from('users').insert({
+                    id: userId,
+                    first_name: firstName,
+                    last_name: lastName,
+                    email: email,
+                    role: role.toLowerCase(),
+                    active_role: role.toLowerCase(),
+                    is_email_verified: false,
+                    is_active: true
+                });
+
+                if (userError) throw userError;
+
+                // 3. Insert into role-specific profile table
+                if (role.toLowerCase() === 'client') {
+                    const { error: clientProfileError } = await supabase.from('client_profiles').insert({
+                        user_id: userId,
+                        notification_email: true,
+                        notification_in_app: true
+                    });
+                    if (clientProfileError) throw clientProfileError;
+                } else if (role.toLowerCase() === 'scout') {
+                    const { error: scoutProfileError } = await supabase.from('scout_profiles').insert({
+                        user_id: userId,
+                        scout_status: 'PendingVerification',
+                        total_completions: 0,
+                        notification_email: true,
+                        notification_in_app: true
+                    });
+                    if (scoutProfileError) throw scoutProfileError;
+                }
+                
+                // 4. Redirect
+                window.location.href = 'verify-email.html';
+
+            } catch (error) {
+                console.error('Sign-up Error:', error.message);
+                showError(emailInput, error.message); // Display error, often "User already registered"
+            }
+        });
+
+        googleSignInBtn.addEventListener('click', async () => {
+            try {
+                const { error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: 'http://localhost:3000/auth/select-role.html'
+                    }
+                });
+                if (error) throw error;
+            } catch (error) {
+                console.error('Google Sign-In Error:', error.message);
+                alert('Could not sign in with Google. Please try again.');
+            }
+        });
+        
+        // Clear errors on input
+        [firstNameInput, lastNameInput, emailInput, passwordInput].forEach(input => {
+            input.addEventListener('input', () => clearError(input));
+        });
+
+        // Validation Logic
+        const validateForm = () => {
+            let isValid = true;
+            
+            // Clear all previous errors
+            [firstNameInput, lastNameInput, emailInput, passwordInput].forEach(clearError);
+
+            if (firstNameInput.value.trim() === '') {
+                showError(firstNameInput, 'First name is required');
+                isValid = false;
+            }
+            if (lastNameInput.value.trim() === '') {
+                showError(lastNameInput, 'Last name is required');
+                isValid = false;
+            }
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailInput.value.trim())) {
+                showError(emailInput, 'Please enter a valid email address');
+                isValid = false;
+            }
+            if (passwordInput.value.length < 8) {
+                showError(passwordInput, 'Password must be at least 8 characters');
+                isValid = false;
+            }
+            
+            return isValid;
+        };
+
+    </script>
+</body>
+</html>
+```
