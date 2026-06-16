@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Your Role - Spekto</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --purple: #560591;
+            --light-tint: #F5EEFF;
+            --background: #F7F5FA;
+            --text-primary: #0D0D0D;
+            --text-secondary: #666;
+            --text-tertiary: #999;
+            --border-color: #E0E0E0;
+            --error-red: #E53935;
+            --font-inter: 'Inter', sans-serif;
+            --font-dm-sans: 'DM Sans', sans-serif;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-inter);
+            background-color: var(--background);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            max-width: 1100px;
+            min-height: 100vh;
+            background-color: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .left-panel {
+            background-color: var(--purple);
+            width: 45%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+        
+        .right-panel {
+            width: 55%;
+            padding: 3rem 4rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .content-wrapper {
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .subtext {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .role-cards-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .role-card {
+            position: relative;
+            width: 100%;
+            border: 1.5px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px 24px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .role-card.selected {
+            border-color: var(--purple);
+            background-color: var(--light-tint);
+        }
+        .role-card.selected h4 {
+            color: var(--purple);
+        }
+
+        .radio-indicator {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: white;
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .role-card.selected .radio-indicator {
+            background-color: var(--purple);
+            border-color: var(--purple);
+        }
+        
+        .radio-indicator::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: white;
+            transform: scale(0);
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .role-card.selected .radio-indicator::after {
+            transform: scale(1);
+        }
+
+        .icon-row {
+            font-size: 28px;
+        }
+        
+        .role-card h4 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: 10px;
+            transition: color 0.2s ease-in-out;
+        }
+        
+        .role-card p {
+            font-size: 13px;
+            color: var(--text-tertiary);
+            line-height: 1.5;
+            margin-top: 4px;
+        }
+        
+        .continue-button {
+            width: 100%;
+            height: 48px;
+            background-color: var(--purple);
+            color: white;
+            font-size: 15px;
+            font-weight: 700;
+            border: none;
+            border-radius: 8px;
+            margin-top: 24px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .continue-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .error-message {
+            font-size: 12px;
+            color: var(--error-red);
+            margin-top: 8px;
+            height: 14px; /* prevent layout shift */
+            visibility: hidden;
+        }
+        .error-message.show {
+            visibility: visible;
+        }
+
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+             .right-panel { padding: 2rem; }
+        }
+        
+        @media (max-width: 640px) {
+            body { min-height: auto; }
+            .container {
+                flex-direction: column;
+                min-height: 100vh;
+                box-shadow: none;
+            }
+            .left-panel {
+                width: 100%;
+                height: 56px;
+                padding: 1rem;
+            }
+            /* Adjust logo for mobile top bar */
+            .left-panel .spekto-logo-lockup > div:first-child {
+                width: 36px !important;
+                height: 36px !important;
+                border-radius: 10px !important;
+            }
+            .left-panel .spekto-logo-lockup > div:first-child svg {
+                width: 20px !important;
+                height: 18px !important;
+            }
+            .left-panel .spekto-logo-lockup > div:last-child {
+                font-size: 24px !important;
+                letter-spacing: -1px !important;
+            }
+            .right-panel {
+                width: 100%;
+                padding: 24px;
+                flex-grow: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="container">
+        <section class="left-panel">
+            <div class="spekto-logo-lockup" style="display:flex;align-items:center;gap:14px">
+                <div style="width:52px;height:52px;background:rgba(255,255,255,0.15);border-radius:14px;border:1.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;">
+                  <svg width="30" height="26" viewBox="0 0 30 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+                    <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+                    <circle cx="15" cy="15" r="2" fill="white"/>
+                    <circle cx="24" cy="9" r="1.5" fill="white"/>
+                  </svg>
+                </div>
+                <div style="font-family:'DM Sans',sans-serif;font-size:36px;font-weight:800;color:#fff;letter-spacing:-2px;">SPEKTO</div>
+            </div>
+        </section>
+
+        <section class="right-panel">
+            <div class="content-wrapper">
+                <h1>Welcome to Spekto</h1>
+                <p class="subtext">One last step — tell us how you will be using Spekto</p>
+
+                <div class="role-cards-container">
+                    <div class="role-card" data-role="client">
+                        <div class="radio-indicator"></div>
+                        <div class="icon-row">🏢</div>
+                        <h4>I am a Client</h4>
+                        <p>I want to request property video inspections for properties I am interested in purchasing</p>
+                    </div>
+                    <div class="role-card" data-role="scout">
+                        <div class="radio-indicator"></div>
+                        <div class="icon-row">📷</div>
+                        <h4>I am a Scout</h4>
+                        <p>I want to accept inspection jobs, record property videos and earn money</p>
+                    </div>
+                </div>
+
+                <button id="continueBtn" class="continue-button" disabled>Continue</button>
+                <p id="errorMsg" class="error-message">Please select a role to continue</p>
+            </div>
+        </section>
+    </main>
+    
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        const supabase = createClient(
+            'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+            'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+        );
+
+        let currentUser;
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                window.location.href = 'register.html';
+                return;
+            }
+            currentUser = user;
+
+            const roleCards = document.querySelectorAll('.role-card');
+            const continueBtn = document.getElementById('continueBtn');
+            const errorMsg = document.getElementById('errorMsg');
+
+            roleCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    roleCards.forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    continueBtn.disabled = false;
+                    errorMsg.classList.remove('show');
+                });
+            });
+
+            continueBtn.addEventListener('click', saveRole);
+        });
+
+        async function saveRole() {
+            const continueBtn = document.getElementById('continueBtn');
+            const errorMsg = document.getElementById('errorMsg');
+            const selectedRoleCard = document.querySelector('.role-card.selected');
+            const selectedRole = selectedRoleCard?.dataset.role;
+
+            if (!selectedRole) {
+                errorMsg.classList.add('show');
+                return;
+            }
+
+            continueBtn.disabled = true;
+            continueBtn.textContent = 'Saving...';
+            errorMsg.classList.remove('show');
+
+            try {
+                const user = currentUser;
+                if (!user) throw new Error("User not found.");
+
+                const { data: existingUser, error: fetchError } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('id', user.id)
+                    .single();
+
+                if(fetchError && fetchError.code !== 'PGRST116') { // Ignore 'exact one row' error if user doesn't exist
+                   throw fetchError;
+                }
+
+                if (!existingUser) {
+                    const { error } = await supabase.from('users').insert({
+                        id: user.id,
+                        first_name: user.user_metadata.full_name?.split(' ')[0] || '',
+                        last_name: user.user_metadata.full_name?.split(' ').slice(1).join(' ') || '',
+                        email: user.email,
+                        role: selectedRole,
+                        active_role: selectedRole,
+                        is_email_verified: true,
+                        is_active: true
+                    });
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase.from('users')
+                        .update({ role: selectedRole, active_role: selectedRole })
+                        .eq('id', user.id);
+                    if (error) throw error;
+                }
+
+                if (selectedRole === 'client') {
+                    const { error } = await supabase.from('client_profiles').upsert({
+                        user_id: user.id,
+                        notification_email: true,
+                        notification_in_app: true
+                    }, { onConflict: 'user_id' }); // Use upsert to avoid duplicate errors
+                    if (error) throw error;
+                } else if (selectedRole === 'scout') {
+                    const { error } = await supabase.from('scout_profiles').upsert({
+                        user_id: user.id,
+                        scout_status: 'PendingVerification',
+                        total_completions: 0,
+                        notification_email: true,
+                        notification_in_app: true
+                    }, { onConflict: 'user_id' }); // Use upsert to avoid duplicate errors
+                    if (error) throw error;
+                }
+
+                if (selectedRole === 'client') {
+                    window.location.href = '../client/dashboard.html';
+                } else {
+                    window.location.href = '../scout/dashboard.html';
+                }
+
+            } catch (error) {
+                console.error('Error saving role:', error.message);
+                errorMsg.textContent = 'An unexpected error occurred. Please try again.';
+                errorMsg.classList.add('show');
+                continueBtn.disabled = false;
+                continueBtn.textContent = 'Continue';
+            }
+        }
+    </script>
+</body>
+</html>
