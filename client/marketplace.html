@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marketplace - Spekto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: var(--purple); display: flex; flex-direction: column; padding: 28px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .s-mark { width: 36px; height: 36px; background: rgba(255,255,255,0.15); border-radius: 9px; border: 1px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -1.5px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; padding: 20px 12px; flex: 1; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13px; color: rgba(255,255,255,0.6); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.15); color: #fff; }
+    .nav-item i { font-size: 17px; }
+    .sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .user-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .user-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500; }
+    .main { flex: 1; margin-left: 220px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; position: sticky; top: 0; z-index: 50; }
+    .topbar-title { font-size: 18px; font-weight: 700; color: #0D0D0D; letter-spacing: -0.3px; }
+    .hero { background: var(--purple); padding: 32px 28px; }
+    .hero-inner { max-width: 640px; }
+    .hero-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .hero-title { font-size: 24px; font-weight: 800; color: #fff; font-family: 'DM Sans', sans-serif; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .hero-sub { font-size: 14px; color: rgba(255,255,255,0.7); margin-bottom: 20px; line-height: 1.6; }
+    .hero-search { display: flex; gap: 10px; }
+    .hero-search-box { flex: 1; display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.2); border-radius: 10px; padding: 0 16px; height: 48px; }
+    .hero-search-box i { font-size: 18px; color: rgba(255,255,255,0.5); }
+    .hero-search-box input { border: none; background: transparent; outline: none; font-size: 15px; color: #fff; font-family: 'Inter', sans-serif; width: 100%; }
+    .hero-search-box input::placeholder { color: rgba(255,255,255,0.4); }
+    .btn-search { height: 48px; background: var(--green); color: #fff; border: none; border-radius: 10px; padding: 0 24px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap; }
+    .hero-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .hero-pill { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 5px 12px; font-size: 12px; color: rgba(255,255,255,0.7); cursor: pointer; transition: all 0.15s; }
+    .hero-pill:hover { background: rgba(255,255,255,0.2); color: #fff; }
+    .content { padding: 24px 28px; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .section-title { font-size: 15px; font-weight: 700; color: #0D0D0D; }
+    .section-count { font-size: 13px; color: #999; }
+    .filters { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 2px; }
+    .filters::-webkit-scrollbar { display: none; }
+    .filter-btn { background: #fff; border: 1.5px solid #E0E0E0; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #666; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s; }
+    .filter-btn.active { background: var(--purple); border-color: var(--purple); color: #fff; }
+    .listing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .listing-card { background: #fff; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; transition: box-shadow 0.15s; }
+    .listing-card:hover { box-shadow: 0 4px 16px rgba(86,5,145,0.08); border-color: #D4B8F5; }
+    .listing-thumb { height: 168px; background: #111827; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .preview-play { width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
+    .preview-play:hover { background: rgba(255,255,255,0.25); }
+    .preview-play i { font-size: 20px; color: #fff; margin-left: 3px; }
+    .listing-type-pill { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.65); color: #fff; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .listing-new-pill { position: absolute; top: 10px; right: 10px; background: #22C55E; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
+    .listing-info { padding: 14px 16px; }
+    .listing-addr { font-size: 14px; font-weight: 600; color: #0D0D0D; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .listing-suburb { font-size: 12px; color: #999; margin-bottom: 8px; }
+    .listing-meta { display: flex; gap: 10px; flex-wrap: wrap; }
+    .listing-meta-chip { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #aaa; }
+    .listing-meta-chip i { font-size: 12px; }
+    .listing-footer { padding: 12px 16px; border-top: 1px solid #F3F3F3; display: flex; align-items: center; justify-content: space-between; }
+    .listing-price { font-size: 18px; font-weight: 800; color: #0D0D0D; font-family: 'DM Sans', sans-serif; }
+    .listing-price-sub { font-size: 10px; color: #aaa; margin-top: 1px; }
+    .btn-buy { height: 36px; background: var(--purple); color: #fff; border: none; border-radius: 8px; padding: 0 16px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .btn-buy:hover { opacity: 0.9; }
+    .empty-state { text-align: center; padding: 60px 20px; background: #fff; border-radius: 14px; border: 1px solid var(--border); }
+    .empty-state i { font-size: 40px; color: #ddd; margin-bottom: 16px; display: block; }
+    .empty-state h3 { font-size: 16px; font-weight: 600; color: #0D0D0D; margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; color: #999; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .purchase-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .purchase-modal-overlay.open { display: flex; }
+    .purchase-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 420px; overflow: hidden; }
+    .purchase-modal-header { padding: 20px 22px 0; }
+    .purchase-modal-title { font-size: 16px; font-weight: 700; color: #0D0D0D; margin-bottom: 4px; }
+    .purchase-modal-sub { font-size: 13px; color: #999; }
+    .purchase-modal-body { padding: 20px 22px; }
+    .purchase-detail-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #F3F3F3; font-size: 13px; }
+    .purchase-detail-row:last-child { border-bottom: none; }
+    .purchase-detail-label { color: #666; }
+    .purchase-detail-val { font-weight: 600; color: #0D0D0D; }
+    .purchase-total-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0 0; }
+    .purchase-total-label { font-size: 15px; font-weight: 700; color: #0D0D0D; }
+    .purchase-total-val { font-size: 22px; font-weight: 800; color: var(--purple); font-family: 'DM Sans', sans-serif; }
+    .purchase-modal-footer { padding: 0 22px 22px; display: flex; gap: 10px; }
+    .btn-cancel-purchase { flex: 1; height: 44px; background: #fff; color: #444; border: 1.5px solid #E0E0E0; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .btn-confirm-purchase { flex: 2; height: 44px; background: var(--purple); color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .coming-soon-banner { background: #FEF9C3; border: 1.5px solid #FDE047; border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    .coming-soon-banner i { font-size: 18px; color: #854D0E; flex-shrink: 0; }
+    .coming-soon-text { font-size: 13px; color: #854D0E; font-weight: 500; }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .content { padding: 16px; }
+      .hero { padding: 24px 16px; }
+      .listing-grid { grid-template-columns: 1fr 1fr; }
+      .hero-search { flex-direction: column; }
+    }
+    @media (max-width: 420px) {
+      .listing-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div class="s-name">SPEKTO</div>
+    </div>
+    <nav class="nav">
+      <a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> My Inspections</a>
+      <a class="nav-item" href="new-inspection.html"><i class="ti ti-plus"></i> New Inspection</a>
+      <a class="nav-item" href="property-library.html"><i class="ti ti-video"></i> Property Library</a>
+      <a class="nav-item active" href="marketplace.html"><i class="ti ti-shopping-bag"></i> Marketplace</a>
+      <a class="nav-item" href="billing.html"><i class="ti ti-credit-card"></i> Billing</a>
+      <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> My Disputes</a>
+      <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="user-row">
+        <div class="avatar" id="userAvatar">?</div>
+        <div class="user-name" id="userName">Loading...</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">Marketplace</div>
+    </div>
+
+    <div class="hero">
+      <div class="hero-inner">
+        <div class="hero-label">Spekto Marketplace</div>
+        <div class="hero-title">Browse existing property footage</div>
+        <div class="hero-sub">Search our library of recently recorded property videos. Purchase instant access to any footage for $20 — no inspection booking required.</div>
+        <div class="hero-search">
+          <div class="hero-search-box">
+            <i class="ti ti-search"></i>
+            <input type="text" id="heroSearch" placeholder="Search by suburb, street or postcode...">
+          </div>
+          <button class="btn-search" id="heroSearchBtn">Search</button>
+        </div>
+        <div class="hero-pills">
+          <div class="hero-pill" onclick="setSearch('Newtown')">Newtown</div>
+          <div class="hero-pill" onclick="setSearch('Surry Hills')">Surry Hills</div>
+          <div class="hero-pill" onclick="setSearch('Paddington')">Paddington</div>
+          <div class="hero-pill" onclick="setSearch('Glebe')">Glebe</div>
+          <div class="hero-pill" onclick="setSearch('Pyrmont')">Pyrmont</div>
+          <div class="hero-pill" onclick="setSearch('Chippendale')">Chippendale</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="coming-soon-banner">
+        <i class="ti ti-info-circle"></i>
+        <div class="coming-soon-text">Marketplace payments via Stripe are coming soon. You can browse listings now — purchasing will be enabled once Stripe integration is complete.</div>
+      </div>
+
+      <div class="filters" id="filters">
+        <button class="filter-btn active" data-filter="all">All listings</button>
+        <button class="filter-btn" data-filter="external">External only</button>
+        <button class="filter-btn" data-filter="internal">Internal only</button>
+      </div>
+
+      <div id="listingsContainer">
+        <div class="loading"><div class="spinner"></div> Loading listings...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="purchase-modal-overlay" id="purchaseModal">
+  <div class="purchase-modal">
+    <div class="purchase-modal-header">
+      <div class="purchase-modal-title">Purchase video access</div>
+      <div class="purchase-modal-sub" id="purchaseAddr"></div>
+    </div>
+    <div class="purchase-modal-body">
+      <div class="purchase-detail-row">
+        <div class="purchase-detail-label">Video type</div>
+        <div class="purchase-detail-val" id="purchaseType"></div>
+      </div>
+      <div class="purchase-detail-row">
+        <div class="purchase-detail-label">Recorded</div>
+        <div class="purchase-detail-val" id="purchaseDate"></div>
+      </div>
+      <div class="purchase-detail-row">
+        <div class="purchase-detail-label">Access duration</div>
+        <div class="purchase-detail-val">48 hours from purchase</div>
+      </div>
+      <div class="purchase-detail-row">
+        <div class="purchase-detail-label">Downloads</div>
+        <div class="purchase-detail-val">Up to 3 downloads</div>
+      </div>
+      <div class="purchase-detail-row">
+        <div class="purchase-detail-label">Price (ex GST)</div>
+        <div class="purchase-detail-val">$18.18</div>
+      </div>
+      <div class="purchase-detail-row">
+        <div class="purchase-detail-label">GST</div>
+        <div class="purchase-detail-val">$1.82</div>
+      </div>
+      <div class="purchase-total-row">
+        <div class="purchase-total-label">Total</div>
+        <div class="purchase-total-val">$20.00</div>
+      </div>
+    </div>
+    <div class="purchase-modal-footer">
+      <button class="btn-cancel-purchase" id="cancelPurchaseBtn">Cancel</button>
+      <button class="btn-confirm-purchase" id="confirmPurchaseBtn">Coming soon</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let allListings = []
+  let filteredListings = []
+  let currentFilter = 'all'
+  let searchQuery = ''
+  let selectedListing = null
+  let currentUser = null
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = '../auth/login.html'; return; }
+    currentUser = user
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .single()
+
+    if (userData) {
+      const initials = (userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')
+      document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
+    }
+
+    await loadListings()
+    setupListeners()
+  }
+
+  async function loadListings(query = '') {
+    document.getElementById('listingsContainer').innerHTML =
+      '<div class="loading"><div class="spinner"></div> Searching...</div>'
+
+    let queryBuilder = supabase
+      .from('marketplace_listings')
+      .select('*, captures(video_url, recorded_at, gps_latitude, gps_longitude)')
+      .eq('status', 'Active')
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+
+    if (query) {
+      queryBuilder = queryBuilder.ilike('address', `%${query}%`)
+    }
+
+    const { data, error } = await queryBuilder
+
+    if (error) {
+      document.getElementById('listingsContainer').innerHTML =
+        '<div class="loading">Error loading listings. Please refresh.</div>'
+      return
+    }
+
+    allListings = data || []
+    filteredListings = [...allListings]
+    applyFilters()
+
+    if (query && allListings.length > 0) {
+      await supabase.from('marketplace_searches').insert({
+        search_query: query,
+        results_count: allListings.length,
+        searcher_id: currentUser.id
+      })
+    }
+  }
+
+  function applyFilters() {
+    filteredListings = allListings.filter(l => {
+      return currentFilter === 'all' || l.capture_type === currentFilter
+    })
+    renderListings()
+  }
+
+  function renderListings() {
+    const container = document.getElementById('listingsContainer')
+
+    if (filteredListings.length === 0) {
+      const hasSearch = searchQuery.length > 0
+      container.innerHTML = `
+        <div class="empty-state">
+          <i class="ti ti-building-store"></i>
+          <h3>${hasSearch ? 'No listings found' : 'No listings available yet'}</h3>
+          <p>${hasSearch
+            ? `No property videos found for "${searchQuery}". Try a different suburb or postcode.`
+            : 'Marketplace listings will appear here as Scouts complete inspections in the area.'}</p>
+        </div>`
+      return
+    }
+
+    const sectionHeader = document.createElement('div')
+    sectionHeader.className = 'section-header'
+    sectionHeader.innerHTML = `
+      <div class="section-title">${searchQuery ? `Results for "${searchQuery}"` : 'Available listings'}</div>
+      <div class="section-count">${filteredListings.length} listing${filteredListings.length !== 1 ? 's' : ''}</div>`
+
+    const grid = document.createElement('div')
+    grid.className = 'listing-grid'
+
+    const now = new Date()
+    filteredListings.forEach((listing, idx) => {
+      const isNew = (now - new Date(listing.created_at)) < 7 * 24 * 60 * 60 * 1000
+      const recordedAt = listing.captures?.recorded_at
+        ? new Date(listing.captures.recorded_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' })
+        : listing.recorded_at
+          ? new Date(listing.recorded_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' })
+          : '—'
+      const typeLabel = listing.capture_type === 'external' ? 'External' : 'Internal'
+
+      const card = document.createElement('div')
+      card.className = 'listing-card'
+      card.innerHTML = `
+        <div class="listing-thumb">
+          <div class="preview-play" onclick="openPurchaseModal(${idx})">
+            <i class="ti ti-player-play"></i>
+          </div>
+          <div class="listing-type-pill">${typeLabel}</div>
+          ${isNew ? '<div class="listing-new-pill">New</div>' : ''}
+        </div>
+        <div class="listing-info">
+          <div class="listing-addr">${listing.address}</div>
+          <div class="listing-suburb">${listing.suburb || ''} ${listing.state || ''} ${listing.postcode || ''}</div>
+          <div class="listing-meta">
+            <div class="listing-meta-chip"><i class="ti ti-calendar"></i> ${recordedAt}</div>
+            ${listing.captures?.gps_latitude ? '<div class="listing-meta-chip"><i class="ti ti-map-pin"></i> GPS verified</div>' : ''}
+          </div>
+        </div>
+        <div class="listing-footer">
+          <div>
+            <div class="listing-price">$${parseFloat(listing.price || 20).toFixed(2)}</div>
+            <div class="listing-price-sub">inc. GST · 48hr access</div>
+          </div>
+          <button class="btn-buy" onclick="openPurchaseModal(${idx})">Purchase</button>
+        </div>`
+      grid.appendChild(card)
+    })
+
+    container.innerHTML = ''
+    container.appendChild(sectionHeader)
+    container.appendChild(grid)
+  }
+
+  window.openPurchaseModal = (idx) => {
+    selectedListing = filteredListings[idx]
+    if (!selectedListing) return
+    const typeLabel = selectedListing.capture_type === 'external' ? 'External capture' : 'Internal capture'
+    const recordedAt = selectedListing.recorded_at
+      ? new Date(selectedListing.recorded_at).toLocaleDateString('en-AU', { day:'numeric', month:'long', year:'numeric' })
+      : '—'
+    document.getElementById('purchaseAddr').textContent = selectedListing.address
+    document.getElementById('purchaseType').textContent = typeLabel
+    document.getElementById('purchaseDate').textContent = recordedAt
+    document.getElementById('purchaseModal').classList.add('open')
+  }
+
+  window.setSearch = (query) => {
+    document.getElementById('heroSearch').value = query
+    searchQuery = query
+    loadListings(query)
+  }
+
+  function setupListeners() {
+    document.getElementById('heroSearchBtn').addEventListener('click', () => {
+      searchQuery = document.getElementById('heroSearch').value.trim()
+      loadListings(searchQuery)
+    })
+
+    document.getElementById('heroSearch').addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        searchQuery = e.target.value.trim()
+        loadListings(searchQuery)
+      }
+    })
+
+    document.getElementById('filters').addEventListener('click', e => {
+      const btn = e.target.closest('.filter-btn')
+      if (!btn) return
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'))
+      btn.classList.add('active')
+      currentFilter = btn.dataset.filter
+      applyFilters()
+    })
+
+    document.getElementById('cancelPurchaseBtn').addEventListener('click', () => {
+      document.getElementById('purchaseModal').classList.remove('open')
+    })
+
+    document.getElementById('confirmPurchaseBtn').addEventListener('click', () => {
+      alert('Stripe payment integration coming soon. Purchasing will be enabled once Stripe is connected.')
+    })
+
+    document.getElementById('purchaseModal').addEventListener('click', e => {
+      if (e.target === document.getElementById('purchaseModal')) {
+        document.getElementById('purchaseModal').classList.remove('open')
+      }
+    })
+  }
+
+  init()
+</script>
+</body>
+</html>
