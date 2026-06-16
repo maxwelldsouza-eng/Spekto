@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billing - Spekto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: var(--purple); display: flex; flex-direction: column; padding: 28px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .s-mark { width: 36px; height: 36px; background: rgba(255,255,255,0.15); border-radius: 9px; border: 1px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -1.5px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; padding: 20px 12px; flex: 1; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13px; color: rgba(255,255,255,0.6); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.15); color: #fff; }
+    .nav-item i { font-size: 17px; }
+    .sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .user-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .user-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500; }
+    .main { flex: 1; margin-left: 220px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .topbar-title { font-size: 18px; font-weight: 700; color: #0D0D0D; letter-spacing: -0.3px; }
+    .content { padding: 24px 28px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 18px; }
+    .stat-label { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+    .stat-val { font-size: 24px; font-weight: 800; color: #0D0D0D; letter-spacing: -0.5px; font-family: 'DM Sans', sans-serif; }
+    .stat-val.purple { color: var(--purple); }
+    .filters { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 2px; }
+    .filters::-webkit-scrollbar { display: none; }
+    .filter-btn { background: #fff; border: 1.5px solid #E0E0E0; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #666; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s; }
+    .filter-btn.active { background: var(--purple); border-color: var(--purple); color: #fff; }
+    .billing-list { display: flex; flex-direction: column; gap: 10px; }
+    .billing-item { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 16px 20px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: box-shadow 0.15s; }
+    .billing-item:hover { box-shadow: 0 2px 8px rgba(86,5,145,0.06); border-color: #D4B8F5; }
+    .billing-date { text-align: center; background: #F7F5FA; border-radius: 8px; padding: 8px 12px; min-width: 48px; flex-shrink: 0; }
+    .billing-day { font-size: 20px; font-weight: 800; color: var(--purple); line-height: 1; font-family: 'DM Sans', sans-serif; }
+    .billing-month { font-size: 10px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+    .billing-info { flex: 1; min-width: 0; }
+    .billing-addr { font-size: 14px; font-weight: 600; color: #0D0D0D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .billing-type { font-size: 12px; color: #999; margin-top: 3px; display: flex; align-items: center; gap: 8px; }
+    .billing-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+    .billing-amount { font-size: 18px; font-weight: 800; color: #0D0D0D; font-family: 'DM Sans', sans-serif; }
+    .badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+    .badge-Pending { background: #FEF9C3; color: #854D0E; }
+    .badge-Processing { background: #E0F2FE; color: #0369A1; }
+    .badge-Completed { background: #DCFCE7; color: #166534; }
+    .badge-Disputed { background: #FEE2E2; color: #991B1B; }
+    .badge-Refunded { background: #F3F4F6; color: #6B7280; }
+    .badge-PartiallyRefunded { background: #FEF9C3; color: #854D0E; }
+    .badge-PendingPayment { background: #FEF9C3; color: #854D0E; }
+    .badge-Posted { background: #EDE4F7; color: #560591; }
+    .badge-Paid { background: #DCFCE7; color: #166534; }
+    .receipt-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--purple); font-weight: 600; cursor: pointer; }
+    .receipt-row i { font-size: 13px; }
+    .empty-state { text-align: center; padding: 60px 20px; background: #fff; border-radius: 14px; border: 1px solid var(--border); }
+    .empty-state i { font-size: 40px; color: #ddd; margin-bottom: 16px; display: block; }
+    .empty-state h3 { font-size: 16px; font-weight: 600; color: #0D0D0D; margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; color: #999; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div class="s-name">SPEKTO</div>
+    </div>
+    <nav class="nav">
+      <a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> My Inspections</a>
+      <a class="nav-item" href="new-inspection.html"><i class="ti ti-plus"></i> New Inspection</a>
+      <a class="nav-item" href="property-library.html"><i class="ti ti-video"></i> Property Library</a>
+      <a class="nav-item active" href="billing.html"><i class="ti ti-credit-card"></i> Billing</a>
+      <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> My Disputes</a>
+      <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="user-row">
+        <div class="avatar" id="userAvatar">?</div>
+        <div class="user-name" id="userName">Loading...</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">Billing</div>
+    </div>
+    <div class="content" id="mainContent">
+      <div class="loading"><div class="spinner"></div> Loading billing...</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let allInspections = []
+  let currentFilter = 'all'
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = '../auth/login.html'; return; }
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .single()
+
+    if (userData) {
+      const initials = (userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')
+      document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
+    }
+
+    const { data: inspections } = await supabase
+      .from('inspections')
+      .select('*')
+      .eq('client_id', user.id)
+      .not('status', 'eq', 'Posted')
+      .not('status', 'eq', 'Accepted')
+      .not('status', 'eq', 'InProgress')
+      .not('status', 'eq', 'Cancelled')
+      .order('created_at', { ascending: false })
+
+    allInspections = inspections || []
+    renderPage()
+  }
+
+  function renderPage() {
+    const total = allInspections.reduce((sum, i) =>
+      sum + (parseFloat(i.pricing_snapshot?.total) || 0), 0)
+    const paid = allInspections.filter(i => i.status === 'Paid')
+    const pending = allInspections.filter(i => i.status === 'PendingPayment')
+    const disputed = allInspections.filter(i => i.status === 'Disputed')
+
+    let html = `
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Total spent</div>
+          <div class="stat-val purple">$${total.toFixed(2)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Completed</div>
+          <div class="stat-val">${paid.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending payment</div>
+          <div class="stat-val">${pending.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Disputed</div>
+          <div class="stat-val">${disputed.length}</div>
+        </div>
+      </div>
+
+      <div class="filters" id="filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="Completed">Completed</button>
+        <button class="filter-btn" data-filter="PendingPayment">Pending Payment</button>
+        <button class="filter-btn" data-filter="Disputed">Disputed</button>
+        <button class="filter-btn" data-filter="Paid">Paid</button>
+      </div>
+
+      <div class="billing-list" id="billingList"></div>`
+
+    document.getElementById('mainContent').innerHTML = html
+    renderList(allInspections)
+
+    document.getElementById('filters').addEventListener('click', e => {
+      const btn = e.target.closest('.filter-btn')
+      if (!btn) return
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'))
+      btn.classList.add('active')
+      currentFilter = btn.dataset.filter
+      const filtered = currentFilter === 'all'
+        ? allInspections
+        : allInspections.filter(i => i.status === currentFilter)
+      renderList(filtered)
+    })
+  }
+
+  function renderList(inspections) {
+    const container = document.getElementById('billingList')
+
+    if (inspections.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <i class="ti ti-receipt-off"></i>
+          <h3>No billing records</h3>
+          <p>Your payment history will appear here once you submit an inspection</p>
+        </div>`
+      return
+    }
+
+    container.innerHTML = inspections.map(insp => {
+      const date = new Date(insp.date)
+      const day = date.getDate().toString().padStart(2, '0')
+      const month = date.toLocaleString('default', { month: 'short' })
+      const amount = insp.pricing_snapshot?.total
+        ? '$' + parseFloat(insp.pricing_snapshot.total).toFixed(2)
+        : '—'
+      const typeLabel = insp.inspection_type === 'external' ? 'External only'
+        : insp.inspection_type === 'internal' ? 'Internal only'
+        : 'Internal & External'
+      const statusLabel = insp.status === 'PendingPayment' ? 'Pending Payment' : insp.status
+
+      return `
+        <div class="billing-item" onclick="window.location.href='inspection-detail.html?id=${insp.id}'">
+          <div class="billing-date">
+            <div class="billing-day">${day}</div>
+            <div class="billing-month">${month}</div>
+          </div>
+          <div class="billing-info">
+            <div class="billing-addr">${insp.address}</div>
+            <div class="billing-type">
+              <span>${typeLabel}</span>
+              <span>·</span>
+              <span>${new Date(insp.date).toLocaleDateString('en-AU', { day:'numeric', month:'long', year:'numeric' })}</span>
+            </div>
+          </div>
+          <div class="billing-right">
+            <div class="billing-amount">${amount}</div>
+            <span class="badge badge-${insp.status}">${statusLabel}</span>
+            <div class="receipt-row"><i class="ti ti-external-link"></i> View inspection</div>
+          </div>
+        </div>`
+    }).join('')
+  }
+
+  init()
+</script>
+</body>
+</html>
