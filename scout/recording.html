@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Record Inspection - Spekto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; --red: #DC2626; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .topbar { background: var(--purple); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .back-btn { width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; font-size: 18px; text-decoration: none; }
+    .topbar-title { font-size: 16px; font-weight: 700; color: #fff; }
+    .topbar-badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: rgba(255,255,255,0.2); color: #fff; }
+    .gps-pill { display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.15); border-radius: 20px; padding: 5px 12px; font-size: 12px; color: #fff; font-weight: 500; }
+    .gps-dot { width: 7px; height: 7px; border-radius: 50%; background: #86EFAC; }
+    .gps-dot.searching { background: #FCD34D; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .content { padding: 16px 20px; max-width: 640px; margin: 0 auto; }
+    .address-banner { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 14px 18px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+    .address-icon { width: 36px; height: 36px; background: var(--tint); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .address-icon i { font-size: 17px; color: var(--purple); }
+    .address-text { font-size: 14px; font-weight: 600; color: #0D0D0D; }
+    .address-sub { font-size: 12px; color: #999; margin-top: 2px; }
+    .section-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .section-tab { flex: 1; padding: 10px; background: #fff; border: 1.5px solid var(--border); border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.15s; }
+    .section-tab.active { border-color: var(--purple); background: var(--tint); }
+    .section-tab.done { border-color: var(--green); background: #F0FDF4; }
+    .section-tab-label { font-size: 12px; font-weight: 700; color: #999; }
+    .section-tab.active .section-tab-label { color: var(--purple); }
+    .section-tab.done .section-tab-label { color: #166534; }
+    .section-tab-count { font-size: 20px; font-weight: 800; font-family: 'DM Sans', sans-serif; color: #ddd; line-height: 1; margin-bottom: 3px; }
+    .section-tab.active .section-tab-count { color: var(--purple); }
+    .section-tab.done .section-tab-count { color: var(--green); }
+    .record-area { background: #fff; border-radius: 14px; border: 2px solid var(--border); overflow: hidden; margin-bottom: 16px; }
+    .record-header { padding: 16px 18px; border-bottom: 1px solid #F3F3F3; display: flex; align-items: center; justify-content: space-between; }
+    .record-title { font-size: 14px; font-weight: 700; color: #0D0D0D; }
+    .record-sub { font-size: 12px; color: #999; margin-top: 2px; }
+    .upload-zone { padding: 24px 18px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .upload-circle { width: 80px; height: 80px; border-radius: 50%; background: var(--tint); display: flex; align-items: center; justify-content: center; cursor: pointer; border: 2px dashed #C4A0E8; transition: all 0.15s; }
+    .upload-circle:hover { background: #EAD5FC; }
+    .upload-circle i { font-size: 30px; color: var(--purple); }
+    .upload-hint { font-size: 13px; color: #999; text-align: center; }
+    .upload-hint strong { color: var(--purple); cursor: pointer; }
+    .file-input { display: none; }
+    .video-preview-list { padding: 0 18px 16px; display: flex; flex-direction: column; gap: 10px; }
+    .video-preview-item { display: flex; align-items: center; gap: 10px; background: var(--tint); border-radius: 8px; padding: 10px 12px; border: 1px solid #D4B8F5; }
+    .video-thumb { width: 44px; height: 44px; background: #D4B8F5; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+    .video-thumb video { width: 100%; height: 100%; object-fit: cover; }
+    .video-thumb i { font-size: 20px; color: var(--purple); }
+    .video-info { flex: 1; min-width: 0; }
+    .video-name { font-size: 12px; font-weight: 600; color: var(--purple); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .video-size { font-size: 11px; color: #999; margin-top: 2px; }
+    .video-gps { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #16a34a; font-weight: 500; margin-top: 2px; }
+    .video-gps i { font-size: 12px; }
+    .btn-remove-video { width: 28px; height: 28px; border-radius: 6px; border: none; background: rgba(220,38,38,0.1); color: var(--red); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .btn-add-more { width: 100%; height: 40px; background: transparent; border: 1.5px dashed #C4A0E8; border-radius: 8px; color: var(--purple); font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0 18px 16px; width: calc(100% - 36px); transition: background 0.15s; }
+    .btn-add-more:hover { background: var(--tint); }
+    .instructions-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 16px 18px; margin-bottom: 16px; }
+    .instructions-title { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+    .instruction-check { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #F3F3F3; cursor: pointer; }
+    .instruction-check:last-child { border-bottom: none; }
+    .check-box { width: 20px; height: 20px; border-radius: 5px; border: 2px solid #E0E0E0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
+    .check-box.checked { background: var(--purple); border-color: var(--purple); }
+    .check-box.checked i { display: block; }
+    .check-box i { display: none; font-size: 13px; color: #fff; }
+    .check-label { font-size: 13px; color: #555; font-weight: 500; }
+    .check-label.done { text-decoration: line-through; color: #aaa; }
+    .submit-section { background: #fff; border-radius: 14px; border: 1px solid var(--border); padding: 20px 18px; margin-bottom: 24px; }
+    .submit-checklist { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .submit-check-item { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+    .check-icon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .check-icon.ok { background: #DCFCE7; color: #16a34a; }
+    .check-icon.warn { background: #FEF9C3; color: #854D0E; }
+    .check-icon.fail { background: #FEE2E2; color: var(--red); }
+    .check-icon i { font-size: 13px; }
+    .check-item-text { color: #555; }
+    .check-item-text.ok { color: #166534; }
+    .check-item-text.warn { color: #854D0E; }
+    .check-item-text.fail { color: var(--red); }
+    .btn-submit-final { width: 100%; height: 52px; background: var(--purple); color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.15s; }
+    .btn-submit-final:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-save-progress { width: 100%; height: 44px; background: #fff; color: var(--purple); border: 1.5px solid var(--purple); border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; margin-bottom: 10px; }
+    .progress-bar-wrap { background: #F0F0F0; border-radius: 20px; height: 6px; margin: 12px 0; overflow: hidden; display: none; }
+    .progress-bar { height: 100%; background: var(--purple); border-radius: 20px; transition: width 0.3s; width: 0%; }
+    .upload-status { font-size: 12px; color: #999; text-align: center; margin-top: 4px; display: none; }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1F2937; color: #fff; font-size: 13px; font-weight: 500; padding: 12px 20px; border-radius: 10px; z-index: 999; display: none; white-space: nowrap; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <a class="back-btn" id="backBtn" href="dashboard.html">&#8592;</a>
+    <div>
+      <div class="topbar-title">Recording Session</div>
+    </div>
+  </div>
+  <div class="gps-pill">
+    <div class="gps-dot searching" id="gpsDot"></div>
+    <span id="gpsLabel">Getting GPS...</span>
+  </div>
+</div>
+
+<div class="content" id="mainContent">
+  <div class="loading"><div class="spinner"></div> Loading inspection...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let inspection = null
+  let currentUser = null
+  let gpsData = { latitude: null, longitude: null, address: null }
+  let externalVideos = []
+  let internalVideos = []
+  let activeSection = 'external'
+  let checkedInstructions = new Set()
+
+  const urlParams = new URLSearchParams(window.location.search)
+  const inspectionId = urlParams.get('id')
+
+  function showToast(msg, duration = 3000) {
+    const t = document.getElementById('toast')
+    t.textContent = msg
+    t.style.display = 'block'
+    setTimeout(() => { t.style.display = 'none' }, duration)
+  }
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = '../auth/login.html'; return; }
+    currentUser = user
+
+    if (!inspectionId) { window.location.href = 'dashboard.html'; return; }
+
+    const { data, error } = await supabase
+      .from('inspections')
+      .select('*, instructions(*)')
+      .eq('id', inspectionId)
+      .single()
+
+    if (error || !data) { window.location.href = 'dashboard.html'; return; }
+    inspection = data
+
+    if (inspection.scout_id !== currentUser.id) { window.location.href = 'dashboard.html'; return; }
+    if (!['Accepted','InProgress'].includes(inspection.status)) {
+      window.location.href = `inspection-detail.html?id=${inspectionId}`
+      return
+    }
+
+    document.getElementById('backBtn').href = `inspection-detail.html?id=${inspectionId}`
+    getGPS()
+    await markInProgress()
+    renderPage()
+  }
+
+  async function markInProgress() {
+    if (inspection.status === 'Accepted') {
+      await supabase
+        .from('inspections')
+        .update({ status: 'InProgress', updated_at: new Date().toISOString() })
+        .eq('id', inspectionId)
+      inspection.status = 'InProgress'
+    }
+  }
+
+  function getGPS() {
+    if (!navigator.geolocation) {
+      document.getElementById('gpsLabel').textContent = 'GPS unavailable'
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        gpsData.latitude = pos.coords.latitude
+        gpsData.longitude = pos.coords.longitude
+        document.getElementById('gpsDot').classList.remove('searching')
+        document.getElementById('gpsLabel').textContent =
+          pos.coords.latitude.toFixed(4) + '°S'
+        updateSubmitChecklist()
+      },
+      () => {
+        document.getElementById('gpsLabel').textContent = 'GPS blocked'
+        updateSubmitChecklist()
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    )
+  }
+
+  function renderPage() {
+    const isExternal = ['external','internalExternal'].includes(inspection.inspection_type)
+    const isInternal = ['internal','internalExternal'].includes(inspection.inspection_type)
+    activeSection = isExternal ? 'external' : 'internal'
+
+    let html = `
+      <div class="address-banner">
+        <div class="address-icon"><i class="ti ti-map-pin"></i></div>
+        <div>
+          <div class="address-text">${inspection.address}</div>
+          <div class="address-sub">${inspection.inspection_type === 'external' ? 'External only' : inspection.inspection_type === 'internal' ? 'Internal only' : 'Internal & External'} · ${inspection.time?.slice(0,5) || ''}</div>
+        </div>
+      </div>`
+
+    if (isExternal && isInternal) {
+      html += `
+        <div class="section-tabs">
+          <div class="section-tab ${activeSection === 'external' ? 'active' : ''}" id="tabExternal" onclick="switchSection('external')">
+            <div class="section-tab-count" id="extCount">0</div>
+            <div class="section-tab-label">External</div>
+          </div>
+          <div class="section-tab" id="tabInternal" onclick="switchSection('internal')">
+            <div class="section-tab-count" id="intCount">0</div>
+            <div class="section-tab-label">Internal</div>
+          </div>
+        </div>`
+    }
+
+    html += `<div id="uploadArea"></div>`
+
+    if (inspection.instructions && inspection.instructions.length > 0) {
+      html += `
+        <div class="instructions-card">
+          <div class="instructions-title">Recording Checklist</div>
+          ${inspection.instructions
+            .sort((a,b) => a.display_order - b.display_order)
+            .map(inst => `
+              <div class="instruction-check" onclick="toggleInstruction('${inst.id}')">
+                <div class="check-box" id="check-${inst.id}">
+                  <i class="ti ti-check"></i>
+                </div>
+                <div class="check-label" id="label-${inst.id}">${inst.text}</div>
+              </div>`).join('')}
+        </div>`
+    }
+
+    html += `
+      <div class="submit-section">
+        <div class="instructions-title" style="margin-bottom:16px">Ready to submit?</div>
+        <div class="submit-checklist" id="submitChecklist"></div>
+        <div class="progress-bar-wrap" id="progressWrap">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="upload-status" id="uploadStatus"></div>
+        <button class="btn-save-progress" id="saveProgressBtn">Save progress and continue later</button>
+        <button class="btn-submit-final" id="submitFinalBtn" disabled>
+          <i class="ti ti-send"></i> Submit Inspection
+        </button>
+      </div>`
+
+    document.getElementById('mainContent').innerHTML = html
+    renderUploadArea()
+    updateSubmitChecklist()
+    document.getElementById('saveProgressBtn').addEventListener('click', saveProgress)
+    document.getElementById('submitFinalBtn').addEventListener('click', submitFinal)
+  }
+
+  function renderUploadArea() {
+    const isExternal = ['external','internalExternal'].includes(inspection.inspection_type)
+    const isInternal = ['internal','internalExternal'].includes(inspection.inspection_type)
+    const showBoth = isExternal && isInternal
+    const videos = activeSection === 'external' ? externalVideos : internalVideos
+    const label = activeSection === 'external' ? 'External Recording' : 'Internal Recording'
+    const sub = activeSection === 'external'
+      ? 'Record the outside of the property — all sides, entrance and street view'
+      : 'Record inside the property — all rooms, hallways and key features'
+
+    let html = `
+      <div class="record-area">
+        <div class="record-header">
+          <div>
+            <div class="record-title">${label}</div>
+            <div class="record-sub">${sub}</div>
+          </div>
+        </div>`
+
+    if (videos.length === 0) {
+      html += `
+        <div class="upload-zone">
+          <div class="upload-circle" onclick="document.getElementById('fileInput-${activeSection}').click()">
+            <i class="ti ti-video-plus"></i>
+          </div>
+          <div class="upload-hint">Tap to select or record a video<br><strong onclick="document.getElementById('fileInput-${activeSection}').click()">Browse files</strong> or use your camera</div>
+        </div>`
+    } else {
+      html += `<div class="video-preview-list" id="videoList-${activeSection}">`
+      videos.forEach((v, idx) => {
+        html += `
+          <div class="video-preview-item">
+            <div class="video-thumb"><i class="ti ti-video"></i></div>
+            <div class="video-info">
+              <div class="video-name">${v.file.name}</div>
+              <div class="video-size">${(v.file.size / 1024 / 1024).toFixed(1)} MB</div>
+              ${gpsData.latitude ? '<div class="video-gps"><i class="ti ti-map-pin"></i> GPS captured</div>' : ''}
+            </div>
+            <button class="btn-remove-video" onclick="removeVideo('${activeSection}', ${idx})">&#215;</button>
+          </div>`
+      })
+      html += `</div>
+        <button class="btn-add-more" onclick="document.getElementById('fileInput-${activeSection}').click()">
+          <i class="ti ti-plus" style="font-size:14px"></i> Add another video
+        </button>`
+    }
+
+    html += `
+        <input type="file" accept="video/*" multiple capture="environment" class="file-input" id="fileInput-${activeSection}" onchange="handleFiles(event, '${activeSection}')">
+      </div>`
+
+    document.getElementById('uploadArea').innerHTML = html
+
+    if (showBoth) {
+      const extTab = document.getElementById('tabExternal')
+      const intTab = document.getElementById('tabInternal')
+      if (extTab && intTab) {
+        extTab.className = 'section-tab' + (activeSection === 'external' ? ' active' : '') + (externalVideos.length > 0 ? ' done' : '')
+        intTab.className = 'section-tab' + (activeSection === 'internal' ? ' active' : '') + (internalVideos.length > 0 ? ' done' : '')
+        document.getElementById('extCount').textContent = externalVideos.length
+        document.getElementById('intCount').textContent = internalVideos.length
+      }
+    }
+  }
+
+  window.switchSection = (section) => {
+    activeSection = section
+    renderUploadArea()
+  }
+
+  window.handleFiles = (event, section) => {
+    const files = Array.from(event.target.files)
+    files.forEach(file => {
+      const entry = { file, gps: { ...gpsData }, recorded_at: new Date().toISOString() }
+      if (section === 'external') externalVideos.push(entry)
+      else internalVideos.push(entry)
+    })
+    renderUploadArea()
+    updateSubmitChecklist()
+  }
+
+  window.removeVideo = (section, idx) => {
+    if (section === 'external') externalVideos.splice(idx, 1)
+    else internalVideos.splice(idx, 1)
+    renderUploadArea()
+    updateSubmitChecklist()
+  }
+
+  window.toggleInstruction = (id) => {
+    if (checkedInstructions.has(id)) checkedInstructions.delete(id)
+    else checkedInstructions.add(id)
+    const box = document.getElementById(`check-${id}`)
+    const label = document.getElementById(`label-${id}`)
+    if (box && label) {
+      box.className = 'check-box' + (checkedInstructions.has(id) ? ' checked' : '')
+      label.className = 'check-label' + (checkedInstructions.has(id) ? ' done' : '')
+    }
+  }
+
+  function updateSubmitChecklist() {
+    const isExternal = ['external','internalExternal'].includes(inspection.inspection_type)
+    const isInternal = ['internal','internalExternal'].includes(inspection.inspection_type)
+    const hasExternal = !isExternal || externalVideos.length > 0
+    const hasInternal = !isInternal || internalVideos.length > 0
+    const hasGps = !!gpsData.latitude
+    const allReady = hasExternal && hasInternal && hasGps
+
+    const items = []
+    if (isExternal) items.push({ ok: externalVideos.length > 0, text: externalVideos.length > 0 ? `${externalVideos.length} external video${externalVideos.length > 1 ? 's' : ''} ready` : 'External video required' })
+    if (isInternal) items.push({ ok: internalVideos.length > 0, text: internalVideos.length > 0 ? `${internalVideos.length} internal video${internalVideos.length > 1 ? 's' : ''} ready` : 'Internal video required' })
+    items.push({ ok: hasGps, warn: !hasGps, text: hasGps ? 'GPS location captured' : 'GPS not yet captured — allow location access' })
+
+    const container = document.getElementById('submitChecklist')
+    if (container) {
+      container.innerHTML = items.map(item => `
+        <div class="submit-check-item">
+          <div class="check-icon ${item.ok ? 'ok' : item.warn ? 'warn' : 'fail'}">
+            <i class="ti ${item.ok ? 'ti-check' : item.warn ? 'ti-clock' : 'ti-x'}"></i>
+          </div>
+          <div class="check-item-text ${item.ok ? 'ok' : item.warn ? 'warn' : 'fail'}">${item.text}</div>
+        </div>`).join('')
+    }
+
+    const submitBtn = document.getElementById('submitFinalBtn')
+    if (submitBtn) submitBtn.disabled = !allReady
+  }
+
+  async function saveProgress() {
+    showToast('Progress saved. You can continue later from My Jobs.')
+    setTimeout(() => { window.location.href = `inspection-detail.html?id=${inspectionId}` }, 1500)
+  }
+
+  async function submitFinal() {
+    const submitBtn = document.getElementById('submitFinalBtn')
+    const saveBtn = document.getElementById('saveProgressBtn')
+    submitBtn.disabled = true
+    submitBtn.innerHTML = '<div class="spinner" style="border-top-color:#fff"></div> Uploading...'
+    saveBtn.disabled = true
+
+    const progressWrap = document.getElementById('progressWrap')
+    const progressBar = document.getElementById('progressBar')
+    const uploadStatus = document.getElementById('uploadStatus')
+    progressWrap.style.display = 'block'
+    uploadStatus.style.display = 'block'
+
+    const allVideos = [
+      ...externalVideos.map(v => ({ ...v, type: 'external' })),
+      ...internalVideos.map(v => ({ ...v, type: 'internal' }))
+    ]
+
+    let uploaded = 0
+    const captureIds = []
+
+    for (const video of allVideos) {
+      uploadStatus.textContent = `Uploading video ${uploaded + 1} of ${allVideos.length}...`
+      progressBar.style.width = (uploaded / allVideos.length * 100) + '%'
+
+      const fileName = `${inspectionId}/${video.type}-${Date.now()}-${video.file.name.replace(/\s/g,'_')}`
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('captures')
+        .upload(fileName, video.file, { cacheControl: '3600', upsert: false })
+
+      if (uploadError) {
+        showToast('Upload failed: ' + uploadError.message, 5000)
+        submitBtn.disabled = false
+        submitBtn.innerHTML = '<i class="ti ti-send"></i> Submit Inspection'
+        saveBtn.disabled = false
+        progressWrap.style.display = 'none'
+        uploadStatus.style.display = 'none'
+        return
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from('captures').getPublicUrl(fileName)
+
+      const { data: captureRow } = await supabase
+        .from('captures')
+        .insert({
+          inspection_id: inspectionId,
+          scout_id: currentUser.id,
+          capture_type: video.type,
+          video_url: publicUrl,
+          file_name: video.file.name,
+          file_size_bytes: video.file.size,
+          gps_latitude: video.gps.latitude,
+          gps_longitude: video.gps.longitude,
+          gps_address: inspection.address,
+          recorded_at: video.recorded_at
+        })
+        .select()
+        .single()
+
+      if (captureRow) captureIds.push(captureRow.id)
+      uploaded++
+    }
+
+    progressBar.style.width = '100%'
+    uploadStatus.textContent = 'Finalising submission...'
+
+    await supabase
+      .from('inspections')
+      .update({ status: 'Completed', updated_at: new Date().toISOString() })
+      .eq('id', inspectionId)
+
+    showToast('Inspection submitted successfully!')
+    setTimeout(() => { window.location.href = `inspection-detail.html?id=${inspectionId}` }, 1500)
+  }
+
+  init()
+</script>
+</body>
+</html>
