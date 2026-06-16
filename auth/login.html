@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log in - Spekto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --purple: #560591;
+      --light-tint: #F5EEFF;
+      --green: #22C55E;
+      --background: #F7F5FA;
+      --error-red: #E53935;
+      --border: #E0E0E0;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--background);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      display: flex;
+      width: 100%;
+      max-width: 1100px;
+      min-height: 100vh;
+      background: #fff;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+    }
+    .left-panel {
+      width: 42%;
+      background: var(--purple);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .right-panel {
+      width: 58%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 3rem 4rem;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0D0D0D;
+      letter-spacing: -0.4px;
+      margin-bottom: 6px;
+    }
+    .sub {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 28px;
+    }
+    .sub a { color: var(--purple); font-weight: 500; text-decoration: none; }
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #444;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      height: 42px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 0 14px;
+      font-size: 14px;
+      color: #0D0D0D;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .field input:focus { border-color: var(--purple); }
+    .field input.invalid { border-color: var(--error-red); }
+    .error-msg {
+      font-size: 12px;
+      color: var(--error-red);
+      margin-top: 4px;
+      display: none;
+    }
+    .forgot {
+      text-align: right;
+      margin-top: -8px;
+      margin-bottom: 20px;
+    }
+    .forgot a {
+      font-size: 12px;
+      color: var(--purple);
+      text-decoration: none;
+    }
+    .btn-login {
+      width: 100%;
+      height: 44px;
+      background: var(--green);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: background 0.15s;
+    }
+    .btn-login:hover { background: #16a34a; }
+    .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .divider hr { flex: 1; border: none; border-top: 1px solid #EBEBEB; }
+    .divider span { font-size: 12px; color: #bbb; }
+    .btn-google {
+      width: 100%;
+      height: 44px;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #333;
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      transition: background 0.15s;
+    }
+    .btn-google:hover { background: #f9fafb; }
+    .signup-row {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 13px;
+      color: #888;
+    }
+    .signup-row a { color: var(--purple); font-weight: 600; text-decoration: none; }
+    .global-error {
+      background: #FEE2E2;
+      border: 1px solid #FCA5A5;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #991B1B;
+      margin-bottom: 16px;
+      display: none;
+    }
+    @media (max-width: 640px) {
+      .container { flex-direction: column; }
+      .left-panel { width: 100%; height: 56px; padding: 1rem; }
+      .right-panel { width: 100%; padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+<main class="container">
+  <section class="left-panel">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="width:52px;height:52px;background:rgba(255,255,255,0.15);border-radius:14px;border:1.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;">
+        <svg width="30" height="26" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:36px;font-weight:800;color:#fff;letter-spacing:-2px;">SPEKTO</div>
+    </div>
+  </section>
+
+  <section class="right-panel">
+    <h1>Welcome back</h1>
+    <div class="sub">Don't have an account? <a href="register.html">Sign up free</a></div>
+
+    <div class="global-error" id="globalError"></div>
+
+    <div class="field">
+      <label>Email address</label>
+      <input type="email" id="email" placeholder="you@example.com">
+      <div class="error-msg" id="emailError">Please enter a valid email address</div>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="••••••••">
+      <div class="error-msg" id="passwordError">Please enter your password</div>
+    </div>
+
+    <div class="forgot"><a href="forgot-password.html">Forgot password?</a></div>
+
+    <button class="btn-login" id="loginBtn">Log in</button>
+
+    <div class="divider"><hr><span>or continue with</span><hr></div>
+
+    <button class="btn-google" id="googleBtn">
+      <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
+        <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/>
+        <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/>
+        <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58Z" fill="#EA4335"/>
+      </svg>
+      Continue with Google
+    </button>
+
+    <div class="signup-row">New to Spekto? <a href="register.html">Create an account</a></div>
+  </section>
+</main>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  const emailInput = document.getElementById('email')
+  const passwordInput = document.getElementById('password')
+  const loginBtn = document.getElementById('loginBtn')
+  const googleBtn = document.getElementById('googleBtn')
+  const globalError = document.getElementById('globalError')
+
+  function showFieldError(input, msgId) {
+    input.classList.add('invalid')
+    document.getElementById(msgId).style.display = 'block'
+  }
+
+  function clearFieldError(input, msgId) {
+    input.classList.remove('invalid')
+    document.getElementById(msgId).style.display = 'none'
+  }
+
+  function showGlobalError(msg) {
+    globalError.textContent = msg
+    globalError.style.display = 'block'
+  }
+
+  function hideGlobalError() {
+    globalError.style.display = 'none'
+  }
+
+  emailInput.addEventListener('input', () => clearFieldError(emailInput, 'emailError'))
+  passwordInput.addEventListener('input', () => clearFieldError(passwordInput, 'passwordError'))
+
+  loginBtn.addEventListener('click', async () => {
+    let valid = true
+    hideGlobalError()
+
+    const email = emailInput.value.trim()
+    const password = passwordInput.value
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showFieldError(emailInput, 'emailError')
+      valid = false
+    }
+    if (!password) {
+      showFieldError(passwordInput, 'passwordError')
+      valid = false
+    }
+    if (!valid) return
+
+    loginBtn.disabled = true
+    loginBtn.textContent = 'Logging in...'
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (error) {
+      loginBtn.disabled = false
+      loginBtn.textContent = 'Log in'
+      if (error.message.includes('Invalid login')) {
+        showGlobalError('Incorrect email or password. Please try again.')
+      } else if (error.message.includes('Email not confirmed')) {
+        showGlobalError('Please confirm your email address before logging in.')
+      } else {
+        showGlobalError(error.message)
+      }
+      return
+    }
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('active_role')
+      .eq('id', data.user.id)
+      .single()
+
+    if (userData?.active_role === 'scout') {
+      window.location.href = '../scout/dashboard.html'
+    } else {
+      window.location.href = '../client/dashboard.html'
+    }
+  })
+
+  googleBtn.addEventListener('click', async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: 'http://localhost:3000/auth/select-role.html' }
+    })
+    if (error) showGlobalError('Google sign in failed. Please try again.')
+  })
+</script>
+</body>
+</html>
