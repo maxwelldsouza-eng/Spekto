@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Detail - Spekto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; --red: #DC2626; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: var(--purple); display: flex; flex-direction: column; padding: 28px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .s-mark { width: 36px; height: 36px; background: rgba(255,255,255,0.15); border-radius: 9px; border: 1px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -1.5px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; padding: 20px 12px; flex: 1; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.6); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.15); color: #fff; }
+    .nav-item i { font-size: 17px; }
+    .sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .user-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .user-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500; }
+    .main { flex: 1; margin-left: 220px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; position: sticky; top: 0; z-index: 50; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .back-btn { width: 36px; height: 36px; border-radius: 8px; border: 1.5px solid #E0E0E0; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--purple); font-size: 18px; text-decoration: none; }
+    .topbar-title { font-size: 18px; font-weight: 700; color: #0D0D0D; letter-spacing: -0.3px; }
+    .badge { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+    .badge-Posted { background: #EDE4F7; color: #560591; }
+    .badge-Accepted { background: #E0F2FE; color: #0369A1; }
+    .badge-InProgress { background: #EDE9FE; color: #5B21B6; }
+    .badge-Completed { background: #DCFCE7; color: #166534; }
+    .badge-PendingPayment { background: #FEF9C3; color: #854D0E; }
+    .badge-Disputed { background: #FEE2E2; color: #991B1B; }
+    .badge-Paid { background: #D1FAE5; color: #065F46; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .btn-action { height: 40px; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 6px; padding: 0 18px; }
+    .btn-record { background: var(--green); color: #fff; }
+    .btn-record:hover { background: #16a34a; }
+    .btn-close { background: #fff; color: #444; border: 1.5px solid #E0E0E0; }
+    .dispute-banner { background: #FFF8F8; border-bottom: 1px solid #FEE2E2; padding: 14px 28px; }
+    .dispute-inner { display: flex; align-items: center; gap: 10px; }
+    .dispute-icon { color: #991B1B; font-size: 18px; }
+    .dispute-text { font-size: 13px; color: #991B1B; font-weight: 500; }
+    .content { padding: 24px 28px; max-width: 720px; }
+    .card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 20px 24px; margin-bottom: 16px; }
+    .section-label { font-size: 12px; font-weight: 600; color: #888; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 14px; }
+    .detail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .det-label { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+    .det-val { font-size: 14px; font-weight: 600; color: #0D0D0D; }
+    .det-val.link { color: var(--purple); text-decoration: none; }
+    .payout-highlight { background: #DCFCE7; border-radius: 10px; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
+    .payout-label { font-size: 13px; font-weight: 600; color: #166534; }
+    .payout-amount { font-size: 24px; font-weight: 800; color: #166534; font-family: 'DM Sans', sans-serif; }
+    .instructions-list { display: flex; flex-direction: column; gap: 10px; }
+    .instruction-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--tint); border-radius: 8px; border: 1px solid #D4B8F5; }
+    .instruction-item i { font-size: 16px; color: var(--purple); flex-shrink: 0; }
+    .instruction-text { font-size: 13px; color: var(--purple); font-weight: 500; }
+    .captures-section { background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 16px; }
+    .captures-header { padding: 16px 20px; border-bottom: 1px solid #F3F3F3; display: flex; align-items: center; gap: 8px; }
+    .captures-title { font-size: 14px; font-weight: 700; color: var(--purple); flex: 1; }
+    .capture-count-badge { background: var(--tint); color: var(--purple); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 10px; }
+    .captures-list { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+    .capture-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #F9F9F9; border-radius: 8px; border: 1px solid #F0F0F0; }
+    .capture-icon { width: 36px; height: 36px; background: var(--tint); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .capture-icon i { font-size: 17px; color: var(--purple); }
+    .capture-name { font-size: 13px; font-weight: 600; color: #0D0D0D; }
+    .capture-meta { font-size: 11px; color: #999; margin-top: 2px; }
+    .capture-gps { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #16a34a; font-weight: 500; margin-top: 3px; }
+    .capture-gps i { font-size: 12px; }
+    .state-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 48px 24px; margin-bottom: 16px; text-align: center; }
+    .state-icon { font-size: 32px; color: var(--purple); margin-bottom: 16px; }
+    .state-heading { font-size: 16px; font-weight: 700; color: #0D0D0D; margin-bottom: 8px; }
+    .state-sub { font-size: 13px; color: #999; line-height: 1.6; max-width: 380px; margin: 0 auto 20px; }
+    .btn-start-recording { display: inline-flex; align-items: center; gap: 8px; background: var(--green); color: #fff; border: none; border-radius: 10px; padding: 12px 24px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; text-decoration: none; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .detail-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div class="s-name">SPEKTO</div>
+    </div>
+    <nav class="nav">
+      <a class="nav-item active" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> My Jobs</a>
+      <a class="nav-item" href="earnings.html"><i class="ti ti-wallet"></i> Earnings</a>
+      <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> My Disputes</a>
+      <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="user-row">
+        <div class="avatar" id="userAvatar">?</div>
+        <div class="user-name" id="userName">Loading...</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <a class="back-btn" href="dashboard.html">&#8592;</a>
+        <div class="topbar-title">Job Detail</div>
+        <span class="badge" id="statusBadge"></span>
+      </div>
+      <div class="topbar-right" id="topbarActions"></div>
+    </div>
+
+    <div id="disputeBanner" style="display:none" class="dispute-banner">
+      <div class="dispute-inner">
+        <i class="ti ti-alert-triangle dispute-icon"></i>
+        <div class="dispute-text">A dispute has been raised on this inspection. Your payment is on hold pending resolution by Spekto support.</div>
+      </div>
+    </div>
+
+    <div class="content" id="mainContent">
+      <div class="loading"><div class="spinner"></div> Loading job details...</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let inspection = null
+  let captures = []
+  let currentUser = null
+
+  const urlParams = new URLSearchParams(window.location.search)
+  const inspectionId = urlParams.get('id')
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = '../auth/login.html'; return; }
+    currentUser = user
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .single()
+
+    if (userData) {
+      const initials = (userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')
+      document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
+    }
+
+    if (!inspectionId) { window.location.href = 'dashboard.html'; return; }
+    await loadInspection()
+  }
+
+  async function loadInspection() {
+    const { data, error } = await supabase
+      .from('inspections')
+      .select('*, instructions(*)')
+      .eq('id', inspectionId)
+      .single()
+
+    if (error || !data) { window.location.href = 'dashboard.html'; return; }
+    inspection = data
+
+    if (inspection.scout_id && inspection.scout_id !== currentUser.id) {
+      window.location.href = 'dashboard.html'
+      return
+    }
+
+    if (['Completed','PendingPayment','Paid','Disputed'].includes(inspection.status)) {
+      const { data: captureData } = await supabase
+        .from('captures')
+        .select('*')
+        .eq('inspection_id', inspectionId)
+        .eq('is_deleted', false)
+        .eq('is_replaced', false)
+        .order('capture_type', { ascending: true })
+        .order('recorded_at', { ascending: true })
+      captures = captureData || []
+    }
+
+    render()
+  }
+
+  function render() {
+    const badge = document.getElementById('statusBadge')
+    badge.className = `badge badge-${inspection.status}`
+    badge.textContent = inspection.status
+      .replace('PendingPayment','Pending Payment')
+      .replace('InProgress','In Progress')
+
+    if (inspection.status === 'Disputed') {
+      document.getElementById('disputeBanner').style.display = 'block'
+    }
+
+    renderActions()
+    renderContent()
+  }
+
+  function renderActions() {
+    const container = document.getElementById('topbarActions')
+    container.innerHTML = ''
+
+    const closeBtn = document.createElement('a')
+    closeBtn.href = 'dashboard.html'
+    closeBtn.className = 'btn-action btn-close'
+    closeBtn.innerHTML = '<i class="ti ti-arrow-left"></i> Back'
+    container.appendChild(closeBtn)
+
+    if (inspection.status === 'Accepted' || inspection.status === 'InProgress') {
+      const recordBtn = document.createElement('a')
+      recordBtn.href = `recording.html?id=${inspection.id}`
+      recordBtn.className = 'btn-action btn-record'
+      recordBtn.innerHTML = '<i class="ti ti-video"></i> Start Recording'
+      container.insertBefore(recordBtn, closeBtn)
+    }
+  }
+
+  function renderContent() {
+    const typeLabel = inspection.inspection_type === 'external' ? 'External Only'
+      : inspection.inspection_type === 'internal' ? 'Internal Only'
+      : 'Internal & External'
+    const payout = inspection.pricing_snapshot?.pay_to_scout
+      ? '$' + parseFloat(inspection.pricing_snapshot.pay_to_scout).toFixed(2)
+      : null
+
+    let html = `
+      <div class="card">
+        <div class="section-label">Job Details</div>
+        <div class="detail-grid">
+          <div><div class="det-label">Address</div><div class="det-val" style="font-size:13px">${inspection.address}</div></div>
+          <div><div class="det-label">Date</div><div class="det-val">${new Date(inspection.date).toLocaleDateString('en-AU', { day:'numeric', month:'long', year:'numeric' })}</div></div>
+          <div><div class="det-label">Time</div><div class="det-val">${inspection.time?.slice(0,5) || '—'}</div></div>
+          <div><div class="det-label">Type</div><div class="det-val">${typeLabel}</div></div>
+          <div><div class="det-label">Status</div><div class="det-val">${inspection.status.replace('PendingPayment','Pending Payment').replace('InProgress','In Progress')}</div></div>
+          ${inspection.property_link ? `<div><div class="det-label">Property link</div><a class="det-val link" href="${inspection.property_link}" target="_blank">View listing ↗</a></div>` : '<div></div>'}
+        </div>
+        ${payout ? `
+        <div class="payout-highlight">
+          <div class="payout-label"><i class="ti ti-wallet" style="font-size:16px;vertical-align:-2px;margin-right:6px"></i>Your payout for this job</div>
+          <div class="payout-amount">${payout}</div>
+        </div>` : ''}
+      </div>`
+
+    if (inspection.instructions && inspection.instructions.length > 0) {
+      html += `
+        <div class="card">
+          <div class="section-label">Recording Instructions</div>
+          <div class="instructions-list">
+            ${inspection.instructions
+              .sort((a,b) => a.display_order - b.display_order)
+              .map(inst => `
+                <div class="instruction-item">
+                  <i class="ti ti-checkbox"></i>
+                  <div class="instruction-text">${inst.text}</div>
+                </div>`).join('')}
+          </div>
+        </div>`
+    }
+
+    if (inspection.status === 'Accepted' || inspection.status === 'InProgress') {
+      html += `
+        <div class="state-card">
+          <div class="state-icon"><i class="ti ti-video"></i></div>
+          <div class="state-heading">Ready to record</div>
+          <div class="state-sub">Head to the property address and start recording when you arrive. Make sure GPS is enabled on your device.</div>
+          <a class="btn-start-recording" href="recording.html?id=${inspection.id}">
+            <i class="ti ti-video"></i> Start Recording
+          </a>
+        </div>`
+    }
+
+    if (['Completed','PendingPayment','Paid','Disputed'].includes(inspection.status)) {
+      const types = inspection.inspection_type === 'external' ? ['external']
+        : inspection.inspection_type === 'internal' ? ['internal']
+        : ['external', 'internal']
+
+      types.forEach(type => {
+        const typeCaptures = captures.filter(c => c.capture_type === type)
+        const label = type === 'external' ? 'External Captures' : 'Internal Captures'
+        const icon = type === 'external' ? 'ti-home' : 'ti-door-enter'
+
+        html += `
+          <div class="captures-section">
+            <div class="captures-header">
+              <i class="ti ${icon}" style="font-size:16px;color:var(--purple)"></i>
+              <div class="captures-title">${label}</div>
+              <span class="capture-count-badge">${typeCaptures.length} video${typeCaptures.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div class="captures-list">
+              ${typeCaptures.length === 0
+                ? '<div style="text-align:center;padding:20px;font-size:13px;color:#999">No recordings submitted</div>'
+                : typeCaptures.map((cap, idx) => {
+                    const recordedAt = cap.recorded_at
+                      ? new Date(cap.recorded_at).toLocaleString('en-AU', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
+                      : '—'
+                    return `
+                      <div class="capture-item">
+                        <div class="capture-icon"><i class="ti ti-video"></i></div>
+                        <div style="flex:1;min-width:0">
+                          <div class="capture-name">Video ${idx + 1} — ${cap.file_name || 'Recording'}</div>
+                          <div class="capture-meta">Recorded ${recordedAt}</div>
+                          ${cap.gps_latitude ? `<div class="capture-gps"><i class="ti ti-map-pin"></i> GPS verified</div>` : ''}
+                        </div>
+                        <a href="${cap.video_url}" target="_blank" style="font-size:12px;color:var(--purple);font-weight:600;text-decoration:none;flex-shrink:0">View ↗</a>
+                      </div>`
+                  }).join('')
+              }
+            </div>
+          </div>`
+      })
+
+      if (inspection.status === 'PendingPayment') {
+        html += `
+          <div class="card" style="border-color:#D4B8F5;background:var(--tint)">
+            <div style="display:flex;align-items:center;gap:10px">
+              <i class="ti ti-clock" style="font-size:20px;color:var(--purple)"></i>
+              <div>
+                <div style="font-size:14px;font-weight:700;color:var(--purple)">Payment pending</div>
+                <div style="font-size:13px;color:#8B4FC8;margin-top:2px">The client has approved your recording. Your payout will be included in the next weekly batch.</div>
+              </div>
+            </div>
+          </div>`
+      }
+
+      if (inspection.status === 'Paid') {
+        html += `
+          <div class="card" style="border-color:#86EFAC;background:#F0FDF4">
+            <div style="display:flex;align-items:center;gap:10px">
+              <i class="ti ti-circle-check" style="font-size:20px;color:#16a34a"></i>
+              <div>
+                <div style="font-size:14px;font-weight:700;color:#16a34a">Payment completed</div>
+                <div style="font-size:13px;color:#166534;margin-top:2px">Your payout of ${payout || ''} has been processed successfully.</div>
+              </div>
+            </div>
+          </div>`
+      }
+    }
+
+    document.getElementById('mainContent').innerHTML = html
+  }
+
+  init()
+</script>
+</body>
+</html>
