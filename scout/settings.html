@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - Spekto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; --red: #E53935; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: var(--purple); display: flex; flex-direction: column; padding: 28px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .s-mark { width: 36px; height: 36px; background: rgba(255,255,255,0.15); border-radius: 9px; border: 1px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -1.5px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; padding: 20px 12px; flex: 1; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13px; color: rgba(255,255,255,0.6); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.15); color: #fff; }
+    .nav-item i { font-size: 17px; }
+    .sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .user-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .user-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500; }
+    .main { flex: 1; margin-left: 220px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .topbar-title { font-size: 18px; font-weight: 700; color: #0D0D0D; letter-spacing: -0.3px; }
+    .content { padding: 24px 28px; max-width: 720px; }
+    .card { background: #fff; border-radius: 14px; border: 1px solid var(--border); padding: 22px 24px; margin-bottom: 16px; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .card-title { font-size: 14px; font-weight: 700; color: #0D0D0D; display: flex; align-items: center; gap: 8px; }
+    .card-title i { font-size: 17px; color: var(--purple); }
+    .field { margin-bottom: 16px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: #444; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 7px; }
+    .field input, .field select { width: 100%; height: 42px; border: 1.5px solid #E0E0E0; border-radius: 8px; padding: 0 14px; font-size: 14px; color: #0D0D0D; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.15s; background: #fff; }
+    .field input:focus, .field select:focus { border-color: var(--purple); }
+    .field input:disabled { background: #F9F9F9; color: #999; cursor: not-allowed; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .hint { font-size: 11px; color: #aaa; margin-top: 5px; line-height: 1.5; }
+    .badge-status { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
+    .badge-pending { background: #FEF9C3; color: #854D0E; }
+    .badge-verified { background: #DCFCE7; color: #166534; }
+    .badge-rejected { background: #FEE2E2; color: #991B1B; }
+    .badge-unverified { background: #F3F4F6; color: #6B7280; }
+    .id-upload-zone { border: 2px dashed #D4B8F5; border-radius: 10px; padding: 28px; text-align: center; cursor: pointer; transition: background 0.15s; background: #FDFAFF; }
+    .id-upload-zone:hover { background: var(--tint); }
+    .id-upload-zone i { font-size: 28px; color: var(--purple); margin-bottom: 10px; display: block; }
+    .id-upload-title { font-size: 14px; font-weight: 600; color: var(--purple); margin-bottom: 4px; }
+    .id-upload-sub { font-size: 12px; color: #aaa; }
+    .id-uploaded { display: flex; align-items: center; gap: 12px; background: var(--tint); border: 1.5px solid #D4B8F5; border-radius: 10px; padding: 14px 16px; }
+    .id-uploaded-icon { width: 40px; height: 40px; background: var(--purple); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .id-uploaded-icon i { font-size: 18px; color: #fff; }
+    .id-uploaded-info { flex: 1; min-width: 0; }
+    .id-uploaded-name { font-size: 13px; font-weight: 600; color: var(--purple); }
+    .id-uploaded-sub { font-size: 11px; color: #8B4FC8; margin-top: 2px; }
+    .btn-change-id { font-size: 12px; font-weight: 600; color: var(--purple); background: none; border: none; cursor: pointer; text-decoration: underline; flex-shrink: 0; }
+    .stripe-connect-box { border: 1.5px solid #E0E0E0; border-radius: 10px; padding: 18px; display: flex; align-items: center; gap: 14px; }
+    .stripe-connect-box.connected { border-color: #86EFAC; background: #F0FDF4; }
+    .stripe-logo { font-size: 13px; font-weight: 800; color: #635BFF; background: #fff; border: 1px solid #E0E0E0; border-radius: 6px; padding: 6px 12px; flex-shrink: 0; font-family: 'DM Sans', sans-serif; }
+    .stripe-info { flex: 1; min-width: 0; }
+    .stripe-title { font-size: 13px; font-weight: 700; color: #0D0D0D; }
+    .stripe-sub { font-size: 12px; color: #999; margin-top: 3px; }
+    .stripe-sub.connected { color: #166534; }
+    .btn-stripe { height: 38px; background: #635BFF; color: #fff; border: none; border-radius: 8px; padding: 0 16px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap; flex-shrink: 0; }
+    .btn-stripe.connected { background: #166534; }
+    .service-areas-input { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border: 1.5px solid #E0E0E0; border-radius: 8px; min-height: 48px; cursor: text; transition: border-color 0.15s; }
+    .service-areas-input:focus-within { border-color: var(--purple); }
+    .area-tag { display: flex; align-items: center; gap: 6px; background: var(--tint); border: 1px solid #D4B8F5; border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 600; color: var(--purple); }
+    .area-tag button { background: none; border: none; cursor: pointer; color: var(--purple); font-size: 14px; line-height: 1; padding: 0; display: flex; align-items: center; }
+    .area-input { border: none; outline: none; font-size: 13px; font-family: 'Inter', sans-serif; color: #0D0D0D; min-width: 120px; background: transparent; }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #F3F3F3; }
+    .toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .toggle-label { font-size: 14px; font-weight: 500; color: #0D0D0D; }
+    .toggle-sub { font-size: 12px; color: #999; margin-top: 2px; }
+    .toggle { width: 44px; height: 24px; background: #E0E0E0; border-radius: 12px; position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; border: none; }
+    .toggle.on { background: var(--purple); }
+    .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: left 0.2s; }
+    .toggle.on::after { left: 23px; }
+    .btn-save { height: 44px; background: var(--purple); color: #fff; font-size: 14px; font-weight: 700; border: none; border-radius: 10px; padding: 0 28px; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s; }
+    .btn-save:hover { opacity: 0.9; }
+    .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-logout { height: 44px; background: #fff; color: #991B1B; font-size: 14px; font-weight: 600; border: 1.5px solid #FCA5A5; border-radius: 10px; padding: 0 28px; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; }
+    .btn-logout:hover { background: #FFF8F8; }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #1F2937; color: #fff; font-size: 13px; font-weight: 500; padding: 12px 20px; border-radius: 10px; z-index: 999; display: none; }
+    .toast.success { background: #166534; }
+    .toast.error { background: #991B1B; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .row2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div class="s-name">SPEKTO</div>
+    </div>
+    <nav class="nav">
+      <a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> My Jobs</a>
+      <a class="nav-item" href="earnings.html"><i class="ti ti-wallet"></i> Earnings</a>
+      <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> My Disputes</a>
+      <a class="nav-item active" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="user-row">
+        <div class="avatar" id="userAvatar">?</div>
+        <div class="user-name" id="userName">Loading...</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">Settings</div>
+    </div>
+    <div class="content" id="mainContent">
+      <div class="loading"><div class="spinner"></div> Loading settings...</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="idFileInput" accept="image/*,.pdf" style="display:none">
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let currentUser = null
+  let userData = null
+  let scoutProfile = null
+  let serviceAreas = []
+  let idFileName = null
+  let notifEmail = true
+  let notifApp = true
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast')
+    t.textContent = msg
+    t.className = `toast ${type}`
+    t.style.display = 'block'
+    setTimeout(() => { t.style.display = 'none' }, 3000)
+  }
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = '../auth/login.html'; return; }
+    currentUser = user
+
+    const [{ data: uData }, { data: sData }] = await Promise.all([
+      supabase.from('users').select('*').eq('id', user.id).single(),
+      supabase.from('scout_profiles').select('*').eq('user_id', user.id).single()
+    ])
+
+    userData = uData
+    scoutProfile = sData
+
+    if (userData) {
+      const initials = (userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')
+      document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
+    }
+
+    serviceAreas = scoutProfile?.service_areas || []
+    notifEmail = scoutProfile?.notification_email ?? true
+    notifApp = scoutProfile?.notification_in_app ?? true
+
+    renderPage()
+  }
+
+  function getVerificationBadge() {
+    const status = scoutProfile?.id_verified ? 'verified'
+      : scoutProfile?.id_document_url ? 'pending'
+      : 'unverified'
+    const labels = { verified: 'ID Verified', pending: 'Under review', unverified: 'Not submitted' }
+    const classes = { verified: 'badge-verified', pending: 'badge-pending', unverified: 'badge-unverified' }
+    const icons = { verified: 'ti-circle-check', pending: 'ti-clock', unverified: 'ti-alert-circle' }
+    return `<span class="badge-status ${classes[status]}"><i class="ti ${icons[status]}" style="font-size:12px"></i> ${labels[status]}</span>`
+  }
+
+  function getStripeStatus() {
+    const connected = !!scoutProfile?.stripe_account_id
+    return `
+      <div class="stripe-connect-box ${connected ? 'connected' : ''}">
+        <div class="stripe-logo">stripe</div>
+        <div class="stripe-info">
+          <div class="stripe-title">${connected ? 'Bank account connected' : 'Connect your bank account'}</div>
+          <div class="stripe-sub ${connected ? 'connected' : ''}">${connected ? 'You will receive payouts every Tuesday directly to your account' : 'Required to receive payouts from completed inspections'}</div>
+        </div>
+        <button class="btn-stripe ${connected ? 'connected' : ''}" onclick="handleStripeConnect()">
+          ${connected ? 'Manage' : 'Connect'}
+        </button>
+      </div>`
+  }
+
+  function renderServiceAreas() {
+    return `
+      <div class="service-areas-input" id="serviceAreasContainer" onclick="document.getElementById('areaInput').focus()">
+        ${serviceAreas.map(area => `
+          <div class="area-tag">
+            ${area}
+            <button onclick="removeArea('${area}')" type="button">×</button>
+          </div>`).join('')}
+        <input class="area-input" id="areaInput" placeholder="${serviceAreas.length === 0 ? 'Type a suburb or postcode and press Enter...' : 'Add more...'}" >
+      </div>
+      <div class="hint">Press Enter after each suburb or postcode. These help clients find Scouts in their area.</div>`
+  }
+
+  function renderPage() {
+    const idUploaded = !!scoutProfile?.id_document_url
+
+    document.getElementById('mainContent').innerHTML = `
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="ti ti-user"></i> Personal details</div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>First name</label>
+            <input type="text" id="firstName" value="${userData?.first_name || ''}">
+          </div>
+          <div class="field">
+            <label>Last name</label>
+            <input type="text" id="lastName" value="${userData?.last_name || ''}">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Email address</label>
+            <input type="email" id="email" value="${userData?.email || ''}" disabled>
+            <div class="hint">Email cannot be changed here. Contact support to update your email.</div>
+          </div>
+          <div class="field">
+            <label>Phone number</label>
+            <input type="tel" id="phone" value="${userData?.phone_number || ''}" placeholder="+61 4XX XXX XXX">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Date of birth</label>
+            <input type="date" id="dob" value="${scoutProfile?.date_of_birth || ''}">
+          </div>
+          <div class="field">
+            <label>ABN (optional)</label>
+            <input type="text" id="abn" value="${scoutProfile?.abn || ''}" placeholder="XX XXX XXX XXX">
+            <div class="hint">Required if you are operating as a sole trader or business.</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:6px">
+          <button class="btn-save" id="savePersonalBtn">Save changes</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="ti ti-id-badge"></i> Identity verification</div>
+          ${getVerificationBadge()}
+        </div>
+        ${scoutProfile?.id_verified ? `
+          <div style="background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:10px">
+            <i class="ti ti-circle-check" style="font-size:20px;color:#166534"></i>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:#166534">Identity verified</div>
+              <div style="font-size:12px;color:#166534;margin-top:2px">Your identity has been verified by the Spekto team. You are approved to accept jobs.</div>
+            </div>
+          </div>` : `
+          <div style="margin-bottom:14px">
+            <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.6">We need to verify your identity before you can accept inspection jobs. Please upload a clear photo or scan of one of the following:</div>
+            <div style="display:flex;gap:8px;margin-bottom:16px">
+              <label style="flex:1;border:1.5px solid #E0E0E0;border-radius:8px;padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500">
+                <input type="radio" name="idType" value="passport" ${scoutProfile?.id_type === 'passport' ? 'checked' : ''} style="accent-color:var(--purple)"> Passport
+              </label>
+              <label style="flex:1;border:1.5px solid #E0E0E0;border-radius:8px;padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500">
+                <input type="radio" name="idType" value="drivers_licence" ${scoutProfile?.id_type === 'drivers_licence' ? 'checked' : ''} style="accent-color:var(--purple)"> Driver's licence
+              </label>
+            </div>
+          </div>
+          ${idUploaded ? `
+            <div class="id-uploaded">
+              <div class="id-uploaded-icon"><i class="ti ti-file-check"></i></div>
+              <div class="id-uploaded-info">
+                <div class="id-uploaded-name">ID document uploaded</div>
+                <div class="id-uploaded-sub">Under review by Spekto team — usually within 24 hours</div>
+              </div>
+              <button class="btn-change-id" onclick="document.getElementById('idFileInput').click()">Change</button>
+            </div>` : `
+            <div class="id-upload-zone" onclick="document.getElementById('idFileInput').click()">
+              <i class="ti ti-upload"></i>
+              <div class="id-upload-title">Upload your ID document</div>
+              <div class="id-upload-sub">JPG, PNG or PDF — max 10MB</div>
+            </div>`}
+          <div class="hint" style="margin-top:10px">Your document is stored securely and only seen by our verification team. It will not be shared with clients or scouts.</div>`}
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="ti ti-wallet"></i> Payouts</div>
+        </div>
+        ${getStripeStatus()}
+        <div class="hint" style="margin-top:12px">Payouts are processed every Tuesday for inspections completed the previous Tuesday to Monday. Disputed inspections are excluded until resolved.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="ti ti-map-pin"></i> Service areas</div>
+        </div>
+        <div id="serviceAreasWrap">${renderServiceAreas()}</div>
+        <div style="display:flex;justify-content:flex-end;margin-top:14px">
+          <button class="btn-save" id="saveAreasBtn">Save areas</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="ti ti-bell"></i> Notifications</div>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Email notifications</div>
+            <div class="toggle-sub">Receive job alerts and updates by email</div>
+          </div>
+          <button class="toggle ${notifEmail ? 'on' : ''}" id="toggleEmail" onclick="toggleNotif('email')"></button>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">In-app notifications</div>
+            <div class="toggle-sub">Receive alerts inside the Spekto app</div>
+          </div>
+          <button class="toggle ${notifApp ? 'on' : ''}" id="toggleApp" onclick="toggleNotif('app')"></button>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:16px">
+          <button class="btn-save" id="saveNotifBtn">Save preferences</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="ti ti-lock"></i> Password</div>
+        </div>
+        <div style="font-size:13px;color:#999;margin-bottom:14px">To change your password we will send a reset link to your email address.</div>
+        <button class="btn-save" id="resetPasswordBtn" style="background:#fff;color:var(--purple);border:1.5px solid var(--purple)">Send password reset email</button>
+      </div>
+
+      <div style="display:flex;justify-content:flex-start;margin-top:8px;margin-bottom:32px">
+        <button class="btn-logout" id="logoutBtn"><i class="ti ti-logout" style="font-size:16px"></i> Log out</button>
+      </div>`
+
+    setupListeners()
+  }
+
+  function setupListeners() {
+    document.getElementById('savePersonalBtn').addEventListener('click', savePersonal)
+    document.getElementById('saveAreasBtn').addEventListener('click', saveAreas)
+    document.getElementById('saveNotifBtn').addEventListener('click', saveNotifications)
+    document.getElementById('resetPasswordBtn').addEventListener('click', sendPasswordReset)
+    document.getElementById('logoutBtn').addEventListener('click', handleLogout)
+
+    const areaInput = document.getElementById('areaInput')
+    if (areaInput) {
+      areaInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && e.target.value.trim()) {
+          e.preventDefault()
+          const val = e.target.value.trim()
+          if (!serviceAreas.includes(val)) {
+            serviceAreas.push(val)
+            document.getElementById('serviceAreasWrap').innerHTML = renderServiceAreas()
+            setupAreaInput()
+          }
+        }
+      })
+    }
+
+    document.getElementById('idFileInput').addEventListener('change', handleIdUpload)
+  }
+
+  function setupAreaInput() {
+    const areaInput = document.getElementById('areaInput')
+    if (areaInput) {
+      areaInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && e.target.value.trim()) {
+          e.preventDefault()
+          const val = e.target.value.trim()
+          if (!serviceAreas.includes(val)) {
+            serviceAreas.push(val)
+            document.getElementById('serviceAreasWrap').innerHTML = renderServiceAreas()
+            setupAreaInput()
+          }
+        }
+      })
+    }
+  }
+
+  window.removeArea = (area) => {
+    serviceAreas = serviceAreas.filter(a => a !== area)
+    document.getElementById('serviceAreasWrap').innerHTML = renderServiceAreas()
+    setupAreaInput()
+  }
+
+  window.toggleNotif = (type) => {
+    if (type === 'email') {
+      notifEmail = !notifEmail
+      document.getElementById('toggleEmail').className = `toggle ${notifEmail ? 'on' : ''}`
+    } else {
+      notifApp = !notifApp
+      document.getElementById('toggleApp').className = `toggle ${notifApp ? 'on' : ''}`
+    }
+  }
+
+  window.handleStripeConnect = () => {
+    showToast('Stripe Connect integration coming soon. Your bank details will be connected here.', 'success')
+  }
+
+  async function savePersonal() {
+    const btn = document.getElementById('savePersonalBtn')
+    btn.disabled = true
+    btn.textContent = 'Saving...'
+
+    const firstName = document.getElementById('firstName').value.trim()
+    const lastName = document.getElementById('lastName').value.trim()
+    const phone = document.getElementById('phone').value.trim()
+    const dob = document.getElementById('dob').value
+    const abn = document.getElementById('abn').value.trim()
+    const idType = document.querySelector('input[name="idType"]:checked')?.value
+
+    const { error: userError } = await supabase
+      .from('users')
+      .update({ first_name: firstName, last_name: lastName, phone_number: phone || null, updated_at: new Date().toISOString() })
+      .eq('id', currentUser.id)
+
+    const { error: profileError } = await supabase
+      .from('scout_profiles')
+      .update({ date_of_birth: dob || null, abn: abn || null, id_type: idType || null, updated_at: new Date().toISOString() })
+      .eq('user_id', currentUser.id)
+
+    btn.disabled = false
+    btn.textContent = 'Save changes'
+
+    if (userError || profileError) {
+      showToast('Error saving changes. Please try again.', 'error')
+    } else {
+      const initials = (firstName?.[0] || '') + (lastName?.[0] || '')
+      document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      document.getElementById('userName').textContent = firstName + ' ' + lastName
+      showToast('Personal details saved successfully')
+    }
+  }
+
+  async function handleIdUpload() {
+    const file = document.getElementById('idFileInput').files[0]
+    if (!file) return
+
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('File too large. Maximum size is 10MB.', 'error')
+      return
+    }
+
+    showToast('Uploading document...')
+
+    const fileName = `id-documents/${currentUser.id}/${Date.now()}-${file.name.replace(/\s/g, '_')}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('id-documents')
+      .upload(fileName, file, { cacheControl: '3600', upsert: true })
+
+    if (uploadError) {
+      showToast('Upload failed. Please try again.', 'error')
+      return
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from('id-documents').getPublicUrl(fileName)
+
+    const idType = document.querySelector('input[name="idType"]:checked')?.value
+
+    await supabase
+      .from('scout_profiles')
+      .update({ id_document_url: publicUrl, id_type: idType || 'other', updated_at: new Date().toISOString() })
+      .eq('user_id', currentUser.id)
+
+    showToast('ID document uploaded. Our team will verify it within 24 hours.')
+    setTimeout(() => window.location.reload(), 1500)
+  }
+
+  async function saveAreas() {
+    const btn = document.getElementById('saveAreasBtn')
+    btn.disabled = true
+    btn.textContent = 'Saving...'
+
+    const { error } = await supabase
+      .from('scout_profiles')
+      .update({ service_areas: serviceAreas, updated_at: new Date().toISOString() })
+      .eq('user_id', currentUser.id)
+
+    btn.disabled = false
+    btn.textContent = 'Save areas'
+
+    if (error) showToast('Error saving areas. Please try again.', 'error')
+    else showToast('Service areas saved successfully')
+  }
+
+  async function saveNotifications() {
+    const btn = document.getElementById('saveNotifBtn')
+    btn.disabled = true
+    btn.textContent = 'Saving...'
+
+    const { error } = await supabase
+      .from('scout_profiles')
+      .update({ notification_email: notifEmail, notification_in_app: notifApp, updated_at: new Date().toISOString() })
+      .eq('user_id', currentUser.id)
+
+    btn.disabled = false
+    btn.textContent = 'Save preferences'
+
+    if (error) showToast('Error saving preferences.', 'error')
+    else showToast('Notification preferences saved')
+  }
+
+  async function sendPasswordReset() {
+    const btn = document.getElementById('resetPasswordBtn')
+    btn.disabled = true
+    btn.textContent = 'Sending...'
+
+    const { error } = await supabase.auth.resetPasswordForEmail(currentUser.email, {
+      redirectTo: 'https://maxwelldsouza-eng.github.io/Spekto/auth/reset-password.html'
+    })
+
+    btn.disabled = false
+    btn.textContent = 'Send password reset email'
+
+    if (error) showToast('Error sending reset email.', 'error')
+    else showToast('Password reset email sent to ' + currentUser.email)
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    window.location.href = '../auth/login.html'
+  }
+
+  init()
+</script>
+</body>
+</html>
