@@ -412,7 +412,7 @@
                 const userId = authData.user.id;
 
                 // 2. Insert into 'users' table
-                const { error: userError } = await supabase.from('users').insert({
+                const { error: userError } = await supabase.from('users').upsert({
                     id: userId,
                     first_name: firstName,
                     last_name: lastName,
@@ -427,14 +427,14 @@
 
                 // 3. Insert into role-specific profile table
                 if (role.toLowerCase() === 'client') {
-                    const { error: clientProfileError } = await supabase.from('client_profiles').insert({
+                    const { error: clientProfileError } = await supabase.from('client_profiles').upsert({
                         user_id: userId,
                         notification_email: true,
                         notification_in_app: true
                     });
                     if (clientProfileError) throw clientProfileError;
                 } else if (role.toLowerCase() === 'scout') {
-                    const { error: scoutProfileError } = await supabase.from('scout_profiles').insert({
+                    const { error: scoutProfileError } = await supabase.from('scout_profiles').upsert({
                         user_id: userId,
                         scout_status: 'PendingVerification',
                         total_completions: 0,
