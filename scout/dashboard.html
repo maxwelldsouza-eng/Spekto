@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scout Dashboard - Spekto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 220px; background: var(--purple);
+      display: flex; flex-direction: column;
+      padding: 28px 0; flex-shrink: 0;
+      position: fixed; top: 0; left: 0; height: 100vh; z-index: 100;
+    }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .s-mark { width: 36px; height: 36px; background: rgba(255,255,255,0.15); border-radius: 9px; border: 1px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -1.5px; }
+    .role-toggle { margin: 16px 12px 4px; display: flex; background: rgba(255,255,255,0.1); border-radius: 8px; padding: 3px; }
+    .role-btn { flex: 1; padding: 6px; font-size: 11px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; color: rgba(255,255,255,0.6); background: transparent; }
+    .role-btn.active { background: #fff; color: var(--purple); }
+    .nav { display: flex; flex-direction: column; gap: 2px; padding: 12px 12px; flex: 1; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.6); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.15); color: #fff; }
+    .nav-item i { font-size: 17px; }
+    .sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .user-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .user-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500; }
+    .main { flex: 1; margin-left: 220px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .topbar-title { font-size: 18px; font-weight: 700; color: #0D0D0D; letter-spacing: -0.3px; }
+    .content { padding: 24px 28px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 18px; }
+    .stat-label { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+    .stat-val { font-size: 26px; font-weight: 800; color: #0D0D0D; letter-spacing: -0.5px; font-family: 'DM Sans', sans-serif; }
+    .stat-val.green { color: var(--green); }
+    .tabs { display: flex; gap: 0; border-bottom: 2px solid #F0F0F0; margin-bottom: 20px; }
+    .tab { padding: 10px 20px; font-size: 13px; font-weight: 600; color: #999; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; }
+    .tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+    .tab .count { display: inline-flex; align-items: center; justify-content: center; background: var(--tint); color: var(--purple); font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px; margin-left: 6px; }
+    .tab.active .count { background: var(--purple); color: #fff; }
+    .tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+    .tile { background: #fff; border-radius: 14px; border: 1px solid var(--border); padding: 18px; display: flex; flex-direction: column; gap: 12px; transition: box-shadow 0.15s; }
+    .tile:hover { box-shadow: 0 4px 16px rgba(86,5,145,0.08); border-color: #D4B8F5; }
+    .tile-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .tile-date { text-align: center; background: #F7F5FA; border-radius: 8px; padding: 8px 12px; min-width: 48px; flex-shrink: 0; }
+    .tile-day { font-size: 22px; font-weight: 800; color: var(--purple); line-height: 1; font-family: 'DM Sans', sans-serif; }
+    .tile-month { font-size: 10px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+    .tile-addr { font-size: 14px; font-weight: 600; color: #0D0D0D; line-height: 1.4; flex: 1; }
+    .tile-meta { display: flex; flex-direction: column; gap: 5px; }
+    .tile-meta-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #888; }
+    .tile-meta-row i { font-size: 13px; color: #bbb; }
+    .payout-badge { display: inline-flex; align-items: center; gap: 5px; background: #DCFCE7; color: #166534; font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 20px; }
+    .tile-actions { display: flex; gap: 8px; padding-top: 4px; border-top: 1px solid #F3F3F3; }
+    .btn-accept { flex: 1; height: 38px; background: var(--green); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .btn-accept:hover { background: #16a34a; }
+    .btn-view { flex: 1; height: 38px; background: var(--tint); color: var(--purple); border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .btn-view:hover { background: #EAD5FC; }
+    .badge { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+    .badge-Posted { background: #EDE4F7; color: #560591; }
+    .badge-Accepted { background: #E0F2FE; color: #0369A1; }
+    .badge-InProgress { background: #EDE9FE; color: #5B21B6; }
+    .badge-Completed { background: #DCFCE7; color: #166534; }
+    .badge-PendingPayment { background: #FEF9C3; color: #854D0E; }
+    .badge-Disputed { background: #FEE2E2; color: #991B1B; }
+    .badge-Paid { background: #D1FAE5; color: #065F46; }
+    .badge-Cancelled { background: #F3F4F6; color: #6B7280; }
+    .empty-state { text-align: center; padding: 60px 20px; background: #fff; border-radius: 14px; border: 1px solid var(--border); }
+    .empty-state i { font-size: 40px; color: #ddd; margin-bottom: 16px; display: block; }
+    .empty-state h3 { font-size: 16px; font-weight: 600; color: #0D0D0D; margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; color: #999; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .pending-badge { background: #FEF9C3; color: #854D0E; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 10px; }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .tile-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 420px) { .tile-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div class="s-name">SPEKTO</div>
+    </div>
+    <div class="role-toggle">
+      <button class="role-btn" id="switchToClient">Client</button>
+      <button class="role-btn active" id="switchToScout">Scout</button>
+    </div>
+    <nav class="nav">
+      <a class="nav-item active" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> My Jobs</a>
+      <a class="nav-item" href="earnings.html"><i class="ti ti-wallet"></i> Earnings</a>
+      <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> My Disputes</a>
+      <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="user-row">
+        <div class="avatar" id="userAvatar">?</div>
+        <div class="user-name" id="userName">Loading...</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">My Jobs</div>
+      <div style="font-size:13px;color:#999" id="locationTag"></div>
+    </div>
+    <div class="content">
+      <div class="stats">
+        <div class="stat-card"><div class="stat-label">Available</div><div class="stat-val" id="statAvailable">0</div></div>
+        <div class="stat-card"><div class="stat-label">My Active</div><div class="stat-val" id="statActive">0</div></div>
+        <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-val" id="statCompleted">0</div></div>
+        <div class="stat-card"><div class="stat-label">Total Earned</div><div class="stat-val green" id="statEarned">$0</div></div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="available">Available <span class="count" id="countAvailable">0</span></div>
+        <div class="tab" data-tab="active">My Active Jobs <span class="count" id="countActive">0</span></div>
+        <div class="tab" data-tab="completed">Completed <span class="count" id="countCompleted">0</span></div>
+      </div>
+
+      <div id="inspectionContainer">
+        <div class="loading"><div class="spinner"></div> Loading jobs...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let currentUser = null
+  let availableInspections = []
+  let myActiveInspections = []
+  let myCompletedInspections = []
+  let currentTab = 'available'
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = '../auth/login.html'; return; }
+    currentUser = user
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('first_name, last_name, active_role')
+      .eq('id', user.id)
+      .single()
+
+    if (userData) {
+      const initials = (userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')
+      document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
+      if (userData.active_role === 'client') {
+        window.location.href = '../client/dashboard.html'
+      }
+    }
+
+    await loadAll()
+    setupRoleToggle()
+  }
+
+  async function loadAll() {
+    await Promise.all([
+      loadAvailable(),
+      loadMyJobs()
+    ])
+    updateStats()
+    renderTab(currentTab)
+  }
+
+  async function loadAvailable() {
+    const { data } = await supabase
+      .from('inspections')
+      .select('*')
+      .eq('status', 'Posted')
+      .neq('client_id', currentUser.id)
+      .order('date', { ascending: true })
+    availableInspections = data || []
+  }
+
+  async function loadMyJobs() {
+    const { data: active } = await supabase
+      .from('inspections')
+      .select('*')
+      .eq('scout_id', currentUser.id)
+      .in('status', ['Accepted', 'InProgress'])
+      .order('date', { ascending: true })
+    myActiveInspections = active || []
+
+    const { data: completed } = await supabase
+      .from('inspections')
+      .select('*')
+      .eq('scout_id', currentUser.id)
+      .in('status', ['Completed', 'PendingPayment', 'Paid', 'Disputed'])
+      .order('created_at', { ascending: false })
+    myCompletedInspections = completed || []
+  }
+
+  function updateStats() {
+    document.getElementById('statAvailable').textContent = availableInspections.length
+    document.getElementById('statActive').textContent = myActiveInspections.length
+    document.getElementById('statCompleted').textContent = myCompletedInspections.filter(i => i.status === 'Paid').length
+    document.getElementById('countAvailable').textContent = availableInspections.length
+    document.getElementById('countActive').textContent = myActiveInspections.length
+    document.getElementById('countCompleted').textContent = myCompletedInspections.length
+
+    const totalEarned = myCompletedInspections
+      .filter(i => i.status === 'Paid')
+      .reduce((sum, i) => sum + (parseFloat(i.pricing_snapshot?.pay_to_scout) || 0), 0)
+    document.getElementById('statEarned').textContent = '$' + totalEarned.toFixed(2)
+  }
+
+  function renderTab(tab) {
+    const inspections = tab === 'available' ? availableInspections
+      : tab === 'active' ? myActiveInspections
+      : myCompletedInspections
+
+    const emptyMessages = {
+      available: { icon: 'ti-map-search', heading: 'No available jobs', sub: 'New inspection jobs in your area will appear here.' },
+      active: { icon: 'ti-camera', heading: 'No active jobs', sub: 'Accept an available inspection to get started.' },
+      completed: { icon: 'ti-circle-check', heading: 'No completed jobs yet', sub: 'Completed inspections will appear here.' }
+    }
+
+    const container = document.getElementById('inspectionContainer')
+
+    if (inspections.length === 0) {
+      const msg = emptyMessages[tab]
+      container.innerHTML = `
+        <div class="empty-state">
+          <i class="ti ${msg.icon}"></i>
+          <h3>${msg.heading}</h3>
+          <p>${msg.sub}</p>
+        </div>`
+      return
+    }
+
+    const grid = document.createElement('div')
+    grid.className = 'tile-grid'
+
+    inspections.forEach(insp => {
+      const date = new Date(insp.date)
+      const day = date.getDate().toString().padStart(2, '0')
+      const month = date.toLocaleString('default', { month: 'short' })
+      const typeLabel = insp.inspection_type === 'external' ? 'External only'
+        : insp.inspection_type === 'internal' ? 'Internal only'
+        : 'Internal & External'
+      const payout = insp.pricing_snapshot?.pay_to_scout
+        ? '$' + parseFloat(insp.pricing_snapshot.pay_to_scout).toFixed(2)
+        : ''
+
+      const tile = document.createElement('div')
+      tile.className = 'tile'
+
+      let actionsHtml = ''
+      if (tab === 'available') {
+        actionsHtml = `<button class="btn-accept" onclick="acceptJob('${insp.id}', this)"><i class="ti ti-check" style="font-size:14px"></i> Accept Job</button>`
+      } else {
+        actionsHtml = `<button class="btn-view" onclick="viewJob('${insp.id}')">View Details</button>`
+      }
+
+      tile.innerHTML = `
+        <div class="tile-top">
+          <div class="tile-date">
+            <div class="tile-day">${day}</div>
+            <div class="tile-month">${month}</div>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div class="tile-addr">${insp.address}</div>
+          </div>
+          ${tab !== 'available' ? `<span class="badge badge-${insp.status}">${insp.status.replace('PendingPayment','Pending Payment').replace('InProgress','In Progress')}</span>` : ''}
+        </div>
+        <div class="tile-meta">
+          <div class="tile-meta-row"><i class="ti ti-clock"></i> ${insp.time?.slice(0,5) || ''}</div>
+          <div class="tile-meta-row"><i class="ti ti-camera"></i> ${typeLabel}</div>
+          ${payout ? `<div class="tile-meta-row"><i class="ti ti-wallet"></i> <span class="payout-badge">${payout} payout</span></div>` : ''}
+        </div>
+        <div class="tile-actions">${actionsHtml}</div>`
+      grid.appendChild(tile)
+    })
+
+    container.innerHTML = ''
+    container.appendChild(grid)
+  }
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+      tab.classList.add('active')
+      currentTab = tab.dataset.tab
+      renderTab(currentTab)
+    })
+  })
+
+  window.acceptJob = async (inspectionId, btn) => {
+    btn.disabled = true
+    btn.textContent = 'Accepting...'
+
+    const { data: insp } = await supabase
+      .from('inspections')
+      .select('client_id')
+      .eq('id', inspectionId)
+      .single()
+
+    if (insp?.client_id === currentUser.id) {
+      alert('You cannot accept your own inspection.')
+      btn.disabled = false
+      btn.textContent = 'Accept Job'
+      return
+    }
+
+    const { error } = await supabase
+      .from('inspections')
+      .update({
+        scout_id: currentUser.id,
+        status: 'Accepted',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', inspectionId)
+      .eq('status', 'Posted')
+
+    if (!error) {
+      await loadAll()
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+      document.querySelector('[data-tab="active"]').classList.add('active')
+      currentTab = 'active'
+      renderTab('active')
+    } else {
+      btn.disabled = false
+      btn.innerHTML = '<i class="ti ti-check" style="font-size:14px"></i> Accept Job'
+      alert('Could not accept this job. It may have already been taken.')
+    }
+  }
+
+  window.viewJob = (id) => {
+    window.location.href = `inspection-detail.html?id=${id}`
+  }
+
+  function setupRoleToggle() {
+    document.getElementById('switchToClient').addEventListener('click', async () => {
+      await supabase
+        .from('users')
+        .update({ active_role: 'client' })
+        .eq('id', currentUser.id)
+      window.location.href = '../client/dashboard.html'
+    })
+
+    document.getElementById('switchToScout').addEventListener('click', () => {})
+  }
+
+  init()
+</script>
+</body>
+</html>
