@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Disputes - Spekto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --red: #DC2626; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: var(--purple); display: flex; flex-direction: column; padding: 28px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .s-mark { width: 36px; height: 36px; background: rgba(255,255,255,0.15); border-radius: 9px; border: 1px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -1.5px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; padding: 20px 12px; flex: 1; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 13px; color: rgba(255,255,255,0.6); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.15); color: #fff; }
+    .nav-item i { font-size: 17px; }
+    .sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .user-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .user-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500; }
+    .main { flex: 1; margin-left: 220px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .topbar-title { font-size: 18px; font-weight: 700; color: #0D0D0D; letter-spacing: -0.3px; }
+    .content { padding: 24px 28px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 18px; }
+    .stat-label { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+    .stat-val { font-size: 24px; font-weight: 800; color: #0D0D0D; letter-spacing: -0.5px; font-family: 'DM Sans', sans-serif; }
+    .filters { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 2px; }
+    .filters::-webkit-scrollbar { display: none; }
+    .filter-btn { background: #fff; border: 1.5px solid #E0E0E0; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #666; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s; }
+    .filter-btn.active { background: var(--purple); border-color: var(--purple); color: #fff; }
+    .dispute-list { display: flex; flex-direction: column; gap: 12px; }
+    .dispute-card { background: #fff; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: box-shadow 0.15s; }
+    .dispute-card:hover { box-shadow: 0 4px 16px rgba(86,5,145,0.08); border-color: #D4B8F5; }
+    .dispute-card-top { padding: 16px 20px; display: flex; align-items: flex-start; gap: 14px; }
+    .dispute-icon { width: 40px; height: 40px; border-radius: 10px; background: #FEE2E2; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .dispute-icon i { font-size: 18px; color: #991B1B; }
+    .dispute-icon.resolved { background: #DCFCE7; }
+    .dispute-icon.resolved i { color: #166534; }
+    .dispute-icon.dismissed { background: #F3F4F6; }
+    .dispute-icon.dismissed i { color: #6B7280; }
+    .dispute-info { flex: 1; min-width: 0; }
+    .dispute-id { font-size: 11px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+    .dispute-addr { font-size: 14px; font-weight: 600; color: #0D0D0D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dispute-reason { font-size: 12px; color: #999; margin-top: 3px; }
+    .dispute-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+    .badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+    .badge-Submitted { background: #EDE4F7; color: #560591; }
+    .badge-UnderReview { background: #E0F2FE; color: #0369A1; }
+    .badge-AwaitingResponse { background: #FEF9C3; color: #854D0E; }
+    .badge-DecisionMade { background: #EDE9FE; color: #5B21B6; }
+    .badge-Resolved { background: #DCFCE7; color: #166534; }
+    .badge-Dismissed { background: #F3F4F6; color: #6B7280; }
+    .dispute-amount { font-size: 16px; font-weight: 800; color: #0D0D0D; font-family: 'DM Sans', sans-serif; }
+    .dispute-card-footer { padding: 10px 20px; background: #FAFAFA; border-top: 1px solid #F0F0F0; display: flex; align-items: center; justify-content: space-between; }
+    .footer-meta { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #aaa; }
+    .footer-meta i { font-size: 13px; }
+    .sla-pill { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 10px; }
+    .sla-ok { background: #DCFCE7; color: #166534; }
+    .sla-warn { background: #FEF9C3; color: #854D0E; }
+    .sla-urgent { background: #FEE2E2; color: #991B1B; }
+    .resolution-banner { padding: 12px 20px; display: flex; align-items: center; gap: 10px; }
+    .resolution-banner.win { background: #F0FDF4; border-top: 1px solid #86EFAC; }
+    .resolution-banner.lose { background: #FFF8F8; border-top: 1px solid #FEE2E2; }
+    .resolution-banner i { font-size: 16px; }
+    .resolution-banner.win i { color: #166534; }
+    .resolution-banner.lose i { color: #991B1B; }
+    .resolution-text { font-size: 13px; font-weight: 500; }
+    .resolution-banner.win .resolution-text { color: #166534; }
+    .resolution-banner.lose .resolution-text { color: #991B1B; }
+    .empty-state { text-align: center; padding: 60px 20px; background: #fff; border-radius: 14px; border: 1px solid var(--border); }
+    .empty-state i { font-size: 40px; color: #ddd; margin-bottom: 16px; display: block; }
+    .empty-state h3 { font-size: 16px; font-weight: 600; color: #0D0D0D; margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; color: #999; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div class="s-name">SPEKTO</div>
+    </div>
+    <nav class="nav">
+      <a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> My Inspections</a>
+      <a class="nav-item" href="new-inspection.html"><i class="ti ti-plus"></i> New Inspection</a>
+      <a class="nav-item" href="property-library.html"><i class="ti ti-video"></i> Property Library</a>
+      <a class="nav-item" href="billing.html"><i class="ti ti-credit-card"></i> Billing</a>
+      <a class="nav-item active" href="disputes.html"><i class="ti ti-alert-triangle"></i> My Disputes</a>
+      <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="user-row">
+        <div class="avatar" id="userAvatar">?</div>
+        <div class="user-name" id="userName">Loading...</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">My Disputes</div>
+    </div>
+    <div class="content" id="mainContent">
+      <div class="loading"><div class="spinner"></div> Loading disputes...</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let allDisputes = []
+  let currentFilter = 'all'
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = '../auth/login.html'; return; }
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .single()
+
+    if (userData) {
+      const initials = (userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')
+      document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
+    }
+
+    const { data: disputes } = await supabase
+      .from('disputes')
+      .select(`*, inspections(address, date, inspection_type, pricing_snapshot)`)
+      .eq('raised_by', user.id)
+      .order('created_at', { ascending: false })
+
+    allDisputes = disputes || []
+    renderPage()
+  }
+
+  function renderPage() {
+    const open = allDisputes.filter(d => !['Resolved','Dismissed'].includes(d.status))
+    const resolved = allDisputes.filter(d => d.status === 'Resolved')
+    const dismissed = allDisputes.filter(d => d.status === 'Dismissed')
+
+    let html = `
+      <div class="stats">
+        <div class="stat-card"><div class="stat-label">Total disputes</div><div class="stat-val">${allDisputes.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Open</div><div class="stat-val">${open.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Resolved</div><div class="stat-val">${resolved.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Dismissed</div><div class="stat-val">${dismissed.length}</div></div>
+      </div>
+      <div class="filters" id="filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="open">Open</button>
+        <button class="filter-btn" data-filter="Resolved">Resolved</button>
+        <button class="filter-btn" data-filter="Dismissed">Dismissed</button>
+      </div>
+      <div class="dispute-list" id="disputeList"></div>`
+
+    document.getElementById('mainContent').innerHTML = html
+    renderList(allDisputes)
+
+    document.getElementById('filters').addEventListener('click', e => {
+      const btn = e.target.closest('.filter-btn')
+      if (!btn) return
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'))
+      btn.classList.add('active')
+      currentFilter = btn.dataset.filter
+      let filtered
+      if (currentFilter === 'all') filtered = allDisputes
+      else if (currentFilter === 'open') filtered = allDisputes.filter(d => !['Resolved','Dismissed'].includes(d.status))
+      else filtered = allDisputes.filter(d => d.status === currentFilter)
+      renderList(filtered)
+    })
+  }
+
+  function renderList(disputes) {
+    const container = document.getElementById('disputeList')
+
+    if (disputes.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <i class="ti ti-mood-happy"></i>
+          <h3>No disputes</h3>
+          <p>You have not raised any disputes yet. Disputes can be raised from the inspection detail screen after a capture is submitted.</p>
+        </div>`
+      return
+    }
+
+    container.innerHTML = disputes.map(dispute => {
+      const insp = dispute.inspections
+      const amount = insp?.pricing_snapshot?.total
+        ? '$' + parseFloat(insp.pricing_snapshot.total).toFixed(2) : '—'
+      const isResolved = dispute.status === 'Resolved'
+      const isDismissed = dispute.status === 'Dismissed'
+      const isOpen = !isResolved && !isDismissed
+
+      const iconClass = isResolved ? 'resolved' : isDismissed ? 'dismissed' : ''
+      const iconName = isResolved ? 'ti-circle-check' : isDismissed ? 'ti-circle-x' : 'ti-alert-triangle'
+
+      const createdAt = new Date(dispute.created_at)
+      const dateStr = createdAt.toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' })
+
+      let slaHtml = ''
+      if (isOpen && dispute.due_at) {
+        const hoursLeft = Math.floor((new Date(dispute.due_at) - new Date()) / 3600000)
+        const slaClass = hoursLeft > 24 ? 'sla-ok' : hoursLeft > 6 ? 'sla-warn' : 'sla-urgent'
+        const slaText = hoursLeft > 0 ? `${hoursLeft}h remaining` : 'Overdue'
+        slaHtml = `<span class="sla-pill ${slaClass}"><i class="ti ti-clock" style="font-size:11px"></i> ${slaText}</span>`
+      }
+
+      let resolutionHtml = ''
+      if (isResolved && dispute.resolution) {
+        const isWin = ['FullRefundToClient','PartialRefundToClient'].includes(dispute.resolution)
+        const resText = dispute.resolution === 'FullRefundToClient' ? 'Full refund issued to you'
+          : dispute.resolution === 'PartialRefundToClient' ? 'Partial refund issued to you'
+          : dispute.resolution === 'PaymentReleasedToScout' ? 'Resolved in favour of Scout — no refund'
+          : dispute.resolution === 'Dismissed' ? 'Dispute dismissed'
+          : dispute.resolution
+        resolutionHtml = `
+          <div class="resolution-banner ${isWin ? 'win' : 'lose'}">
+            <i class="ti ${isWin ? 'ti-circle-check' : 'ti-circle-x'}"></i>
+            <div class="resolution-text">${resText}</div>
+          </div>`
+      }
+
+      return `
+        <div class="dispute-card" onclick="window.location.href='inspection-detail.html?id=${dispute.inspection_id}'">
+          <div class="dispute-card-top">
+            <div class="dispute-icon ${iconClass}"><i class="ti ${iconName}"></i></div>
+            <div class="dispute-info">
+              <div class="dispute-id">Dispute · ${dateStr}</div>
+              <div class="dispute-addr">${insp?.address || '—'}</div>
+              <div class="dispute-reason">${dispute.reason?.replace(/([A-Z])/g, ' $1').trim() || '—'}</div>
+            </div>
+            <div class="dispute-right">
+              <span class="badge badge-${dispute.status}">${dispute.status.replace(/([A-Z])/g, ' $1').trim()}</span>
+              <div class="dispute-amount">${amount}</div>
+            </div>
+          </div>
+          ${resolutionHtml}
+          <div class="dispute-card-footer">
+            <div class="footer-meta">
+              <i class="ti ti-calendar"></i>
+              <span>Raised ${dateStr}</span>
+            </div>
+            ${slaHtml}
+          </div>
+        </div>`
+    }).join('')
+  }
+
+  init()
+</script>
+</body>
+</html>
