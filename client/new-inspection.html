@@ -366,7 +366,7 @@
     })
   })
 
-  document.getElementById('addInstructionBtn').addEventListener('click', addInstruction)
+  document.getElementById('addInstructionBtn').addEventListener('click', () => addInstruction())
 
   function addInstruction(text = '', checked = false) {
     const list = document.getElementById('instructionsList')
