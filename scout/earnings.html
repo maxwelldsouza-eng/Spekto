@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Earnings - Spekto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: var(--purple); display: flex; flex-direction: column; padding: 28px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .s-mark { width: 36px; height: 36px; background: rgba(255,255,255,0.15); border-radius: 9px; border: 1px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -1.5px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; padding: 20px 12px; flex: 1; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.6); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.15); color: #fff; }
+    .nav-item i { font-size: 17px; }
+    .sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .user-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .user-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500; }
+    .main { flex: 1; margin-left: 220px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .topbar-title { font-size: 18px; font-weight: 700; color: #0D0D0D; letter-spacing: -0.3px; }
+    .content { padding: 24px 28px; }
+    .hero-card { background: var(--purple); border-radius: 16px; padding: 28px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; }
+    .hero-left { display: flex; flex-direction: column; gap: 4px; }
+    .hero-label { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; }
+    .hero-amount { font-size: 42px; font-weight: 800; color: #fff; font-family: 'DM Sans', sans-serif; letter-spacing: -1px; line-height: 1; }
+    .hero-sub { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+    .hero-right { display: flex; flex-direction: column; gap: 12px; align-items: flex-end; }
+    .hero-stat { text-align: right; }
+    .hero-stat-val { font-size: 20px; font-weight: 800; color: #fff; font-family: 'DM Sans', sans-serif; }
+    .hero-stat-label { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 16px 18px; }
+    .stat-label { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+    .stat-val { font-size: 22px; font-weight: 800; color: #0D0D0D; letter-spacing: -0.5px; font-family: 'DM Sans', sans-serif; }
+    .next-payout-card { background: #fff; border-radius: 12px; border: 1.5px solid #D4B8F5; padding: 18px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px; }
+    .payout-icon { width: 44px; height: 44px; background: var(--tint); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .payout-icon i { font-size: 20px; color: var(--purple); }
+    .payout-info { flex: 1; min-width: 0; }
+    .payout-title { font-size: 14px; font-weight: 700; color: #0D0D0D; }
+    .payout-sub { font-size: 12px; color: #999; margin-top: 3px; }
+    .payout-amount { font-size: 20px; font-weight: 800; color: var(--purple); font-family: 'DM Sans', sans-serif; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .section-title { font-size: 14px; font-weight: 700; color: #0D0D0D; }
+    .earnings-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
+    .earning-item { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 14px 18px; display: flex; align-items: center; gap: 14px; transition: box-shadow 0.15s; }
+    .earning-item:hover { box-shadow: 0 2px 8px rgba(86,5,145,0.06); }
+    .earning-date-box { text-align: center; background: #F7F5FA; border-radius: 8px; padding: 6px 10px; min-width: 44px; flex-shrink: 0; }
+    .earning-day { font-size: 18px; font-weight: 800; color: var(--purple); line-height: 1; font-family: 'DM Sans', sans-serif; }
+    .earning-month { font-size: 10px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+    .earning-info { flex: 1; min-width: 0; }
+    .earning-addr { font-size: 13px; font-weight: 600; color: #0D0D0D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .earning-type { font-size: 12px; color: #999; margin-top: 3px; }
+    .earning-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+    .earning-amount { font-size: 16px; font-weight: 800; color: #0D0D0D; font-family: 'DM Sans', sans-serif; }
+    .earning-badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .badge-Paid { background: #DCFCE7; color: #166534; }
+    .badge-PendingPayment { background: #FEF9C3; color: #854D0E; }
+    .badge-Disputed { background: #FEE2E2; color: #991B1B; }
+    .badge-Completed { background: #E0F2FE; color: #0369A1; }
+    .empty-state { text-align: center; padding: 48px 20px; background: #fff; border-radius: 14px; border: 1px solid var(--border); }
+    .empty-state i { font-size: 36px; color: #ddd; margin-bottom: 12px; display: block; }
+    .empty-state h3 { font-size: 15px; font-weight: 600; color: #0D0D0D; margin-bottom: 6px; }
+    .empty-state p { font-size: 13px; color: #999; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .hero-amount { font-size: 32px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div class="s-name">SPEKTO</div>
+    </div>
+    <nav class="nav">
+      <a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> My Jobs</a>
+      <a class="nav-item active" href="earnings.html"><i class="ti ti-wallet"></i> Earnings</a>
+      <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> My Disputes</a>
+      <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="user-row">
+        <div class="avatar" id="userAvatar">?</div>
+        <div class="user-name" id="userName">Loading...</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">Earnings</div>
+    </div>
+    <div class="content" id="mainContent">
+      <div class="loading"><div class="spinner"></div> Loading earnings...</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = '../auth/login.html'; return; }
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .single()
+
+    if (userData) {
+      const initials = (userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')
+      document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
+    }
+
+    const { data: inspections } = await supabase
+      .from('inspections')
+      .select('*')
+      .eq('scout_id', user.id)
+      .in('status', ['Completed', 'PendingPayment', 'Disputed', 'Paid'])
+      .order('created_at', { ascending: false })
+
+    const allInspections = inspections || []
+    renderPage(allInspections)
+  }
+
+  function renderPage(inspections) {
+    const paid = inspections.filter(i => i.status === 'Paid')
+    const pending = inspections.filter(i => i.status === 'PendingPayment')
+    const completed = inspections.filter(i => i.status === 'Completed')
+    const disputed = inspections.filter(i => i.status === 'Disputed')
+
+    const totalEarned = paid.reduce((sum, i) =>
+      sum + (parseFloat(i.pricing_snapshot?.pay_to_scout) || 0), 0)
+    const pendingAmount = pending.reduce((sum, i) =>
+      sum + (parseFloat(i.pricing_snapshot?.pay_to_scout) || 0), 0)
+    const awaitingAmount = completed.reduce((sum, i) =>
+      sum + (parseFloat(i.pricing_snapshot?.pay_to_scout) || 0), 0)
+
+    const nextTuesday = getNextTuesday()
+
+    let html = `
+      <div class="hero-card">
+        <div class="hero-left">
+          <div class="hero-label">Total earned</div>
+          <div class="hero-amount">$${totalEarned.toFixed(2)}</div>
+          <div class="hero-sub">${paid.length} completed payout${paid.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div class="hero-right">
+          <div class="hero-stat">
+            <div class="hero-stat-val">${inspections.length}</div>
+            <div class="hero-stat-label">Total jobs</div>
+          </div>
+          <div class="hero-stat">
+            <div class="hero-stat-val">${disputed.length}</div>
+            <div class="hero-stat-label">Disputed</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Paid out</div>
+          <div class="stat-val">$${totalEarned.toFixed(2)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">In batch</div>
+          <div class="stat-val">$${pendingAmount.toFixed(2)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Awaiting release</div>
+          <div class="stat-val">$${awaitingAmount.toFixed(2)}</div>
+        </div>
+      </div>`
+
+    if (pendingAmount > 0) {
+      html += `
+        <div class="next-payout-card">
+          <div class="payout-icon"><i class="ti ti-calendar"></i></div>
+          <div class="payout-info">
+            <div class="payout-title">Next payout</div>
+            <div class="payout-sub">Scheduled for ${nextTuesday} — payments collected Tuesday to Monday are paid the following Tuesday</div>
+          </div>
+          <div class="payout-amount">$${pendingAmount.toFixed(2)}</div>
+        </div>`
+    }
+
+    html += `
+      <div class="section-header">
+        <div class="section-title">Earnings history</div>
+      </div>`
+
+    if (inspections.length === 0) {
+      html += `
+        <div class="empty-state">
+          <i class="ti ti-wallet"></i>
+          <h3>No earnings yet</h3>
+          <p>Complete your first inspection to start earning</p>
+        </div>`
+    } else {
+      html += '<div class="earnings-list">'
+      inspections.forEach(insp => {
+        const date = new Date(insp.date)
+        const day = date.getDate().toString().padStart(2, '0')
+        const month = date.toLocaleString('default', { month: 'short' })
+        const payout = insp.pricing_snapshot?.pay_to_scout
+          ? '$' + parseFloat(insp.pricing_snapshot.pay_to_scout).toFixed(2)
+          : '—'
+        const typeLabel = insp.inspection_type === 'external' ? 'External only'
+          : insp.inspection_type === 'internal' ? 'Internal only'
+          : 'Internal & External'
+        const statusLabel = insp.status === 'PendingPayment' ? 'In batch'
+          : insp.status === 'Completed' ? 'Awaiting release'
+          : insp.status
+
+        html += `
+          <div class="earning-item" onclick="window.location.href='inspection-detail.html?id=${insp.id}'" style="cursor:pointer">
+            <div class="earning-date-box">
+              <div class="earning-day">${day}</div>
+              <div class="earning-month">${month}</div>
+            </div>
+            <div class="earning-info">
+              <div class="earning-addr">${insp.address}</div>
+              <div class="earning-type">${typeLabel}</div>
+            </div>
+            <div class="earning-right">
+              <div class="earning-amount">${payout}</div>
+              <span class="earning-badge badge-${insp.status}">${statusLabel}</span>
+            </div>
+          </div>`
+      })
+      html += '</div>'
+    }
+
+    document.getElementById('mainContent').innerHTML = html
+  }
+
+  function getNextTuesday() {
+    const now = new Date()
+    const day = now.getDay()
+    const daysUntilTuesday = (2 - day + 7) % 7 || 7
+    const tuesday = new Date(now)
+    tuesday.setDate(now.getDate() + daysUntilTuesday)
+    return tuesday.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })
+  }
+
+  init()
+</script>
+</body>
+</html>
