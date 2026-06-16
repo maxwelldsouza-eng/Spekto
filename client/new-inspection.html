@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Inspection - Spekto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --red: #E53935; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 220px; background: var(--purple);
+      display: flex; flex-direction: column;
+      padding: 28px 0; flex-shrink: 0;
+      position: fixed; top: 0; left: 0;
+      height: 100vh; z-index: 100;
+    }
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 20px 28px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .s-mark {
+      width: 36px; height: 36px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 9px; border: 1px solid rgba(255,255,255,0.25);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -1.5px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; padding: 20px 12px; flex: 1; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 8px;
+      cursor: pointer; font-size: 13px;
+      color: rgba(255,255,255,0.6); font-weight: 500;
+      text-decoration: none; transition: all 0.15s;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.15); color: #fff; }
+    .nav-item i { font-size: 17px; }
+    .sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .user-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .user-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500; }
+    .main { flex: 1; margin-left: 220px; display: flex; flex-direction: column; }
+    .topbar {
+      background: #fff; border-bottom: 1px solid var(--border);
+      padding: 16px 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .back-btn {
+      width: 36px; height: 36px; border-radius: 8px;
+      border: 1.5px solid #E0E0E0; background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--purple); font-size: 18px;
+      text-decoration: none;
+    }
+    .topbar-title { font-size: 18px; font-weight: 700; color: #0D0D0D; letter-spacing: -0.3px; }
+    .status-badge {
+      background: #EDE4F7; color: var(--purple);
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.5px; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 20px;
+    }
+    .content { padding: 32px 28px; max-width: 680px; margin: 0 auto; width: 100%; }
+    .card {
+      background: #fff; border-radius: 14px;
+      border: 1px solid var(--border); padding: 24px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 12px; font-weight: 600; color: #888;
+      letter-spacing: 0.5px; text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .field { margin-bottom: 18px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600; color: #444;
+      letter-spacing: 0.3px; text-transform: uppercase;
+      margin-bottom: 7px;
+    }
+    .req { color: var(--purple); font-size: 14px; line-height: 1; }
+    .optional-tag {
+      font-size: 10px; font-weight: 500; color: #aaa;
+      background: #F4F4F4; border-radius: 4px;
+      padding: 2px 6px; text-transform: none; letter-spacing: 0;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%; height: 44px;
+      border: 1.5px solid #E0E0E0; border-radius: 8px;
+      padding: 0 14px; font-size: 14px; color: #0D0D0D;
+      background: #fff; outline: none;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.15s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--purple); }
+    .field input.invalid { border-color: var(--red); }
+    .error-msg { font-size: 12px; color: var(--red); margin-top: 4px; display: none; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .address-wrap { position: relative; }
+    .address-wrap input { padding-left: 40px; }
+    .address-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #aaa; font-size: 17px; pointer-events: none; }
+    .insp-options { display: flex; flex-direction: column; gap: 10px; }
+    .insp-option {
+      display: flex; align-items: center; gap: 12px;
+      border: 1.5px solid #E0E0E0; border-radius: 8px;
+      padding: 13px 16px; cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .insp-option.selected { border-color: var(--purple); background: var(--tint); }
+    .insp-option input[type=radio] { accent-color: var(--purple); width: 17px; height: 17px; flex-shrink: 0; }
+    .insp-label { font-size: 14px; font-weight: 600; color: #0D0D0D; }
+    .insp-desc { font-size: 12px; color: #999; margin-top: 2px; }
+    .insp-option.selected .insp-label { color: var(--purple); }
+    .pricing-block {
+      background: var(--tint); border: 1.5px solid #D4B8F5;
+      border-radius: 10px; padding: 16px 20px; margin-top: 16px;
+    }
+    .pricing-row { display: flex; justify-content: space-between; align-items: center; }
+    .pricing-label { font-size: 13px; font-weight: 500; color: var(--purple); }
+    .pricing-amount { font-size: 20px; font-weight: 800; color: var(--purple); font-family: 'DM Sans', sans-serif; }
+    .pricing-hint { font-size: 11px; color: #aaa; margin-top: 8px; text-align: center; }
+    .instructions-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+    .instruction-row { display: flex; align-items: center; gap: 8px; }
+    .instruction-tag {
+      flex: 1; display: flex; align-items: center; gap: 10px;
+      background: var(--tint); border: 1.5px solid #D4B8F5;
+      border-radius: 8px; padding: 10px 14px;
+    }
+    .instruction-tag input[type=checkbox] { accent-color: var(--purple); width: 16px; height: 16px; flex-shrink: 0; }
+    .instruction-tag input[type=text] {
+      border: none; background: transparent; outline: none;
+      font-size: 13px; color: var(--purple); font-family: 'Inter', sans-serif;
+      font-weight: 500; width: 100%; padding: 0; height: auto;
+    }
+    .instruction-tag input[type=text]::placeholder { color: #C4A0E8; }
+    .btn-remove-tag {
+      width: 28px; height: 28px; border-radius: 6px;
+      border: 1px solid #E0E0E0; background: #fff;
+      color: #bbb; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0; transition: all 0.15s;
+    }
+    .btn-remove-tag:hover { border-color: var(--red); color: var(--red); }
+    .btn-add-tag {
+      display: flex; align-items: center; gap: 7px;
+      background: transparent; border: 1.5px dashed #C4A0E8;
+      border-radius: 8px; padding: 9px 14px;
+      font-size: 13px; font-weight: 600; color: var(--purple);
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      width: 100%; justify-content: center; transition: background 0.15s;
+    }
+    .btn-add-tag:hover { background: var(--tint); }
+    .hint-text { font-size: 11px; color: #bbb; margin-top: 10px; line-height: 1.5; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+    .btn-submit {
+      height: 48px; background: var(--purple); color: #fff;
+      font-size: 15px; font-weight: 700; border: none;
+      border-radius: 10px; cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: opacity 0.15s;
+    }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-cancel {
+      height: 48px; background: #fff; color: #444;
+      font-size: 15px; font-weight: 600;
+      border: 1.5px solid #E0E0E0; border-radius: 10px;
+      cursor: pointer; font-family: 'Inter', sans-serif;
+      text-decoration: none; display: flex; align-items: center; justify-content: center;
+    }
+    .mandatory-note { font-size: 12px; color: #aaa; margin-top: 16px; text-align: center; }
+    .mandatory-note span { color: var(--purple); }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .row2 { grid-template-columns: 1fr; }
+      .actions { grid-template-columns: 1fr; }
+      .actions .btn-submit { order: -1; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div class="s-name">SPEKTO</div>
+    </div>
+    <nav class="nav">
+      <a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> My Inspections</a>
+      <a class="nav-item active" href="new-inspection.html"><i class="ti ti-plus"></i> New Inspection</a>
+      <a class="nav-item" href="property-library.html"><i class="ti ti-video"></i> Property Library</a>
+      <a class="nav-item" href="billing.html"><i class="ti ti-credit-card"></i> Billing</a>
+      <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> My Disputes</a>
+      <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="user-row">
+        <div class="avatar" id="userAvatar">?</div>
+        <div class="user-name" id="userName">Loading...</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <a class="back-btn" href="dashboard.html">&#8592;</a>
+        <div class="topbar-title">New Inspection</div>
+      </div>
+      <span class="status-badge">New</span>
+    </div>
+
+    <div class="content">
+      <div class="card">
+        <div class="card-title">Schedule</div>
+        <div class="row2">
+          <div class="field">
+            <label>Date <span class="req">*</span></label>
+            <input type="date" id="inspDate">
+            <div class="error-msg" id="dateError">Date is required</div>
+          </div>
+          <div class="field">
+            <label>Time <span class="req">*</span></label>
+            <input type="time" id="inspTime">
+            <div class="error-msg" id="timeError">Time is required</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Property</div>
+        <div class="field">
+          <label>Address <span class="req">*</span></label>
+          <div class="address-wrap">
+            <i class="ti ti-map-pin address-icon"></i>
+            <input type="text" id="address" placeholder="Start typing an address...">
+          </div>
+          <div class="error-msg" id="addressError">Address is required</div>
+        </div>
+        <div class="field">
+          <label>Property listing link <span class="optional-tag">Optional</span></label>
+          <input type="url" id="propertyLink" placeholder="https://realestate.com.au/...">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Inspection type <span class="req" style="font-size:13px">*</span></div>
+        <div class="insp-options">
+          <label class="insp-option selected" data-type="external">
+            <input type="radio" name="inspType" value="external" checked>
+            <div>
+              <div class="insp-label">External only</div>
+              <div class="insp-desc">Exterior walkthrough of the property</div>
+            </div>
+          </label>
+          <label class="insp-option" data-type="internal">
+            <input type="radio" name="inspType" value="internal">
+            <div>
+              <div class="insp-label">Internal only</div>
+              <div class="insp-desc">Interior walkthrough of the property</div>
+            </div>
+          </label>
+          <label class="insp-option" data-type="internalExternal">
+            <input type="radio" name="inspType" value="internalExternal">
+            <div>
+              <div class="insp-label">Internal & External</div>
+              <div class="insp-desc">Full property walkthrough, inside and out</div>
+            </div>
+          </label>
+        </div>
+        <div class="pricing-block" id="pricingBlock">
+          <div class="pricing-row">
+            <span class="pricing-label">Total charge for this inspection</span>
+            <span class="pricing-amount" id="pricingAmount">Loading...</span>
+          </div>
+          <div class="pricing-hint">Payment is processed securely via Stripe upon submission. GST included.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Recording instructions</div>
+        <div class="instructions-list" id="instructionsList"></div>
+        <button class="btn-add-tag" id="addInstructionBtn">+ Add instruction</button>
+        <div class="hint-text">These will appear as reminder checkboxes for the scout while recording.</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-submit" id="submitBtn">Submit Inspection</button>
+        <a class="btn-cancel" href="dashboard.html">Cancel</a>
+      </div>
+      <div class="mandatory-note"><span>*</span> Mandatory fields</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL
+'
+  )
+
+  let pricing = {}
+  let currentUser = null
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = '../auth/login.html'; return; }
+    currentUser = user
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .single()
+
+    if (userData) {
+      const initials = (userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')
+      document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
+    }
+
+    await loadPricing()
+  }
+
+  async function loadPricing() {
+    const { data } = await supabase.from('pricing').select('*').eq('active', true)
+    if (data) {
+      data.forEach(p => { pricing[p.id] = p })
+      updatePricing()
+    }
+  }
+
+  function updatePricing() {
+    const selected = document.querySelector('input[name="inspType"]:checked')?.value || 'external'
+    const price = pricing[selected]
+    if (price) {
+      document.getElementById('pricingAmount').textContent = '$' + parseFloat(price.total).toFixed(2)
+    }
+  }
+
+  document.querySelectorAll('.insp-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      document.querySelectorAll('.insp-option').forEach(o => o.classList.remove('selected'))
+      opt.classList.add('selected')
+      updatePricing()
+    })
+  })
+
+  document.getElementById('addInstructionBtn').addEventListener('click', addInstruction)
+
+  function addInstruction(text = '', checked = false) {
+    const list = document.getElementById('instructionsList')
+    const row = document.createElement('div')
+    row.className = 'instruction-row'
+    row.innerHTML = `
+      <div class="instruction-tag">
+        <input type="checkbox" ${checked ? 'checked' : ''}>
+        <input type="text" placeholder="Type an instruction..." value="${text}">
+      </div>
+      <button class="btn-remove-tag" type="button">&#215;</button>`
+    row.querySelector('.btn-remove-tag').addEventListener('click', () => row.remove())
+    list.appendChild(row)
+    if (!text) row.querySelector('input[type=text]').focus()
+  }
+
+  function validate() {
+    let valid = true
+    const fields = [
+      { id: 'inspDate', errorId: 'dateError' },
+      { id: 'inspTime', errorId: 'timeError' },
+      { id: 'address', errorId: 'addressError' }
+    ]
+    fields.forEach(({ id, errorId }) => {
+      const input = document.getElementById(id)
+      const error = document.getElementById(errorId)
+      if (!input.value.trim()) {
+        input.classList.add('invalid')
+        error.style.display = 'block'
+        valid = false
+      } else {
+        input.classList.remove('invalid')
+        error.style.display = 'none'
+      }
+    })
+    return valid
+  }
+
+  ['inspDate', 'inspTime', 'address'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      document.getElementById(id).classList.remove('invalid')
+      const errorMap = { inspDate: 'dateError', inspTime: 'timeError', address: 'addressError' }
+      document.getElementById(errorMap[id]).style.display = 'none'
+    })
+  })
+
+  document.getElementById('submitBtn').addEventListener('click', async () => {
+    if (!validate()) return
+
+    const submitBtn = document.getElementById('submitBtn')
+    submitBtn.disabled = true
+    submitBtn.textContent = 'Submitting...'
+
+    const inspectionType = document.querySelector('input[name="inspType"]:checked').value
+    const pricingSnapshot = pricing[inspectionType] || null
+
+    const instructions = []
+    document.querySelectorAll('.instruction-row').forEach((row, index) => {
+      const text = row.querySelector('input[type=text]').value.trim()
+      const checked = row.querySelector('input[type=checkbox]').checked
+      if (text) instructions.push({ text, is_checked: checked, display_order: index + 1 })
+    })
+
+    const { data: inspection, error } = await supabase
+      .from('inspections')
+      .insert({
+        client_id: currentUser.id,
+        address: document.getElementById('address').value.trim(),
+        date: document.getElementById('inspDate').value,
+        time: document.getElementById('inspTime').value,
+        inspection_type: inspectionType,
+        property_link: document.getElementById('propertyLink').value.trim() || null,
+        status: 'Posted',
+        pricing_snapshot: pricingSnapshot ? {
+          inspection_type: pricingSnapshot.inspection_type,
+          pay_to_scout: pricingSnapshot.pay_to_scout,
+          fee_excluding_gst: pricingSnapshot.fee_excluding_gst,
+          gst: pricingSnapshot.gst,
+          total: pricingSnapshot.total
+        } : null
+      })
+      .select()
+      .single()
+
+    if (error) {
+      submitBtn.disabled = false
+      submitBtn.textContent = 'Submit Inspection'
+      alert('Error creating inspection: ' + error.message)
+      return
+    }
+
+    if (instructions.length > 0) {
+      const instructionRows = instructions.map(inst => ({
+        inspection_id: inspection.id,
+        text: inst.text,
+        is_checked: inst.is_checked,
+        display_order: inst.display_order
+      }))
+      await supabase.from('instructions').insert(instructionRows)
+    }
+
+    window.location.href = 'dashboard.html'
+  })
+
+  init()
+</script>
+</body>
+</html>
