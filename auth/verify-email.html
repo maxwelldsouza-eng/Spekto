@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - Spekto</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --purple: #560591;
+            --light-tint: #F5EEFF;
+            --background: #F7F5FA;
+            --green-bg: #DCFCE7;
+            --green-border: #86EFAC;
+            --green-text: #166534;
+            --text-primary: #0D0D0D;
+            --text-secondary: #555;
+            --text-hint: #aaa;
+            --border-color: #E0E0E0;
+            --font-inter: 'Inter', sans-serif;
+            --font-dm-sans: 'DM Sans', sans-serif;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-inter);
+            background-color: #F7F5FA;
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            max-width: 1100px;
+            min-height: 100vh;
+            background-color: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .left-panel {
+            background-color: var(--purple);
+            width: 40%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+        
+        .right-panel {
+            width: 60%;
+            padding: 3rem 4rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .content-wrapper {
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .envelope-icon {
+            width: 72px;
+            height: 72px;
+            background-color: var(--light-tint);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+        }
+        .envelope-icon svg {
+            color: var(--purple);
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+        
+        .subtext {
+            color: #444;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        
+        .subtext .email-address {
+            color: var(--purple);
+            font-weight: 600;
+        }
+
+        .steps-block {
+            background-color: var(--background);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        
+        .steps-block ol {
+            list-style: none;
+            padding: 0;
+            counter-reset: step-counter;
+        }
+
+        .steps-block li {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: var(--text-secondary);
+            counter-increment: step-counter;
+        }
+        
+        .steps-block li:not(:last-child) {
+            margin-bottom: 16px;
+        }
+
+        .steps-block li::before {
+            content: counter(step-counter);
+            margin-right: 12px;
+            background-color: var(--purple);
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .hint-text {
+            font-size: 12px;
+            color: var(--text-hint);
+            margin-bottom: 24px;
+        }
+
+        .resend-button {
+            width: 100%;
+            max-width: 320px;
+            height: 44px;
+            background-color: white;
+            border: 1.5px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--purple);
+            cursor: pointer;
+            transition: border-color 0.2s;
+            margin: 0 auto;
+            display: block;
+        }
+        
+        .resend-button:hover {
+            border-color: var(--purple);
+        }
+        
+        .toast {
+            background-color: var(--green-bg);
+            border: 1px solid var(--green-border);
+            border-radius: 8px;
+            padding: 10px 16px;
+            color: var(--green-text);
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 24px;
+            font-size: 13px;
+            color: var(--purple);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+             .right-panel {
+                padding: 2rem;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            body {
+                min-height: auto;
+            }
+            .container {
+                flex-direction: column;
+                min-height: 100vh;
+                box-shadow: none;
+            }
+            .left-panel {
+                width: 100%;
+                height: 56px;
+                padding: 1rem;
+            }
+            /* Adjust logo for mobile top bar */
+            .left-panel .spekto-logo-lockup > div:first-child {
+                width: 36px !important;
+                height: 36px !important;
+                border-radius: 10px !important;
+            }
+            .left-panel .spekto-logo-lockup > div:first-child svg {
+                width: 20px !important;
+                height: 18px !important;
+            }
+            .left-panel .spekto-logo-lockup > div:last-child {
+                font-size: 24px !important;
+                letter-spacing: -1px !important;
+            }
+            .right-panel {
+                width: 100%;
+                padding: 24px;
+                flex-grow: 1;
+                justify-content: flex-start;
+                padding-top: 48px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <main class="container">
+        <section class="left-panel">
+            <div class="spekto-logo-lockup" style="display:flex;align-items:center;gap:14px">
+                <div style="width:52px;height:52px;background:rgba(255,255,255,0.15);border-radius:14px;border:1.5px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;">
+                  <svg width="30" height="26" viewBox="0 0 30 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+                    <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+                    <circle cx="15" cy="15" r="2" fill="white"/>
+                    <circle cx="24" cy="9" r="1.5" fill="white"/>
+                  </svg>
+                </div>
+                <div style="font-family:'DM Sans',sans-serif;font-size:36px;font-weight:800;color:#fff;letter-spacing:-2px;">SPEKTO</div>
+            </div>
+        </section>
+
+        <section class="right-panel">
+            <div class="content-wrapper">
+                <div class="envelope-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 7.00005L10.2 11.65C11.2667 12.45 12.7333 12.45 13.8 11.65L20 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </div>
+                <h1>Check your inbox</h1>
+                <p class="subtext">
+                    We have sent a confirmation email to <strong id="userEmail" class="email-address">your.email@example.com</strong>. Click the link in the email to activate your account.
+                </p>
+                <div class="steps-block">
+                    <ol>
+                        <li>Open the email from Spekto in your inbox</li>
+                        <li>Click the confirmation link inside the email</li>
+                        <li>You will be taken to the login page to sign in</li>
+                    </ol>
+                </div>
+                <p class="hint-text">
+                    Cannot find the email? Check your spam folder. The link expires in 24 hours.
+                </p>
+                <div id="resendToast" class="toast">
+                    Confirmation email resent successfully
+                </div>
+                <button id="resendBtn" class="resend-button">Resend confirmation email</button>
+                <a href="login.html" class="back-link">← Back to login</a>
+            </div>
+        </section>
+    </main>
+    
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+        const supabase = createClient(
+            'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+            'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+        );
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const userEmailElement = document.getElementById('userEmail');
+            const resendBtn = document.getElementById('resendBtn');
+            const resendToast = document.getElementById('resendToast');
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const emailFromUrl = urlParams.get('email');
+
+            if (emailFromUrl) {
+                userEmailElement.textContent = emailFromUrl;
+            } else {
+                 userEmailElement.textContent = 'your inbox';
+            }
+
+            resendBtn.addEventListener('click', async () => {
+                if (!emailFromUrl) {
+                    alert("No email address found. Please go back and try signing up again.");
+                    return;
+                }
+
+                resendBtn.disabled = true;
+                resendBtn.textContent = 'Resending...';
+
+                const { error } = await supabase.auth.resend({
+                    type: 'signup',
+                    email: emailFromUrl
+                });
+
+                if (error) {
+                    alert('Error resending email: ' + error.message);
+                } else {
+                    resendToast.classList.add('show');
+                    setTimeout(() => {
+                        resendToast.classList.remove('show');
+                    }, 3000);
+                }
+                
+                resendBtn.disabled = false;
+                resendBtn.textContent = 'Resend confirmation email';
+            });
+        });
+    </script>
+</body>
+</html>
