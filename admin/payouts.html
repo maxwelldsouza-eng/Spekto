@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payouts - Spekto Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --dark: #1A0533; --green: #22C55E; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 230px; background: var(--dark); display: flex; flex-direction: column; padding: 24px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .s-mark { width: 34px; height: 34px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -1px; }
+    .admin-tag { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+    .nav-section { padding: 16px 12px 4px; }
+    .nav-section-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px; margin-bottom: 4px; }
+    .nav { display: flex; flex-direction: column; gap: 1px; padding: 0 12px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px; font-size: 13px; color: rgba(255,255,255,0.55); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
+    .nav-item i { font-size: 16px; flex-shrink: 0; }
+    .nav-badge { margin-left: auto; background: #DC2626; color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+    .sidebar-foot { margin-top: auto; padding: 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .admin-user { display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+    .admin-avatar { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .admin-info { flex: 1; min-width: 0; }
+    .admin-name-s { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .admin-role-s { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+    .btn-logout-sm { width: 28px; height: 28px; background: rgba(255,255,255,0.08); border: none; border-radius: 6px; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .main { flex: 1; margin-left: 230px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; flex-wrap: wrap; gap: 10px; }
+    .topbar-title { font-size: 17px; font-weight: 700; color: #0D0D0D; }
+    .topbar-right { display: flex; gap: 10px; align-items: center; }
+    .content { padding: 24px 28px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 18px; }
+    .stat-label { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+    .stat-val { font-size: 24px; font-weight: 800; color: #0D0D0D; font-family: 'DM Sans', sans-serif; letter-spacing: -0.5px; }
+    .stat-val.green { color: #166534; }
+    .next-batch-card { background: var(--dark); border-radius: 14px; padding: 22px 26px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+    .batch-info { display: flex; flex-direction: column; gap: 4px; }
+    .batch-title { font-size: 16px; font-weight: 700; color: #fff; }
+    .batch-sub { font-size: 13px; color: rgba(255,255,255,0.5); }
+    .batch-stats { display: flex; gap: 24px; }
+    .batch-stat { text-align: right; }
+    .batch-stat-val { font-size: 22px; font-weight: 800; color: #fff; font-family: 'DM Sans', sans-serif; }
+    .batch-stat-label { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+    .btn-process { height: 44px; background: var(--green); color: #fff; border: none; border-radius: 10px; padding: 0 24px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; }
+    .btn-process:disabled { opacity: 0.5; cursor: not-allowed; }
+    .section-title { font-size: 15px; font-weight: 700; color: #0D0D0D; margin-bottom: 14px; }
+    .pending-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+    .pending-item { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 16px 20px; display: flex; align-items: center; gap: 14px; }
+    .scout-av { width: 38px; height: 38px; border-radius: 50%; background: #EDE4F7; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--purple); flex-shrink: 0; }
+    .pending-info { flex: 1; min-width: 0; }
+    .pending-name { font-size: 14px; font-weight: 600; color: #0D0D0D; }
+    .pending-addr { font-size: 12px; color: #999; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pending-amount { font-size: 18px; font-weight: 800; color: #0D0D0D; font-family: 'DM Sans', sans-serif; flex-shrink: 0; }
+    .badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; display: inline-block; }
+    .badge-Pending { background: #FEF9C3; color: #854D0E; }
+    .badge-Processing { background: #E0F2FE; color: #0369A1; }
+    .badge-Paid { background: #DCFCE7; color: #166534; }
+    .badge-OnHold { background: #FEE2E2; color: #991B1B; }
+    .badge-Failed { background: #FEE2E2; color: #991B1B; }
+    .empty-state { text-align: center; padding: 40px 20px; background: #fff; border-radius: 14px; border: 1px solid var(--border); }
+    .empty-state i { font-size: 32px; color: #ddd; margin-bottom: 10px; display: block; }
+    .empty-state p { font-size: 13px; color: #999; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #1F2937; color: #fff; font-size: 13px; font-weight: 500; padding: 12px 20px; border-radius: 10px; z-index: 999; display: none; }
+    .toast.success { background: #166534; }
+    .toast.error { background: #991B1B; }
+    .on-hold-banner { background: #FFF8F8; border: 1.5px solid #FEE2E2; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .on-hold-banner i { color: #991B1B; font-size: 16px; flex-shrink: 0; }
+    .on-hold-text { font-size: 13px; color: #991B1B; font-weight: 500; }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div class="s-name">SPEKTO</div>
+        <div class="admin-tag">Admin Portal</div>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Overview</div>
+      <div class="nav"><a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Operations</div>
+      <div class="nav">
+        <a class="nav-item" href="inspections.html"><i class="ti ti-clipboard-list"></i> Inspections</a>
+        <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> Disputes <span class="nav-badge" id="disputeBadge">0</span></a>
+        <a class="nav-item active" href="payouts.html"><i class="ti ti-wallet"></i> Payouts</a>
+        <a class="nav-item" href="verification.html"><i class="ti ti-id-badge"></i> Verification</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Users</div>
+      <div class="nav">
+        <a class="nav-item" href="users.html"><i class="ti ti-users"></i> All Users</a>
+        <a class="nav-item" href="scouts.html"><i class="ti ti-camera"></i> Scouts</a>
+        <a class="nav-item" href="clients.html"><i class="ti ti-building"></i> Clients</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Platform</div>
+      <div class="nav">
+        <a class="nav-item" href="marketplace.html"><i class="ti ti-shopping-bag"></i> Marketplace</a>
+        <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+      </div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="admin-user">
+        <div class="admin-avatar" id="adminAvatar">?</div>
+        <div class="admin-info">
+          <div class="admin-name-s" id="adminName">Loading...</div>
+          <div class="admin-role-s" id="adminRole">Admin</div>
+        </div>
+        <button class="btn-logout-sm" id="logoutBtn"><i class="ti ti-logout"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">Payouts</div>
+    </div>
+    <div class="content" id="mainContent">
+      <div class="loading"><div class="spinner"></div> Loading payouts...</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let pendingInspections = []
+  let onHoldInspections = []
+  let adminData = null
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast')
+    t.textContent = msg
+    t.className = `toast ${type}`
+    t.style.display = 'block'
+    setTimeout(() => { t.style.display = 'none' }, 3000)
+  }
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = 'login.html'; return; }
+
+    const { data: admin } = await supabase
+      .from('admins')
+      .select('id, first_name, last_name, role, is_active')
+      .eq('email', user.email)
+      .single()
+
+    if (!admin || !admin.is_active) {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+      return
+    }
+
+    adminData = admin
+    const initials = (admin.first_name?.[0] || '') + (admin.last_name?.[0] || '')
+    document.getElementById('adminAvatar').textContent = initials.toUpperCase()
+    document.getElementById('adminName').textContent = admin.first_name + ' ' + admin.last_name
+    document.getElementById('adminRole').textContent = admin.role === 'superadmin' ? 'Super Admin' : 'Admin'
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+    })
+
+    const { data: openDisputes } = await supabase
+      .from('disputes').select('id').not('status', 'in', '("Resolved","Dismissed")')
+    document.getElementById('disputeBadge').textContent = (openDisputes || []).length
+
+    await loadPayouts()
+  }
+
+  async function loadPayouts() {
+    const [
+      { data: pending },
+      { data: onHold },
+      { data: paid }
+    ] = await Promise.all([
+      supabase.from('inspections').select(`*, scout:scout_id(first_name, last_name)`).eq('status', 'PendingPayment').order('created_at', { ascending: true }),
+      supabase.from('inspections').select(`*, scout:scout_id(first_name, last_name)`).eq('status', 'Disputed').not('scout_id', 'is', null),
+      supabase.from('inspections').select('id, pricing_snapshot').eq('status', 'Paid')
+    ])
+
+    pendingInspections = pending || []
+    onHoldInspections = onHold || []
+
+    const totalPaid = (paid || []).reduce((sum, i) =>
+      sum + (parseFloat(i.pricing_snapshot?.pay_to_scout) || 0), 0)
+    const totalPending = pendingInspections.reduce((sum, i) =>
+      sum + (parseFloat(i.pricing_snapshot?.pay_to_scout) || 0), 0)
+    const totalOnHold = onHoldInspections.reduce((sum, i) =>
+      sum + (parseFloat(i.pricing_snapshot?.pay_to_scout) || 0), 0)
+
+    const nextTuesday = getNextTuesday()
+
+    const html = `
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Ready to pay</div>
+          <div class="stat-val green">$${totalPending.toFixed(2)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">On hold (disputed)</div>
+          <div class="stat-val" style="color:#854D0E">$${totalOnHold.toFixed(2)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total paid out</div>
+          <div class="stat-val">$${totalPaid.toFixed(2)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Inspections pending</div>
+          <div class="stat-val">${pendingInspections.length}</div>
+        </div>
+      </div>
+
+      <div class="next-batch-card">
+        <div class="batch-info">
+          <div class="batch-title">Next Tuesday payout batch</div>
+          <div class="batch-sub">${nextTuesday} · ${pendingInspections.length} inspection${pendingInspections.length !== 1 ? 's' : ''} ready · Disputed inspections excluded automatically</div>
+        </div>
+        <div class="batch-stats">
+          <div class="batch-stat">
+            <div class="batch-stat-val">$${totalPending.toFixed(2)}</div>
+            <div class="batch-stat-label">To be paid</div>
+          </div>
+        </div>
+        <button class="btn-process" id="processBtn" onclick="processBatch()" ${pendingInspections.length === 0 ? 'disabled' : ''}>
+          <i class="ti ti-send" style="font-size:16px"></i>
+          Process batch
+        </button>
+      </div>
+
+      ${onHoldInspections.length > 0 ? `
+        <div class="on-hold-banner">
+          <i class="ti ti-lock"></i>
+          <div class="on-hold-text">${onHoldInspections.length} inspection${onHoldInspections.length > 1 ? 's are' : ' is'} on hold due to active disputes — $${totalOnHold.toFixed(2)} total. These will be included in a future batch once disputes are resolved.</div>
+        </div>` : ''}
+
+      <div class="section-title">Ready for payout (${pendingInspections.length})</div>
+      ${pendingInspections.length === 0
+        ? `<div class="empty-state"><i class="ti ti-wallet-off"></i><p>No inspections pending payout. When clients release payment the inspections will appear here.</p></div>`
+        : `<div class="pending-list">
+            ${pendingInspections.map(insp => {
+              const scoutName = insp.scout ? insp.scout.first_name + ' ' + insp.scout.last_name : 'Unknown Scout'
+              const scoutInitials = insp.scout ? (insp.scout.first_name?.[0]||'') + (insp.scout.last_name?.[0]||'') : '?'
+              const payout = insp.pricing_snapshot?.pay_to_scout
+                ? '$' + parseFloat(insp.pricing_snapshot.pay_to_scout).toFixed(2) : '—'
+              const date = new Date(insp.date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})
+              return `
+                <div class="pending-item">
+                  <div class="scout-av">${scoutInitials.toUpperCase()}</div>
+                  <div class="pending-info">
+                    <div class="pending-name">${scoutName}</div>
+                    <div class="pending-addr">${insp.address} · ${date}</div>
+                  </div>
+                  <div class="pending-amount">${payout}</div>
+                </div>`
+            }).join('')}
+          </div>`}
+
+      ${onHoldInspections.length > 0 ? `
+        <div class="section-title" style="margin-top:8px">On hold — disputed (${onHoldInspections.length})</div>
+        <div class="pending-list">
+          ${onHoldInspections.map(insp => {
+            const scoutName = insp.scout ? insp.scout.first_name + ' ' + insp.scout.last_name : 'Unknown Scout'
+            const scoutInitials = insp.scout ? (insp.scout.first_name?.[0]||'') + (insp.scout.last_name?.[0]||'') : '?'
+            const payout = insp.pricing_snapshot?.pay_to_scout
+              ? '$' + parseFloat(insp.pricing_snapshot.pay_to_scout).toFixed(2) : '—'
+            return `
+              <div class="pending-item" style="border-left:3px solid #FCA5A5">
+                <div class="scout-av">${scoutInitials.toUpperCase()}</div>
+                <div class="pending-info">
+                  <div class="pending-name">${scoutName}</div>
+                  <div class="pending-addr">${insp.address}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span class="badge badge-OnHold">On hold</span>
+                  <div class="pending-amount" style="color:#854D0E">${payout}</div>
+                </div>
+              </div>`
+          }).join('')}
+        </div>` : ''}`
+
+    document.getElementById('mainContent').innerHTML = html
+  }
+
+  window.processBatch = async () => {
+    if (!confirm(`Process payout batch of $${pendingInspections.reduce((s,i) => s + (parseFloat(i.pricing_snapshot?.pay_to_scout)||0), 0).toFixed(2)} to ${pendingInspections.length} scouts?\n\nNote: Stripe Connect integration required for real payouts. This will mark inspections as Paid in the database.`)) return
+
+    const btn = document.getElementById('processBtn')
+    btn.disabled = true
+    btn.innerHTML = '<div class="spinner" style="border-top-color:#fff"></div> Processing...'
+
+    let processed = 0
+    for (const insp of pendingInspections) {
+      const { error } = await supabase
+        .from('inspections')
+        .update({ status: 'Paid', updated_at: new Date().toISOString() })
+        .eq('id', insp.id)
+        .eq('status', 'PendingPayment')
+
+      if (!error) {
+        await supabase.from('admin_actions').insert({
+          admin_id: adminData.id,
+          action_type: 'PayoutProcessed',
+          target_table: 'inspections',
+          target_id: insp.id,
+          new_value: 'Paid',
+          notes: 'Manual batch payout processed by admin'
+        })
+        processed++
+      }
+    }
+
+    showToast(`${processed} of ${pendingInspections.length} payouts processed successfully`)
+    await loadPayouts()
+  }
+
+  function getNextTuesday() {
+    const now = new Date()
+    const day = now.getDay()
+    const daysUntil = (2 - day + 7) % 7 || 7
+    const tuesday = new Date(now)
+    tuesday.setDate(now.getDate() + daysUntil)
+    return tuesday.toLocaleDateString('en-AU', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
+  }
+
+  init()
+</script>
+</body>
+</html>
