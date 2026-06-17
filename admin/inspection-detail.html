@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inspection Detail - Spekto Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --dark: #1A0533; --green: #16A34A; --red: #DC2626; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 230px; background: var(--dark); display: flex; flex-direction: column; padding: 24px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .s-mark { width: 34px; height: 34px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -1px; }
+    .admin-tag { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+    .nav-section { padding: 16px 12px 4px; }
+    .nav-section-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px; margin-bottom: 4px; }
+    .nav { display: flex; flex-direction: column; gap: 1px; padding: 0 12px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px; font-size: 13px; color: rgba(255,255,255,0.55); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
+    .nav-item i { font-size: 16px; flex-shrink: 0; }
+    .nav-badge { margin-left: auto; background: #DC2626; color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+    .sidebar-foot { margin-top: auto; padding: 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .admin-user { display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+    .admin-avatar { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .admin-info { flex: 1; min-width: 0; }
+    .admin-name-s { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .admin-role-s { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+    .btn-logout-sm { width: 28px; height: 28px; background: rgba(255,255,255,0.08); border: none; border-radius: 6px; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .main { flex: 1; margin-left: 230px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; flex-wrap: wrap; gap: 10px; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .back-btn { width: 34px; height: 34px; border-radius: 7px; border: 1.5px solid #E0E0E0; background: #fff; display: flex; align-items: center; justify-content: center; text-decoration: none; color: #444; font-size: 16px; }
+    .topbar-title { font-size: 16px; font-weight: 700; color: #0D0D0D; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .badge { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+    .badge-Posted { background: #EDE4F7; color: #560591; }
+    .badge-Accepted { background: #E0F2FE; color: #0369A1; }
+    .badge-InProgress { background: #EDE9FE; color: #5B21B6; }
+    .badge-Completed { background: #DCFCE7; color: #166534; }
+    .badge-PendingPayment { background: #FEF9C3; color: #854D0E; }
+    .badge-Disputed { background: #FEE2E2; color: #991B1B; }
+    .badge-Paid { background: #D1FAE5; color: #065F46; }
+    .badge-Cancelled { background: #F3F4F6; color: #6B7280; }
+    .btn-action { height: 36px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 6px; padding: 0 14px; border: none; text-decoration: none; }
+    .btn-view-dispute { background: #FEE2E2; color: #991B1B; }
+    .btn-cancel-insp { background: #fff; color: var(--red); border: 1.5px solid #FCA5A5 !important; }
+    .content { padding: 20px 28px; }
+    .layout { display: grid; grid-template-columns: 1fr 340px; gap: 16px; align-items: start; }
+    .card { background: #fff; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 14px; overflow: hidden; }
+    .card-header { padding: 14px 18px; border-bottom: 1px solid #F3F3F3; display: flex; align-items: center; justify-content: space-between; }
+    .card-title { font-size: 13px; font-weight: 700; color: #0D0D0D; display: flex; align-items: center; gap: 7px; }
+    .card-title i { font-size: 15px; color: var(--purple); }
+    .card-body { padding: 16px 18px; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .det-label { font-size: 10px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
+    .det-val { font-size: 13px; font-weight: 600; color: #0D0D0D; }
+    .det-val a { color: var(--purple); text-decoration: none; }
+    .user-chip { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #F7F5FA; border-radius: 8px; border: 1px solid var(--border); }
+    .user-av { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+    .av-client { background: #E1F5EE; color: #085041; }
+    .av-scout { background: #EDE4F7; color: #560591; }
+    .user-chip-info { flex: 1; min-width: 0; }
+    .user-chip-name { font-size: 13px; font-weight: 600; color: #0D0D0D; }
+    .user-chip-sub { font-size: 11px; color: #999; margin-top: 2px; }
+    .user-chip-stats { font-size: 11px; color: var(--purple); margin-top: 2px; font-weight: 500; }
+    .video-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #F3F3F3; }
+    .video-item:last-child { border-bottom: none; }
+    .video-icon { width: 36px; height: 36px; background: var(--tint); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .video-icon i { font-size: 16px; color: var(--purple); }
+    .video-info { flex: 1; min-width: 0; }
+    .video-name { font-size: 12px; font-weight: 600; color: #0D0D0D; }
+    .video-meta { font-size: 11px; color: #999; margin-top: 2px; }
+    .video-gps { display: flex; align-items: center; gap: 3px; font-size: 11px; color: var(--green); margin-top: 2px; font-weight: 500; }
+    .video-actions { display: flex; gap: 6px; }
+    .btn-video { height: 26px; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; padding: 0 8px; border: none; display: flex; align-items: center; gap: 3px; text-decoration: none; }
+    .btn-video-play { background: var(--tint); color: var(--purple); }
+    .btn-video-dl { background: #F3F4F6; color: #444; }
+    .instr-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--tint); border-radius: 7px; border: 1px solid #D4B8F5; margin-bottom: 6px; }
+    .instr-item:last-child { margin-bottom: 0; }
+    .instr-item i { font-size: 14px; color: var(--purple); flex-shrink: 0; }
+    .instr-text { font-size: 12px; color: var(--purple); font-weight: 500; }
+    .dispute-banner { background: #FFF8F8; border: 1.5px solid #FEE2E2; border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 10px; margin-bottom: 14px; cursor: pointer; }
+    .dispute-banner:hover { background: #FEE2E2; }
+    .dispute-banner i { font-size: 18px; color: #991B1B; flex-shrink: 0; }
+    .dispute-banner-info { flex: 1; }
+    .dispute-banner-title { font-size: 13px; font-weight: 700; color: #991B1B; }
+    .dispute-banner-sub { font-size: 12px; color: #991B1B; opacity: 0.7; margin-top: 2px; }
+    .timeline-item { display: flex; gap: 10px; padding-bottom: 12px; position: relative; }
+    .timeline-item:last-child { padding-bottom: 0; }
+    .tl-line { position: absolute; left: 9px; top: 18px; bottom: 0; width: 1px; background: #F0F0F0; }
+    .timeline-item:last-child .tl-line { display: none; }
+    .tl-dot { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 9px; z-index: 1; }
+    .tl-done { background: #DCFCE7; color: var(--green); }
+    .tl-active { background: var(--tint); color: var(--purple); }
+    .tl-pending { background: #F3F4F6; color: #aaa; border: 1px solid #E0E0E0; }
+    .tl-red { background: #FEE2E2; color: #991B1B; }
+    .tl-content { flex: 1; }
+    .tl-title { font-size: 12px; font-weight: 600; color: #0D0D0D; }
+    .tl-desc { font-size: 11px; color: #999; margin-top: 1px; }
+    .tl-time { font-size: 10px; color: #bbb; margin-top: 2px; }
+    .pricing-breakdown { background: #F7F5FA; border-radius: 10px; padding: 14px; }
+    .price-row { display: flex; justify-content: space-between; font-size: 12px; color: #555; margin-bottom: 6px; }
+    .price-row:last-child { margin-bottom: 0; font-weight: 700; color: #0D0D0D; font-size: 13px; border-top: 1px solid #E0E0E0; padding-top: 8px; margin-top: 4px; }
+    .price-row span:last-child { font-weight: 600; }
+    .admin-actions-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+    .admin-actions-header { padding: 14px 18px; border-bottom: 1px solid #F3F3F3; }
+    .admin-actions-title { font-size: 13px; font-weight: 700; color: #0D0D0D; display: flex; align-items: center; gap: 7px; }
+    .admin-actions-title i { font-size: 15px; color: var(--red); }
+    .admin-actions-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; }
+    .btn-admin-action { width: 100%; height: 40px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; padding: 0 14px; border: none; }
+    .btn-force-cancel { background: #FEE2E2; color: #991B1B; }
+    .btn-force-complete { background: #DCFCE7; color: #166534; }
+    .btn-force-pay { background: var(--tint); color: var(--purple); }
+    .btn-view-dispute-full { background: #FEF9C3; color: #854D0E; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #1F2937; color: #fff; font-size: 13px; font-weight: 500; padding: 12px 20px; border-radius: 10px; z-index: 999; display: none; }
+    .toast.success { background: #166534; }
+    .toast.error { background: #991B1B; }
+    @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div class="s-name">SPEKTO</div>
+        <div class="admin-tag">Admin Portal</div>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Overview</div>
+      <div class="nav"><a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Operations</div>
+      <div class="nav">
+        <a class="nav-item active" href="inspections.html"><i class="ti ti-clipboard-list"></i> Inspections</a>
+        <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> Disputes <span class="nav-badge" id="disputeBadge">0</span></a>
+        <a class="nav-item" href="payouts.html"><i class="ti ti-wallet"></i> Payouts</a>
+        <a class="nav-item" href="verification.html"><i class="ti ti-id-badge"></i> Verification</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Users</div>
+      <div class="nav">
+        <a class="nav-item" href="users.html"><i class="ti ti-users"></i> All Users</a>
+        <a class="nav-item" href="scouts.html"><i class="ti ti-camera"></i> Scouts</a>
+        <a class="nav-item" href="clients.html"><i class="ti ti-building"></i> Clients</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Platform</div>
+      <div class="nav">
+        <a class="nav-item" href="marketplace.html"><i class="ti ti-shopping-bag"></i> Marketplace</a>
+        <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+      </div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="admin-user">
+        <div class="admin-avatar" id="adminAvatar">?</div>
+        <div class="admin-info">
+          <div class="admin-name-s" id="adminName">Loading...</div>
+          <div class="admin-role-s" id="adminRole">Admin</div>
+        </div>
+        <button class="btn-logout-sm" id="logoutBtn"><i class="ti ti-logout"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <a class="back-btn" href="inspections.html">&#8592;</a>
+        <div class="topbar-title" id="topbarTitle">Inspection Detail</div>
+        <span class="badge" id="statusBadge"></span>
+      </div>
+      <div class="topbar-right" id="topbarActions"></div>
+    </div>
+    <div class="content" id="mainContent">
+      <div class="loading"><div class="spinner"></div> Loading inspection...</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let inspection = null
+  let captures = []
+  let dispute = null
+  let adminData = null
+
+  const urlParams = new URLSearchParams(window.location.search)
+  const inspectionId = urlParams.get('id')
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast')
+    t.textContent = msg
+    t.className = `toast ${type}`
+    t.style.display = 'block'
+    setTimeout(() => { t.style.display = 'none' }, 3000)
+  }
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = 'login.html'; return; }
+
+    const { data: admin } = await supabase
+      .from('admins')
+      .select('id, first_name, last_name, role, is_active')
+      .eq('email', user.email)
+      .single()
+
+    if (!admin || !admin.is_active) {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+      return
+    }
+
+    adminData = admin
+    const initials = (admin.first_name?.[0] || '') + (admin.last_name?.[0] || '')
+    document.getElementById('adminAvatar').textContent = initials.toUpperCase()
+    document.getElementById('adminName').textContent = admin.first_name + ' ' + admin.last_name
+    document.getElementById('adminRole').textContent = admin.role === 'superadmin' ? 'Super Admin' : 'Admin'
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+    })
+
+    const { data: openDisputes } = await supabase
+      .from('disputes').select('id').not('status', 'in', '("Resolved","Dismissed")')
+    document.getElementById('disputeBadge').textContent = (openDisputes || []).length
+
+    if (!inspectionId) { window.location.href = 'inspections.html'; return; }
+    await loadInspection()
+  }
+
+  async function loadInspection() {
+    const { data, error } = await supabase
+      .from('inspections')
+      .select(`*, instructions(*), client:client_id(first_name, last_name, email), scout:scout_id(first_name, last_name, email)`)
+      .eq('id', inspectionId)
+      .single()
+
+    if (error || !data) { window.location.href = 'inspections.html'; return; }
+    inspection = data
+
+    const { data: captureData } = await supabase
+      .from('captures')
+      .select('*')
+      .eq('inspection_id', inspectionId)
+      .eq('is_deleted', false)
+      .order('capture_type', { ascending: true })
+      .order('recorded_at', { ascending: true })
+    captures = captureData || []
+
+    const { data: disputeData } = await supabase
+      .from('disputes')
+      .select('*')
+      .eq('inspection_id', inspectionId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    dispute = disputeData
+
+    if (inspection.scout_id) {
+      const { data: scoutProfile } = await supabase
+        .from('scout_profiles')
+        .select('rating, total_completions, scout_status, id_verified')
+        .eq('user_id', inspection.scout_id)
+        .single()
+      if (scoutProfile) inspection.scout_profile = scoutProfile
+    }
+
+    render()
+  }
+
+  function render() {
+    const badge = document.getElementById('statusBadge')
+    badge.className = `badge badge-${inspection.status}`
+    badge.textContent = inspection.status.replace('PendingPayment','Pending Payment').replace('InProgress','In Progress')
+
+    const actions = document.getElementById('topbarActions')
+    actions.innerHTML = ''
+
+    if (dispute && !['Resolved','Dismissed'].includes(dispute.status)) {
+      const btn = document.createElement('a')
+      btn.href = `dispute-detail.html?id=${dispute.id}`
+      btn.className = 'btn-action btn-view-dispute'
+      btn.innerHTML = '<i class="ti ti-alert-triangle" style="font-size:13px"></i> View dispute'
+      actions.appendChild(btn)
+    }
+
+    const typeLabel = inspection.inspection_type === 'external' ? 'External Only'
+      : inspection.inspection_type === 'internal' ? 'Internal Only'
+      : 'Internal & External'
+    const date = new Date(inspection.date).toLocaleDateString('en-AU', {day:'numeric',month:'long',year:'numeric'})
+    const createdAt = new Date(inspection.created_at).toLocaleDateString('en-AU', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+    const clientName = inspection.client ? inspection.client.first_name + ' ' + inspection.client.last_name : '—'
+    const scoutName = inspection.scout ? inspection.scout.first_name + ' ' + inspection.scout.last_name : 'Not assigned'
+    const clientInitials = inspection.client ? (inspection.client.first_name?.[0]||'') + (inspection.client.last_name?.[0]||'') : '?'
+    const scoutInitials = inspection.scout ? (inspection.scout.first_name?.[0]||'') + (inspection.scout.last_name?.[0]||'') : '?'
+    const total = inspection.pricing_snapshot?.total ? parseFloat(inspection.pricing_snapshot.total).toFixed(2) : '0.00'
+    const scoutPayout = inspection.pricing_snapshot?.pay_to_scout ? parseFloat(inspection.pricing_snapshot.pay_to_scout).toFixed(2) : '0.00'
+    const feeExGst = inspection.pricing_snapshot?.fee_excluding_gst ? parseFloat(inspection.pricing_snapshot.fee_excluding_gst).toFixed(2) : '0.00'
+    const gst = inspection.pricing_snapshot?.gst ? parseFloat(inspection.pricing_snapshot.gst).toFixed(2) : '0.00'
+
+    const html = `
+      <div class="layout">
+        <div>
+          ${dispute && !['Resolved','Dismissed'].includes(dispute.status) ? `
+            <div class="dispute-banner" onclick="window.location.href='dispute-detail.html?id=${dispute.id}'">
+              <i class="ti ti-alert-triangle"></i>
+              <div class="dispute-banner-info">
+                <div class="dispute-banner-title">Active dispute — ${dispute.reason?.replace(/([A-Z])/g,' $1').trim()}</div>
+                <div class="dispute-banner-sub">Raised ${new Date(dispute.created_at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})} · Payment on hold · Click to manage dispute</div>
+              </div>
+              <i class="ti ti-chevron-right" style="font-size:16px;color:#991B1B;flex-shrink:0"></i>
+            </div>` : ''}
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="ti ti-file-description"></i> Inspection Details</div>
+              <span style="font-size:11px;color:#aaa">ID: ${inspection.id.slice(0,8)}...</span>
+            </div>
+            <div class="card-body">
+              <div class="detail-grid">
+                <div><div class="det-label">Address</div><div class="det-val">${inspection.address}</div></div>
+                <div><div class="det-label">Date & Time</div><div class="det-val">${date} at ${inspection.time?.slice(0,5) || '—'}</div></div>
+                <div><div class="det-label">Type</div><div class="det-val">${typeLabel}</div></div>
+                <div><div class="det-label">Status</div><div class="det-val">${inspection.status.replace('PendingPayment','Pending Payment').replace('InProgress','In Progress')}</div></div>
+                <div><div class="det-label">Created</div><div class="det-val">${createdAt}</div></div>
+                ${inspection.property_link ? `<div><div class="det-label">Property link</div><div class="det-val"><a href="${inspection.property_link}" target="_blank">View listing ↗</a></div></div>` : '<div></div>'}
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="ti ti-users"></i> Parties</div></div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+              <div>
+                <div class="det-label" style="margin-bottom:6px">Client</div>
+                <div class="user-chip">
+                  <div class="user-av av-client">${clientInitials.toUpperCase()}</div>
+                  <div class="user-chip-info">
+                    <div class="user-chip-name">${clientName}</div>
+                    <div class="user-chip-sub">${inspection.client?.email || '—'}</div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="det-label" style="margin-bottom:6px">Scout</div>
+                <div class="user-chip">
+                  <div class="user-av av-scout">${scoutInitials.toUpperCase()}</div>
+                  <div class="user-chip-info">
+                    <div class="user-chip-name">${scoutName}</div>
+                    <div class="user-chip-sub">${inspection.scout?.email || 'Not yet assigned'}</div>
+                    ${inspection.scout_profile ? `<div class="user-chip-stats">${inspection.scout_profile.total_completions || 0} jobs · ${inspection.scout_profile.rating ? inspection.scout_profile.rating + '★' : 'no rating'} · ${inspection.scout_profile.id_verified ? '✅ ID verified' : '⚠️ Not verified'}</div>` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="ti ti-video"></i> Captured Videos</div>
+              <span style="font-size:12px;color:#999">${captures.length} video${captures.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div class="card-body">
+              ${captures.length === 0
+                ? '<div style="text-align:center;padding:20px;font-size:13px;color:#999">No videos submitted yet</div>'
+                : captures.map((cap, idx) => {
+                    const recAt = cap.recorded_at
+                      ? new Date(cap.recorded_at).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
+                      : '—'
+                    return `
+                      <div class="video-item">
+                        <div class="video-icon"><i class="ti ti-video"></i></div>
+                        <div class="video-info">
+                          <div class="video-name">${cap.capture_type === 'external' ? 'External' : 'Internal'} Video ${idx+1} — ${cap.file_name || 'Recording'}</div>
+                          <div class="video-meta">Recorded ${recAt}</div>
+                          ${cap.gps_latitude ? `<div class="video-gps"><i class="ti ti-map-pin" style="font-size:11px"></i> ${parseFloat(cap.gps_latitude).toFixed(4)}°S, ${parseFloat(cap.gps_longitude).toFixed(4)}°E verified</div>` : ''}
+                        </div>
+                        <div class="video-actions">
+                          <a class="btn-video btn-video-play" href="${cap.video_url}" target="_blank"><i class="ti ti-player-play" style="font-size:11px"></i> Play</a>
+                          <a class="btn-video btn-video-dl" href="${cap.video_url}" download="${cap.file_name||'capture'}"><i class="ti ti-download" style="font-size:11px"></i></a>
+                        </div>
+                      </div>`
+                  }).join('')}
+            </div>
+          </div>
+
+          ${inspection.instructions?.length > 0 ? `
+            <div class="card">
+              <div class="card-header"><div class="card-title"><i class="ti ti-list-check"></i> Recording Instructions</div></div>
+              <div class="card-body">
+                ${inspection.instructions.sort((a,b)=>a.display_order-b.display_order).map(inst => `
+                  <div class="instr-item">
+                    <i class="ti ${inst.is_checked ? 'ti-checkbox' : 'ti-square'}"></i>
+                    <div class="instr-text">${inst.text}</div>
+                  </div>`).join('')}
+              </div>
+            </div>` : ''}
+
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="ti ti-activity"></i> Status Timeline</div></div>
+            <div class="card-body">
+              ${renderTimeline()}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="ti ti-receipt"></i> Pricing</div></div>
+            <div class="card-body">
+              <div class="pricing-breakdown">
+                <div class="price-row"><span>Scout payout</span><span>$${scoutPayout}</span></div>
+                <div class="price-row"><span>Spekto fee (ex GST)</span><span>$${feeExGst}</span></div>
+                <div class="price-row"><span>GST</span><span>$${gst}</span></div>
+                <div class="price-row"><span>Total charged to client</span><span>$${total}</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-actions-card">
+            <div class="admin-actions-header">
+              <div class="admin-actions-title"><i class="ti ti-shield"></i> Admin Actions</div>
+            </div>
+            <div class="admin-actions-body">
+              ${dispute && !['Resolved','Dismissed'].includes(dispute.status) ? `
+                <button class="btn-admin-action btn-view-dispute-full" onclick="window.location.href='dispute-detail.html?id=${dispute.id}'">
+                  <i class="ti ti-alert-triangle" style="font-size:15px"></i> Manage dispute
+                </button>` : ''}
+              ${inspection.status === 'Completed' ? `
+                <button class="btn-admin-action btn-force-pay" onclick="forceStatus('PendingPayment')">
+                  <i class="ti ti-credit-card" style="font-size:15px"></i> Mark as pending payment
+                </button>` : ''}
+              ${inspection.status === 'PendingPayment' ? `
+                <button class="btn-admin-action btn-force-complete" onclick="forceStatus('Paid')">
+                  <i class="ti ti-circle-check" style="font-size:15px"></i> Mark as paid
+                </button>` : ''}
+              ${!['Cancelled','Paid','Disputed'].includes(inspection.status) ? `
+                <button class="btn-admin-action btn-force-cancel" onclick="forceStatus('Cancelled')">
+                  <i class="ti ti-x" style="font-size:15px"></i> Force cancel inspection
+                </button>` : ''}
+              ${inspection.status === 'Cancelled' || inspection.status === 'Paid' ? `
+                <div style="text-align:center;padding:12px;font-size:12px;color:#aaa">
+                  No actions available for ${inspection.status.toLowerCase()} inspections
+                </div>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>`
+
+    document.getElementById('mainContent').innerHTML = html
+  }
+
+  function renderTimeline() {
+    const statuses = ['Posted','Accepted','InProgress','Completed','PendingPayment','Paid']
+    const specialStatuses = ['Disputed','Cancelled']
+    const currentIdx = statuses.indexOf(inspection.status)
+    const isSpecial = specialStatuses.includes(inspection.status)
+
+    const labels = {
+      Posted: 'Inspection posted',
+      Accepted: 'Scout accepted',
+      InProgress: 'Recording in progress',
+      Completed: 'Capture submitted',
+      PendingPayment: 'Payment released by client',
+      Paid: 'Scout paid',
+      Disputed: 'Dispute raised',
+      Cancelled: 'Inspection cancelled'
+    }
+
+    let items = statuses.map((s, idx) => {
+      const isDone = isSpecial ? idx < currentIdx : idx <= currentIdx
+      const isActive = !isSpecial && idx === currentIdx
+      const dotClass = isDone ? 'tl-done' : isActive ? 'tl-active' : 'tl-pending'
+      const icon = isDone ? '<i class="ti ti-check" style="font-size:9px"></i>' : (idx + 1).toString()
+      return `
+        <div class="timeline-item">
+          <div class="tl-dot ${dotClass}">${icon}</div>
+          <div class="tl-line"></div>
+          <div class="tl-content">
+            <div class="tl-title">${labels[s]}</div>
+          </div>
+        </div>`
+    })
+
+    if (isSpecial) {
+      const dotClass = inspection.status === 'Disputed' ? 'tl-red' : 'tl-red'
+      items.push(`
+        <div class="timeline-item">
+          <div class="tl-dot ${dotClass}"><i class="ti ti-x" style="font-size:9px"></i></div>
+          <div class="tl-content">
+            <div class="tl-title" style="color:${inspection.status === 'Disputed' ? '#991B1B' : '#6B7280'}">${labels[inspection.status]}</div>
+          </div>
+        </div>`)
+    }
+
+    return items.join('')
+  }
+
+  window.forceStatus = async (newStatus) => {
+    const confirmMsg = {
+      Cancelled: 'Force cancel this inspection? This cannot be undone.',
+      Paid: 'Mark this inspection as paid? This will process the payout.',
+      PendingPayment: 'Mark this as pending payment?'
+    }
+    if (!confirm(confirmMsg[newStatus] || `Change status to ${newStatus}?`)) return
+
+    const { error } = await supabase
+      .from('inspections')
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', inspectionId)
+
+    if (!error) {
+      await supabase.from('admin_actions').insert({
+        admin_id: adminData.id,
+        action_type: 'StatusOverride',
+        target_table: 'inspections',
+        target_id: inspectionId,
+        previous_value: inspection.status,
+        new_value: newStatus,
+        notes: 'Admin force status change'
+      })
+      showToast(`Status updated to ${newStatus}`)
+      await loadInspection()
+    } else {
+      showToast('Error updating status', 'error')
+    }
+  }
+
+  init()
+</script>
+</body>
+</html>
