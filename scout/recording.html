@@ -145,6 +145,15 @@
   let checkedInstructions = new Set()
   let hadExistingCaptures = false
 
+  // Populate checkedInstructions from any is_checked values already saved
+  // in the database, so a returning Scout sees their previous checklist state.
+  function initChecklistState() {
+    if (!inspection.instructions) return
+    inspection.instructions.forEach(inst => {
+      if (inst.is_checked) checkedInstructions.add(inst.id)
+    })
+  }
+
   const urlParams = new URLSearchParams(window.location.search)
   const inspectionId = urlParams.get('id')
 
@@ -182,6 +191,7 @@
     getGPS()
     await markInProgress()
     await loadExistingCaptures()
+    initChecklistState()
     renderPage()
   }
 
@@ -299,13 +309,16 @@
           <div class="instructions-title">Recording Checklist</div>
           ${inspection.instructions
             .sort((a,b) => a.display_order - b.display_order)
-            .map(inst => `
+            .map(inst => {
+              const isChecked = checkedInstructions.has(inst.id)
+              return `
               <div class="instruction-check" onclick="toggleInstruction('${inst.id}')">
-                <div class="check-box" id="check-${inst.id}">
+                <div class="check-box${isChecked ? ' checked' : ''}" id="check-${inst.id}">
                   <i class="ti ti-check"></i>
                 </div>
-                <div class="check-label" id="label-${inst.id}">${inst.text}</div>
-              </div>`).join('')}
+                <div class="check-label${isChecked ? ' done' : ''}" id="label-${inst.id}">${inst.text}</div>
+              </div>`
+            }).join('')}
         </div>`
     }
 
@@ -436,14 +449,35 @@
     updateSubmitChecklist()
   }
 
-  window.toggleInstruction = (id) => {
-    if (checkedInstructions.has(id)) checkedInstructions.delete(id)
-    else checkedInstructions.add(id)
+  window.toggleInstruction = async (id) => {
+    const nowChecked = !checkedInstructions.has(id)
+    if (nowChecked) checkedInstructions.add(id)
+    else checkedInstructions.delete(id)
+
     const box = document.getElementById(`check-${id}`)
     const label = document.getElementById(`label-${id}`)
     if (box && label) {
-      box.className = 'check-box' + (checkedInstructions.has(id) ? ' checked' : '')
-      label.className = 'check-label' + (checkedInstructions.has(id) ? ' done' : '')
+      box.className = 'check-box' + (nowChecked ? ' checked' : '')
+      label.className = 'check-label' + (nowChecked ? ' done' : '')
+    }
+
+    // Persist immediately so the checklist state survives navigating away,
+    // the same way Save Progress persists video uploads.
+    const { error } = await supabase
+      .from('instructions')
+      .update({ is_checked: nowChecked })
+      .eq('id', id)
+
+    if (error) {
+      // Revert the local/visual state if the write failed, and let the
+      // Scout know rather than silently losing the change.
+      if (nowChecked) checkedInstructions.delete(id)
+      else checkedInstructions.add(id)
+      if (box && label) {
+        box.className = 'check-box' + (checkedInstructions.has(id) ? ' checked' : '')
+        label.className = 'check-label' + (checkedInstructions.has(id) ? ' done' : '')
+      }
+      showToast('Could not save checklist item. Try again.', 3000, true)
     }
   }
 
