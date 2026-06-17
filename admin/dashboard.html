@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Spekto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --dark: #1A0533; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 230px; background: var(--dark); display: flex; flex-direction: column; padding: 24px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .s-mark { width: 34px; height: 34px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -1px; }
+    .admin-tag { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+    .nav-section { padding: 16px 12px 4px; }
+    .nav-section-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px; margin-bottom: 4px; }
+    .nav { display: flex; flex-direction: column; gap: 1px; padding: 0 12px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px; cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.55); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
+    .nav-item i { font-size: 16px; flex-shrink: 0; }
+    .nav-badge { margin-left: auto; background: #DC2626; color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+    .sidebar-foot { margin-top: auto; padding: 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .admin-user { display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+    .admin-avatar { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .admin-info { flex: 1; min-width: 0; }
+    .admin-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .admin-role { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+    .btn-logout-sm { width: 28px; height: 28px; background: rgba(255,255,255,0.08); border: none; border-radius: 6px; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .btn-logout-sm:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .main { flex: 1; margin-left: 230px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .topbar-title { font-size: 17px; font-weight: 700; color: #0D0D0D; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .topbar-date { font-size: 12px; color: #999; }
+    .content { padding: 24px 28px; }
+    .welcome-banner { background: var(--dark); border-radius: 14px; padding: 22px 26px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+    .welcome-text h2 { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .welcome-text p { font-size: 13px; color: rgba(255,255,255,0.5); }
+    .welcome-stats { display: flex; gap: 24px; }
+    .welcome-stat { text-align: center; }
+    .welcome-stat-val { font-size: 22px; font-weight: 800; color: #fff; font-family: 'DM Sans', sans-serif; }
+    .welcome-stat-label { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 18px; cursor: pointer; transition: box-shadow 0.15s; }
+    .stat-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .stat-label { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .stat-label i { font-size: 14px; }
+    .stat-val { font-size: 28px; font-weight: 800; color: #0D0D0D; font-family: 'DM Sans', sans-serif; letter-spacing: -0.5px; }
+    .stat-sub { font-size: 11px; color: #aaa; margin-top: 4px; }
+    .stat-urgent { border-left: 3px solid #DC2626; }
+    .stat-warn { border-left: 3px solid #F59E0B; }
+    .stat-ok { border-left: 3px solid #22C55E; }
+    .stat-info { border-left: 3px solid var(--purple); }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .panel { background: #fff; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; }
+    .panel-header { padding: 16px 20px; border-bottom: 1px solid #F3F3F3; display: flex; align-items: center; justify-content: space-between; }
+    .panel-title { font-size: 14px; font-weight: 700; color: #0D0D0D; display: flex; align-items: center; gap: 8px; }
+    .panel-title i { font-size: 16px; color: var(--purple); }
+    .btn-view-all { font-size: 12px; font-weight: 600; color: var(--purple); text-decoration: none; }
+    .panel-body { padding: 16px 20px; }
+    .activity-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid #F9F9F9; }
+    .activity-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .activity-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+    .dot-purple { background: var(--purple); }
+    .dot-green { background: #22C55E; }
+    .dot-red { background: #DC2626; }
+    .dot-amber { background: #F59E0B; }
+    .dot-blue { background: #3B82F6; }
+    .activity-text { font-size: 13px; color: #444; line-height: 1.5; flex: 1; }
+    .activity-time { font-size: 11px; color: #bbb; flex-shrink: 0; }
+    .dispute-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #F9F9F9; cursor: pointer; }
+    .dispute-item:hover { opacity: 0.8; }
+    .dispute-item:last-child { border-bottom: none; }
+    .dispute-icon { width: 34px; height: 34px; border-radius: 8px; background: #FEE2E2; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .dispute-icon i { font-size: 16px; color: #991B1B; }
+    .dispute-info { flex: 1; min-width: 0; }
+    .dispute-addr { font-size: 13px; font-weight: 600; color: #0D0D0D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dispute-meta { font-size: 11px; color: #999; margin-top: 2px; }
+    .sla-pill { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 8px; white-space: nowrap; flex-shrink: 0; }
+    .sla-ok { background: #DCFCE7; color: #166534; }
+    .sla-warn { background: #FEF9C3; color: #854D0E; }
+    .sla-urgent { background: #FEE2E2; color: #991B1B; }
+    .verification-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #F9F9F9; cursor: pointer; }
+    .verification-item:hover { opacity: 0.8; }
+    .verification-item:last-child { border-bottom: none; }
+    .scout-avatar-sm { width: 34px; height: 34px; border-radius: 50%; background: #EDE4F7; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--purple); flex-shrink: 0; }
+    .verification-info { flex: 1; min-width: 0; }
+    .verification-name { font-size: 13px; font-weight: 600; color: #0D0D0D; }
+    .verification-meta { font-size: 11px; color: #999; margin-top: 2px; }
+    .btn-review { height: 28px; background: var(--purple); color: #fff; border: none; border-radius: 6px; padding: 0 12px; font-size: 11px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap; flex-shrink: 0; }
+    .empty-panel { text-align: center; padding: 32px 20px; color: #999; font-size: 13px; }
+    .empty-panel i { font-size: 28px; color: #E0E0E0; margin-bottom: 10px; display: block; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 32px; color: #999; font-size: 13px; gap: 8px; }
+    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 900px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .two-col { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div class="s-name">SPEKTO</div>
+        <div class="admin-tag">Admin Portal</div>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Overview</div>
+      <div class="nav">
+        <a class="nav-item active" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Operations</div>
+      <div class="nav">
+        <a class="nav-item" href="inspections.html"><i class="ti ti-clipboard-list"></i> Inspections</a>
+        <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> Disputes <span class="nav-badge" id="disputeBadge">0</span></a>
+        <a class="nav-item" href="payouts.html"><i class="ti ti-wallet"></i> Payouts</a>
+        <a class="nav-item" href="verification.html"><i class="ti ti-id-badge"></i> Verification <span class="nav-badge" id="verifyBadge">0</span></a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Users</div>
+      <div class="nav">
+        <a class="nav-item" href="users.html"><i class="ti ti-users"></i> All Users</a>
+        <a class="nav-item" href="scouts.html"><i class="ti ti-camera"></i> Scouts</a>
+        <a class="nav-item" href="clients.html"><i class="ti ti-building"></i> Clients</a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-label">Platform</div>
+      <div class="nav">
+        <a class="nav-item" href="marketplace.html"><i class="ti ti-shopping-bag"></i> Marketplace</a>
+        <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+      </div>
+    </div>
+
+    <div class="sidebar-foot">
+      <div class="admin-user">
+        <div class="admin-avatar" id="adminAvatar">?</div>
+        <div class="admin-info">
+          <div class="admin-name" id="adminName">Loading...</div>
+          <div class="admin-role" id="adminRole">Admin</div>
+        </div>
+        <button class="btn-logout-sm" id="logoutBtn" title="Sign out">
+          <i class="ti ti-logout"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">Dashboard</div>
+      <div class="topbar-right">
+        <div class="topbar-date" id="topbarDate"></div>
+      </div>
+    </div>
+
+    <div class="content" id="mainContent">
+      <div class="loading"><div class="spinner"></div> Loading dashboard...</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL
+  )
+
+  let adminData = null
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = 'login.html'; return; }
+
+    const { data: admin } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('email', user.email)
+      .single()
+
+    if (!admin || !admin.is_active) {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+      return
+    }
+
+    adminData = admin
+    const initials = (admin.first_name?.[0] || '') + (admin.last_name?.[0] || '')
+    document.getElementById('adminAvatar').textContent = initials.toUpperCase()
+    document.getElementById('adminName').textContent = admin.first_name + ' ' + admin.last_name
+    document.getElementById('adminRole').textContent = admin.role === 'superadmin' ? 'Super Admin' : 'Admin'
+
+    document.getElementById('topbarDate').textContent = new Date().toLocaleDateString('en-AU', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    })
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+    })
+
+    await loadDashboard()
+  }
+
+  async function loadDashboard() {
+    const [
+      { data: inspections },
+      { data: disputes },
+      { data: scouts },
+      { data: clients },
+      { data: pendingVerification }
+    ] = await Promise.all([
+      supabase.from('inspections').select('id, status, created_at, address, date, pricing_snapshot'),
+      supabase.from('disputes').select('*, inspections(address)').order('created_at', { ascending: false }),
+      supabase.from('scout_profiles').select('id, scout_status, created_at'),
+      supabase.from('client_profiles').select('id, created_at'),
+      supabase.from('scout_profiles').select('id, user_id, created_at').eq('scout_status', 'PendingVerification')
+    ])
+
+    const allInspections = inspections || []
+    const allDisputes = disputes || []
+    const allScouts = scouts || []
+    const allClients = clients || []
+    const pendingVerifications = pendingVerification || []
+
+    const openDisputes = allDisputes.filter(d => !['Resolved','Dismissed'].includes(d.status))
+    const overdueDisputes = allDisputes.filter(d => {
+      if (['Resolved','Dismissed'].includes(d.status)) return false
+      return d.due_at && new Date(d.due_at) < new Date()
+    })
+
+    document.getElementById('disputeBadge').textContent = openDisputes.length
+    document.getElementById('verifyBadge').textContent = pendingVerifications.length
+
+    const totalRevenue = allInspections
+      .filter(i => ['PendingPayment','Paid'].includes(i.status))
+      .reduce((sum, i) => sum + (parseFloat(i.pricing_snapshot?.total) || 0), 0)
+
+    const postedCount = allInspections.filter(i => i.status === 'Posted').length
+    const activeCount = allInspections.filter(i => ['Accepted','InProgress'].includes(i.status)).length
+    const completedCount = allInspections.filter(i => ['Completed','PendingPayment','Paid'].includes(i.status)).length
+    const disputedCount = allInspections.filter(i => i.status === 'Disputed').length
+
+    const recentDisputes = openDisputes.slice(0, 5)
+    const recentActivity = buildActivity(allInspections, allDisputes)
+
+    const html = `
+      <div class="welcome-banner">
+        <div class="welcome-text">
+          <h2>Welcome back, ${adminData.first_name}</h2>
+          <p>Here is what needs your attention today</p>
+        </div>
+        <div class="welcome-stats">
+          <div class="welcome-stat">
+            <div class="welcome-stat-val">${openDisputes.length}</div>
+            <div class="welcome-stat-label">Open disputes</div>
+          </div>
+          <div class="welcome-stat">
+            <div class="welcome-stat-val">${pendingVerifications.length}</div>
+            <div class="welcome-stat-label">Pending verifications</div>
+          </div>
+          <div class="welcome-stat">
+            <div class="welcome-stat-val">$${totalRevenue.toFixed(0)}</div>
+            <div class="welcome-stat-label">Total revenue</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card stat-info" onclick="window.location.href='inspections.html'">
+          <div class="stat-label"><i class="ti ti-clipboard-list" style="color:var(--purple)"></i> Total Inspections</div>
+          <div class="stat-val">${allInspections.length}</div>
+          <div class="stat-sub">${postedCount} posted · ${activeCount} active · ${completedCount} completed</div>
+        </div>
+        <div class="stat-card stat-urgent" onclick="window.location.href='disputes.html'">
+          <div class="stat-label"><i class="ti ti-alert-triangle" style="color:#DC2626"></i> Open Disputes</div>
+          <div class="stat-val">${openDisputes.length}</div>
+          <div class="stat-sub">${overdueDisputes.length > 0 ? `⚠️ ${overdueDisputes.length} overdue` : 'All within SLA'}</div>
+        </div>
+        <div class="stat-card stat-warn" onclick="window.location.href='verification.html'">
+          <div class="stat-label"><i class="ti ti-id-badge" style="color:#F59E0B"></i> Pending Verification</div>
+          <div class="stat-val">${pendingVerifications.length}</div>
+          <div class="stat-sub">Scout ID documents awaiting review</div>
+        </div>
+        <div class="stat-card stat-ok">
+          <div class="stat-label"><i class="ti ti-users" style="color:#22C55E"></i> Total Users</div>
+          <div class="stat-val">${allScouts.length + allClients.length}</div>
+          <div class="stat-sub">${allClients.length} clients · ${allScouts.length} scouts</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><i class="ti ti-alert-triangle"></i> Open Disputes</div>
+            <a class="btn-view-all" href="disputes.html">View all →</a>
+          </div>
+          <div class="panel-body">
+            ${recentDisputes.length === 0
+              ? '<div class="empty-panel"><i class="ti ti-mood-happy"></i>No open disputes</div>'
+              : recentDisputes.map(d => {
+                  const hoursLeft = d.due_at ? Math.floor((new Date(d.due_at) - new Date()) / 3600000) : null
+                  const slaClass = hoursLeft === null ? '' : hoursLeft > 24 ? 'sla-ok' : hoursLeft > 6 ? 'sla-warn' : 'sla-urgent'
+                  const slaText = hoursLeft === null ? '' : hoursLeft > 0 ? `${hoursLeft}h left` : 'Overdue'
+                  return `
+                    <div class="dispute-item" onclick="window.location.href='disputes.html'">
+                      <div class="dispute-icon"><i class="ti ti-alert-triangle"></i></div>
+                      <div class="dispute-info">
+                        <div class="dispute-addr">${d.inspections?.address || '—'}</div>
+                        <div class="dispute-meta">${d.reason?.replace(/([A-Z])/g, ' $1').trim() || '—'} · ${d.status}</div>
+                      </div>
+                      ${slaText ? `<span class="sla-pill ${slaClass}">${slaText}</span>` : ''}
+                    </div>`
+                }).join('')}
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><i class="ti ti-id-badge"></i> Pending Verifications</div>
+            <a class="btn-view-all" href="verification.html">View all →</a>
+          </div>
+          <div class="panel-body">
+            ${pendingVerifications.length === 0
+              ? '<div class="empty-panel"><i class="ti ti-circle-check"></i>No pending verifications</div>'
+              : pendingVerifications.slice(0,5).map(v => {
+                  const daysAgo = Math.floor((new Date() - new Date(v.created_at)) / 86400000)
+                  return `
+                    <div class="verification-item" onclick="window.location.href='verification.html'">
+                      <div class="scout-avatar-sm">SC</div>
+                      <div class="verification-info">
+                        <div class="verification-name">Scout ID verification</div>
+                        <div class="verification-meta">Submitted ${daysAgo === 0 ? 'today' : daysAgo + ' day' + (daysAgo > 1 ? 's' : '') + ' ago'}</div>
+                      </div>
+                      <button class="btn-review">Review</button>
+                    </div>`
+                }).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title"><i class="ti ti-activity"></i> Recent Activity</div>
+        </div>
+        <div class="panel-body">
+          ${recentActivity.length === 0
+            ? '<div class="empty-panel"><i class="ti ti-clock"></i>No recent activity</div>'
+            : recentActivity.map(a => `
+                <div class="activity-item">
+                  <div class="activity-dot dot-${a.color}"></div>
+                  <div class="activity-text">${a.text}</div>
+                  <div class="activity-time">${a.time}</div>
+                </div>`).join('')}
+        </div>
+      </div>`
+
+    document.getElementById('mainContent').innerHTML = html
+  }
+
+  function buildActivity(inspections, disputes) {
+    const events = []
+
+    inspections.slice(0, 10).forEach(i => {
+      const time = timeAgo(i.created_at)
+      if (i.status === 'Posted') events.push({ color: 'purple', text: `New inspection posted at ${i.address}`, time })
+      else if (i.status === 'Completed') events.push({ color: 'green', text: `Inspection completed at ${i.address}`, time })
+      else if (i.status === 'Disputed') events.push({ color: 'red', text: `Dispute raised on inspection at ${i.address}`, time })
+      else if (i.status === 'PendingPayment') events.push({ color: 'amber', text: `Payment released for ${i.address}`, time })
+    })
+
+    disputes.slice(0, 5).forEach(d => {
+      const time = timeAgo(d.created_at)
+      if (d.status === 'Resolved') events.push({ color: 'green', text: `Dispute resolved for ${d.inspections?.address || 'inspection'}`, time })
+      else if (d.status === 'Submitted') events.push({ color: 'red', text: `New dispute submitted for ${d.inspections?.address || 'inspection'}`, time })
+    })
+
+    return events
+      .sort((a, b) => 0)
+      .slice(0, 8)
+  }
+
+  function timeAgo(dateStr) {
+    const diff = Math.floor((new Date() - new Date(dateStr)) / 60000)
+    if (diff < 1) return 'just now'
+    if (diff < 60) return `${diff}m ago`
+    if (diff < 1440) return `${Math.floor(diff/60)}h ago`
+    return `${Math.floor(diff/1440)}d ago`
+  }
+
+  init()
+</script>
+</body>
+</html>
