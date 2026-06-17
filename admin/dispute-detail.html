@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dispute Detail - Spekto Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --dark: #1A0533; --red: #DC2626; --green: #16A34A; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 230px; background: var(--dark); display: flex; flex-direction: column; padding: 24px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .s-mark { width: 34px; height: 34px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -1px; }
+    .admin-tag { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+    .nav-section { padding: 16px 12px 4px; }
+    .nav-section-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px; margin-bottom: 4px; }
+    .nav { display: flex; flex-direction: column; gap: 1px; padding: 0 12px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px; font-size: 13px; color: rgba(255,255,255,0.55); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
+    .nav-item i { font-size: 16px; flex-shrink: 0; }
+    .nav-badge { margin-left: auto; background: #DC2626; color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+    .sidebar-foot { margin-top: auto; padding: 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .admin-user { display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+    .admin-avatar { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .admin-info { flex: 1; min-width: 0; }
+    .admin-name-s { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .admin-role-s { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+    .btn-logout-sm { width: 28px; height: 28px; background: rgba(255,255,255,0.08); border: none; border-radius: 6px; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .main { flex: 1; margin-left: 230px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; flex-wrap: wrap; gap: 10px; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .back-btn { width: 34px; height: 34px; border-radius: 7px; border: 1.5px solid #E0E0E0; background: #fff; display: flex; align-items: center; justify-content: center; text-decoration: none; color: #444; font-size: 16px; }
+    .topbar-title { font-size: 16px; font-weight: 700; color: #0D0D0D; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .badge { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+    .badge-Submitted { background: #EDE4F7; color: #560591; }
+    .badge-UnderReview { background: #E0F2FE; color: #0369A1; }
+    .badge-AwaitingResponse { background: #FEF9C3; color: #854D0E; }
+    .badge-DecisionMade { background: #EDE9FE; color: #5B21B6; }
+    .badge-Resolved { background: #DCFCE7; color: #166534; }
+    .badge-Dismissed { background: #F3F4F6; color: #6B7280; }
+    .btn-action { height: 36px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 6px; padding: 0 14px; border: none; }
+    .btn-status { background: var(--tint); color: var(--purple); }
+    .content { padding: 20px 28px; }
+    .layout { display: grid; grid-template-columns: 1fr 380px; gap: 16px; align-items: start; }
+    .card { background: #fff; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 14px; overflow: hidden; }
+    .card-header { padding: 14px 18px; border-bottom: 1px solid #F3F3F3; display: flex; align-items: center; justify-content: space-between; }
+    .card-title { font-size: 13px; font-weight: 700; color: #0D0D0D; display: flex; align-items: center; gap: 7px; }
+    .card-title i { font-size: 15px; color: var(--purple); }
+    .card-body { padding: 16px 18px; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .det-label { font-size: 10px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
+    .det-val { font-size: 13px; font-weight: 600; color: #0D0D0D; }
+    .det-val a { color: var(--purple); text-decoration: none; }
+    .user-chip { display: flex; align-items: center; gap: 8px; }
+    .user-chip-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+    .av-client { background: #E1F5EE; color: #085041; }
+    .av-scout { background: #FAEEDA; color: #633806; }
+    .user-chip-name { font-size: 13px; font-weight: 600; color: #0D0D0D; }
+    .user-chip-sub { font-size: 11px; color: #999; }
+    .stat-row { display: flex; gap: 8px; margin-top: 10px; }
+    .stat-chip { flex: 1; background: #F7F5FA; border-radius: 8px; padding: 8px 10px; text-align: center; }
+    .stat-chip-val { font-size: 16px; font-weight: 800; color: #0D0D0D; font-family: 'DM Sans', sans-serif; }
+    .stat-chip-label { font-size: 10px; color: #999; margin-top: 2px; }
+    .amount-hold { background: #FEF9C3; border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+    .amount-hold-label { font-size: 12px; font-weight: 600; color: #854D0E; }
+    .amount-hold-val { font-size: 20px; font-weight: 800; color: #854D0E; font-family: 'DM Sans', sans-serif; }
+    .video-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #F3F3F3; }
+    .video-item:last-child { border-bottom: none; }
+    .video-icon { width: 36px; height: 36px; background: var(--tint); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .video-icon i { font-size: 16px; color: var(--purple); }
+    .video-info { flex: 1; min-width: 0; }
+    .video-name { font-size: 12px; font-weight: 600; color: #0D0D0D; }
+    .video-meta { font-size: 11px; color: #999; margin-top: 2px; }
+    .video-gps { display: flex; align-items: center; gap: 3px; font-size: 11px; color: var(--green); margin-top: 2px; }
+    .video-actions { display: flex; gap: 6px; }
+    .btn-video { height: 26px; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; padding: 0 8px; border: none; display: flex; align-items: center; gap: 3px; text-decoration: none; }
+    .btn-video-play { background: var(--tint); color: var(--purple); }
+    .btn-video-dl { background: #F3F4F6; color: #444; }
+    .timeline-item { display: flex; gap: 10px; padding-bottom: 14px; position: relative; }
+    .timeline-item:last-child { padding-bottom: 0; }
+    .tl-line { position: absolute; left: 9px; top: 20px; bottom: 0; width: 1px; background: #F0F0F0; }
+    .timeline-item:last-child .tl-line { display: none; }
+    .tl-dot { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; z-index: 1; }
+    .tl-done { background: #DCFCE7; color: var(--green); }
+    .tl-active { background: var(--tint); color: var(--purple); }
+    .tl-pending { background: #F3F4F6; color: #aaa; border: 1px solid #E0E0E0; }
+    .tl-content { flex: 1; }
+    .tl-title { font-size: 12px; font-weight: 600; color: #0D0D0D; }
+    .tl-desc { font-size: 11px; color: #999; margin-top: 2px; }
+    .tl-time { font-size: 10px; color: #bbb; margin-top: 2px; }
+    .msg-tabs { display: flex; border-bottom: 1px solid #F3F3F3; }
+    .msg-tab { flex: 1; padding: 8px; font-size: 12px; font-weight: 600; color: #999; cursor: pointer; text-align: center; border-bottom: 2px solid transparent; transition: all 0.15s; }
+    .msg-tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+    .messages { padding: 12px; display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+    .msg { display: flex; flex-direction: column; gap: 3px; }
+    .msg.outgoing { align-items: flex-end; }
+    .msg.incoming { align-items: flex-start; }
+    .msg-meta { display: flex; align-items: center; gap: 5px; }
+    .msg-sender { font-size: 10px; color: #aaa; font-weight: 600; }
+    .msg-time { font-size: 10px; color: #ccc; }
+    .bubble { padding: 8px 12px; border-radius: 10px; max-width: 85%; font-size: 12px; line-height: 1.5; color: #0D0D0D; }
+    .bubble-admin-out { background: var(--tint); border-bottom-right-radius: 3px; }
+    .bubble-user-in { background: #F3F4F6; border-bottom-left-radius: 3px; }
+    .bubble-internal { background: #FEF9C3; border-bottom-right-radius: 3px; }
+    .bubble-system { background: #F3F4F6; border-radius: 8px; font-size: 11px; color: #999; text-align: center; max-width: 100%; }
+    .msg-input-area { padding: 10px 12px; border-top: 1px solid #F3F3F3; }
+    .msg-input-row { display: flex; gap: 6px; align-items: flex-end; }
+    .msg-textarea { flex: 1; border: 1.5px solid #E0E0E0; border-radius: 8px; padding: 8px 10px; font-size: 12px; font-family: 'Inter', sans-serif; color: #0D0D0D; resize: none; outline: none; min-height: 36px; max-height: 80px; transition: border-color 0.15s; }
+    .msg-textarea:focus { border-color: var(--purple); }
+    .btn-send { height: 36px; background: var(--purple); color: #fff; border: none; border-radius: 8px; padding: 0 12px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .internal-toggle { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 11px; color: #999; cursor: pointer; }
+    .internal-toggle input { accent-color: var(--purple); }
+    .resolution-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+    .resolution-header { padding: 14px 18px; border-bottom: 1px solid #F3F3F3; }
+    .resolution-title { font-size: 13px; font-weight: 700; color: #0D0D0D; display: flex; align-items: center; gap: 7px; }
+    .resolution-title i { font-size: 15px; color: var(--red); }
+    .resolution-body { padding: 16px 18px; }
+    .resolution-option { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border: 1.5px solid #E0E0E0; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+    .resolution-option:hover { border-color: var(--purple); background: var(--tint); }
+    .resolution-option.selected { border-color: var(--purple); background: var(--tint); }
+    .resolution-option input { accent-color: var(--purple); flex-shrink: 0; }
+    .resolution-option-label { font-size: 13px; font-weight: 600; color: #0D0D0D; }
+    .resolution-option.selected .resolution-option-label { color: var(--purple); }
+    .resolution-option-sub { font-size: 11px; color: #999; margin-top: 1px; }
+    .resolution-notes { width: 100%; border: 1.5px solid #E0E0E0; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: 'Inter', sans-serif; color: #0D0D0D; resize: vertical; min-height: 80px; outline: none; margin-top: 10px; transition: border-color 0.15s; }
+    .resolution-notes:focus { border-color: var(--purple); }
+    .resolution-actions { display: flex; gap: 10px; margin-top: 12px; }
+    .btn-confirm-res { flex: 2; height: 44px; background: var(--dark); color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .btn-confirm-res:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-save-draft { flex: 1; height: 44px; background: #fff; color: #444; border: 1.5px solid #E0E0E0; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .resolved-banner { background: #F0FDF4; border: 1.5px solid #86EFAC; border-radius: 10px; padding: 14px 16px; }
+    .resolved-title { font-size: 14px; font-weight: 700; color: var(--green); margin-bottom: 4px; }
+    .resolved-sub { font-size: 12px; color: #166534; line-height: 1.5; }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #1F2937; color: #fff; font-size: 13px; font-weight: 500; padding: 12px 20px; border-radius: 10px; z-index: 999; display: none; }
+    .toast.success { background: #166534; }
+    .toast.error { background: #991B1B; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div class="s-name">SPEKTO</div>
+        <div class="admin-tag">Admin Portal</div>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Overview</div>
+      <div class="nav"><a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Operations</div>
+      <div class="nav">
+        <a class="nav-item" href="inspections.html"><i class="ti ti-clipboard-list"></i> Inspections</a>
+        <a class="nav-item active" href="disputes.html"><i class="ti ti-alert-triangle"></i> Disputes</a>
+        <a class="nav-item" href="payouts.html"><i class="ti ti-wallet"></i> Payouts</a>
+        <a class="nav-item" href="verification.html"><i class="ti ti-id-badge"></i> Verification</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Users</div>
+      <div class="nav">
+        <a class="nav-item" href="users.html"><i class="ti ti-users"></i> All Users</a>
+        <a class="nav-item" href="scouts.html"><i class="ti ti-camera"></i> Scouts</a>
+        <a class="nav-item" href="clients.html"><i class="ti ti-building"></i> Clients</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Platform</div>
+      <div class="nav">
+        <a class="nav-item" href="marketplace.html"><i class="ti ti-shopping-bag"></i> Marketplace</a>
+        <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+      </div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="admin-user">
+        <div class="admin-avatar" id="adminAvatar">?</div>
+        <div class="admin-info">
+          <div class="admin-name-s" id="adminName">Loading...</div>
+          <div class="admin-role-s" id="adminRole">Admin</div>
+        </div>
+        <button class="btn-logout-sm" id="logoutBtn"><i class="ti ti-logout"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <a class="back-btn" href="disputes.html">&#8592;</a>
+        <div class="topbar-title" id="topbarTitle">Dispute Detail</div>
+        <span class="badge" id="statusBadge"></span>
+      </div>
+      <div class="topbar-right" id="topbarActions"></div>
+    </div>
+
+    <div class="content" id="mainContent">
+      <div class="loading"><div class="spinner"></div> Loading dispute...</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let dispute = null
+  let inspection = null
+  let captures = []
+  let messages = []
+  let adminData = null
+  let currentMsgTab = 'client'
+  let selectedResolution = null
+
+  const urlParams = new URLSearchParams(window.location.search)
+  const disputeId = urlParams.get('id')
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast')
+    t.textContent = msg
+    t.className = `toast ${type}`
+    t.style.display = 'block'
+    setTimeout(() => { t.style.display = 'none' }, 3000)
+  }
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = 'login.html'; return; }
+
+    const { data: admin } = await supabase
+      .from('admins')
+      .select('id, first_name, last_name, role, is_active')
+      .eq('email', user.email)
+      .single()
+
+    if (!admin || !admin.is_active) {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+      return
+    }
+
+    adminData = admin
+    const initials = (admin.first_name?.[0] || '') + (admin.last_name?.[0] || '')
+    document.getElementById('adminAvatar').textContent = initials.toUpperCase()
+    document.getElementById('adminName').textContent = admin.first_name + ' ' + admin.last_name
+    document.getElementById('adminRole').textContent = admin.role === 'superadmin' ? 'Super Admin' : 'Admin'
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+    })
+
+    if (!disputeId) { window.location.href = 'disputes.html'; return; }
+    await loadDispute()
+  }
+
+  async function loadDispute() {
+    const { data: d, error } = await supabase
+      .from('disputes')
+      .select(`*, inspections(*, instructions(*)), raised_by_user:raised_by(first_name, last_name, email), assigned_admin:assigned_to(first_name, last_name)`)
+      .eq('id', disputeId)
+      .single()
+
+    if (error || !d) { window.location.href = 'disputes.html'; return; }
+    dispute = d
+    inspection = d.inspections
+
+    const { data: captureData } = await supabase
+      .from('captures')
+      .select('*')
+      .eq('inspection_id', inspection.id)
+      .eq('is_deleted', false)
+      .order('capture_type', { ascending: true })
+      .order('recorded_at', { ascending: true })
+    captures = captureData || []
+
+    const { data: msgData } = await supabase
+      .from('dispute_messages')
+      .select('*')
+      .eq('dispute_id', disputeId)
+      .order('created_at', { ascending: true })
+    messages = msgData || []
+
+    if (inspection.scout_id) {
+      const { data: scoutData } = await supabase
+        .from('users')
+        .select('first_name, last_name, email')
+        .eq('id', inspection.scout_id)
+        .single()
+      inspection.scout = scoutData
+    }
+
+    render()
+  }
+
+  function render() {
+    const badge = document.getElementById('statusBadge')
+    badge.className = `badge badge-${dispute.status}`
+    badge.textContent = dispute.status.replace(/([A-Z])/g, ' $1').trim()
+
+    if (!['Resolved','Dismissed'].includes(dispute.status)) {
+      const updateBtn = document.createElement('button')
+      updateBtn.className = 'btn-action btn-status'
+      updateBtn.innerHTML = '<i class="ti ti-edit" style="font-size:13px"></i> Update status'
+      updateBtn.addEventListener('click', showStatusModal)
+      document.getElementById('topbarActions').appendChild(updateBtn)
+    }
+
+    const clientName = dispute.raised_by_user
+      ? dispute.raised_by_user.first_name + ' ' + dispute.raised_by_user.last_name : '—'
+    const scoutName = inspection.scout
+      ? inspection.scout.first_name + ' ' + inspection.scout.last_name : '—'
+    const amount = inspection.pricing_snapshot?.total
+      ? '$' + parseFloat(inspection.pricing_snapshot.total).toFixed(2) : '—'
+    const scoutPayout = inspection.pricing_snapshot?.pay_to_scout
+      ? '$' + parseFloat(inspection.pricing_snapshot.pay_to_scout).toFixed(2) : '—'
+    const typeLabel = inspection.inspection_type === 'external' ? 'External Only'
+      : inspection.inspection_type === 'internal' ? 'Internal Only'
+      : 'Internal & External'
+    const createdAt = new Date(dispute.created_at).toLocaleDateString('en-AU', {
+      day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    })
+    const hoursLeft = dispute.due_at
+      ? Math.floor((new Date(dispute.due_at) - new Date()) / 3600000) : null
+    const slaText = hoursLeft === null ? '—'
+      : hoursLeft < 0 ? '⚠️ Overdue'
+      : `${hoursLeft} hours remaining`
+
+    const html = `
+      <div class="layout">
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="ti ti-file-description"></i> Inspection Details</div>
+            </div>
+            <div class="card-body">
+              <div class="detail-grid">
+                <div><div class="det-label">Address</div><div class="det-val">${inspection.address}</div></div>
+                <div><div class="det-label">Date & Time</div><div class="det-val">${new Date(inspection.date).toLocaleDateString('en-AU', {day:'numeric',month:'long',year:'numeric'})} at ${inspection.time?.slice(0,5)}</div></div>
+                <div><div class="det-label">Type</div><div class="det-val">${typeLabel}</div></div>
+                <div><div class="det-label">Amount at stake</div><div class="det-val">${amount}</div></div>
+              </div>
+              <div style="margin-top:14px;display:flex;gap:12px;flex-wrap:wrap">
+                <div>
+                  <div class="det-label">Client</div>
+                  <div class="user-chip" style="margin-top:4px">
+                    <div class="user-chip-avatar av-client">${clientName.split(' ').map(n=>n[0]).join('').toUpperCase()}</div>
+                    <div>
+                      <div class="user-chip-name">${clientName}</div>
+                      <div class="user-chip-sub">${dispute.raised_by_user?.email || ''}</div>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div class="det-label">Scout</div>
+                  <div class="user-chip" style="margin-top:4px">
+                    <div class="user-chip-avatar av-scout">${scoutName !== '—' ? scoutName.split(' ').map(n=>n[0]).join('').toUpperCase() : '?'}</div>
+                    <div>
+                      <div class="user-chip-name">${scoutName}</div>
+                      <div class="user-chip-sub">${inspection.scout?.email || 'Not assigned'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="stat-row">
+                <div class="stat-chip"><div class="stat-chip-val">${captures.length}</div><div class="stat-chip-label">Videos</div></div>
+                <div class="stat-chip"><div class="stat-chip-val">${captures.filter(c=>c.gps_latitude).length}</div><div class="stat-chip-label">GPS verified</div></div>
+                <div class="stat-chip"><div class="stat-chip-val">${scoutPayout}</div><div class="stat-chip-label">Scout payout</div></div>
+              </div>
+              <div class="amount-hold">
+                <div class="amount-hold-label"><i class="ti ti-lock" style="font-size:14px;margin-right:4px"></i> Amount on hold</div>
+                <div class="amount-hold-val">${amount}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="ti ti-alert-triangle"></i> Dispute Details</div>
+            </div>
+            <div class="card-body">
+              <div class="detail-grid">
+                <div><div class="det-label">Dispute type</div><div class="det-val">${dispute.dispute_type?.replace(/([A-Z])/g,' $1').trim() || '—'}</div></div>
+                <div><div class="det-label">Reason</div><div class="det-val">${dispute.reason?.replace(/([A-Z])/g,' $1').trim() || '—'}</div></div>
+                <div><div class="det-label">Raised</div><div class="det-val">${createdAt}</div></div>
+                <div><div class="det-label">SLA</div><div class="det-val" style="color:${hoursLeft !== null && hoursLeft < 6 ? '#DC2626' : '#0D0D0D'}">${slaText}</div></div>
+              </div>
+              ${dispute.description ? `<div style="margin-top:12px;background:#F7F5FA;border-radius:8px;padding:12px;font-size:13px;color:#555;line-height:1.6">"${dispute.description}"</div>` : ''}
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="ti ti-video"></i> Submitted Videos</div>
+            </div>
+            <div class="card-body">
+              ${captures.length === 0
+                ? '<div style="text-align:center;padding:20px;font-size:13px;color:#999">No videos submitted</div>'
+                : captures.map((cap, idx) => {
+                    const recAt = cap.recorded_at
+                      ? new Date(cap.recorded_at).toLocaleString('en-AU', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
+                      : '—'
+                    return `
+                      <div class="video-item">
+                        <div class="video-icon"><i class="ti ti-video"></i></div>
+                        <div class="video-info">
+                          <div class="video-name">${cap.capture_type === 'external' ? 'External' : 'Internal'} Video ${idx+1} — ${cap.file_name || 'Recording'}</div>
+                          <div class="video-meta">Recorded ${recAt}</div>
+                          ${cap.gps_latitude ? `<div class="video-gps"><i class="ti ti-map-pin" style="font-size:11px"></i> ${parseFloat(cap.gps_latitude).toFixed(4)}°S verified</div>` : ''}
+                        </div>
+                        <div class="video-actions">
+                          <a class="btn-video btn-video-play" href="${cap.video_url}" target="_blank"><i class="ti ti-player-play" style="font-size:11px"></i> Play</a>
+                          <a class="btn-video btn-video-dl" href="${cap.video_url}" download="${cap.file_name||'capture'}"><i class="ti ti-download" style="font-size:11px"></i></a>
+                        </div>
+                      </div>`
+                  }).join('')}
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="ti ti-list-check"></i> Dispute Timeline</div>
+            </div>
+            <div class="card-body">
+              <div class="timeline-item">
+                <div class="tl-dot tl-done"><i class="ti ti-check" style="font-size:10px"></i></div>
+                <div class="tl-line"></div>
+                <div class="tl-content">
+                  <div class="tl-title">Dispute submitted</div>
+                  <div class="tl-desc">Client raised dispute — ${dispute.reason?.replace(/([A-Z])/g,' $1').trim()}</div>
+                  <div class="tl-time">${createdAt}</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="tl-dot ${['UnderReview','AwaitingResponse','DecisionMade','Resolved','Dismissed'].includes(dispute.status) ? 'tl-done' : 'tl-active'}">
+                  ${['UnderReview','AwaitingResponse','DecisionMade','Resolved','Dismissed'].includes(dispute.status) ? '<i class="ti ti-check" style="font-size:10px"></i>' : '2'}
+                </div>
+                <div class="tl-line"></div>
+                <div class="tl-content">
+                  <div class="tl-title">Under review</div>
+                  <div class="tl-desc">Admin reviewing evidence and communications</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="tl-dot ${['DecisionMade','Resolved','Dismissed'].includes(dispute.status) ? 'tl-done' : 'tl-pending'}">
+                  ${['DecisionMade','Resolved','Dismissed'].includes(dispute.status) ? '<i class="ti ti-check" style="font-size:10px"></i>' : '3'}
+                </div>
+                <div class="tl-line"></div>
+                <div class="tl-content">
+                  <div class="tl-title">Decision made</div>
+                  <div class="tl-desc">Resolution confirmed and parties notified</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="tl-dot ${['Resolved','Dismissed'].includes(dispute.status) ? 'tl-done' : 'tl-pending'}">
+                  ${['Resolved','Dismissed'].includes(dispute.status) ? '<i class="ti ti-check" style="font-size:10px"></i>' : '4'}
+                </div>
+                <div class="tl-content">
+                  <div class="tl-title">Resolved</div>
+                  <div class="tl-desc">${dispute.resolution ? dispute.resolution.replace(/([A-Z])/g,' $1').trim() : 'Pending resolution'}</div>
+                  ${dispute.resolved_at ? `<div class="tl-time">${new Date(dispute.resolved_at).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'})}</div>` : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title"><i class="ti ti-message-circle"></i> Communications</div>
+            </div>
+            <div class="msg-tabs">
+              <div class="msg-tab ${currentMsgTab==='client'?'active':''}" onclick="switchMsgTab('client')">Client</div>
+              <div class="msg-tab ${currentMsgTab==='scout'?'active':''}" onclick="switchMsgTab('scout')">Scout</div>
+              <div class="msg-tab ${currentMsgTab==='internal'?'active':''}" onclick="switchMsgTab('internal')">Internal</div>
+            </div>
+            <div class="messages" id="messagesContainer">
+              ${renderMessages()}
+            </div>
+            ${!['Resolved','Dismissed'].includes(dispute.status) ? `
+              <div class="msg-input-area">
+                <label class="internal-toggle">
+                  <input type="checkbox" id="internalToggle" ${currentMsgTab==='internal'?'checked':''}>
+                  Internal note only (not visible to client or scout)
+                </label>
+                <div class="msg-input-row">
+                  <textarea class="msg-textarea" id="msgInput" placeholder="Type your message..." rows="2"></textarea>
+                  <button class="btn-send" onclick="sendMessage()">Send</button>
+                </div>
+              </div>` : ''}
+          </div>
+
+          ${['Resolved','Dismissed'].includes(dispute.status)
+            ? `<div class="resolution-card">
+                <div class="resolution-header">
+                  <div class="resolution-title"><i class="ti ti-circle-check" style="color:var(--green)"></i> Resolution</div>
+                </div>
+                <div class="resolution-body">
+                  <div class="resolved-banner">
+                    <div class="resolved-title">${dispute.resolution?.replace(/([A-Z])/g,' $1').trim() || dispute.status}</div>
+                    <div class="resolved-sub">${dispute.resolution_notes || 'No notes provided.'}</div>
+                  </div>
+                </div>
+              </div>`
+            : `<div class="resolution-card">
+                <div class="resolution-header">
+                  <div class="resolution-title"><i class="ti ti-gavel"></i> Resolve Dispute</div>
+                </div>
+                <div class="resolution-body">
+                  ${[
+                    { val: 'FullRefundToClient', label: 'Full refund to Client', sub: `Full ${amount} refunded — Scout not paid` },
+                    { val: 'PartialRefundToClient', label: 'Partial refund to Client', sub: 'Enter amount in notes — remaining to Scout' },
+                    { val: 'PaymentReleasedToScout', label: 'Release payment to Scout', sub: `${scoutPayout} paid to Scout — no refund to Client` },
+                    { val: 'Dismissed', label: 'Dismiss dispute', sub: 'Dismiss without action — no refund, no payout change' }
+                  ].map(opt => `
+                    <div class="resolution-option ${selectedResolution===opt.val?'selected':''}" onclick="selectResolution('${opt.val}')">
+                      <input type="radio" name="resolution" value="${opt.val}" ${selectedResolution===opt.val?'checked':''}>
+                      <div>
+                        <div class="resolution-option-label">${opt.label}</div>
+                        <div class="resolution-option-sub">${opt.sub}</div>
+                      </div>
+                    </div>`).join('')}
+                  <textarea class="resolution-notes" id="resolutionNotes" placeholder="Add resolution notes (shown to both parties)..."></textarea>
+                  <div class="resolution-actions">
+                    <button class="btn-save-draft" onclick="saveDraft()">Save draft</button>
+                    <button class="btn-confirm-res" id="confirmResBtn" onclick="confirmResolution()" ${!selectedResolution?'disabled':''}>Confirm resolution</button>
+                  </div>
+                </div>
+              </div>`}
+        </div>
+      </div>`
+
+    document.getElementById('mainContent').innerHTML = html
+  }
+
+  function renderMessages() {
+    const filtered = messages.filter(m => {
+      if (currentMsgTab === 'internal') return m.is_internal
+      if (currentMsgTab === 'client') return !m.is_internal && m.sent_by_type !== 'scout'
+      if (currentMsgTab === 'scout') return !m.is_internal && m.sent_by_type !== 'client'
+      return true
+    })
+
+    if (filtered.length === 0) {
+      return `<div class="bubble bubble-system">No messages yet</div>`
+    }
+
+    return filtered.map(m => {
+      const isAdmin = m.sent_by_type === 'admin'
+      const time = new Date(m.created_at).toLocaleString('en-AU', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
+      const bubbleClass = m.is_internal ? 'bubble-internal'
+        : isAdmin ? 'bubble-admin-out' : 'bubble-user-in'
+      return `
+        <div class="msg ${isAdmin ? 'outgoing' : 'incoming'}">
+          <div class="msg-meta">
+            <span class="msg-sender">${isAdmin ? 'Spekto Support' : m.sent_by_type === 'client' ? 'Client' : 'Scout'}</span>
+            <span class="msg-time">${time}</span>
+          </div>
+          <div class="bubble ${bubbleClass}">${m.message}</div>
+        </div>`
+    }).join('')
+  }
+
+  window.switchMsgTab = (tab) => {
+    currentMsgTab = tab
+    document.querySelectorAll('.msg-tab').forEach((t, i) => {
+      t.classList.toggle('active', ['client','scout','internal'][i] === tab)
+    })
+    document.getElementById('messagesContainer').innerHTML = renderMessages()
+    if (document.getElementById('internalToggle')) {
+      document.getElementById('internalToggle').checked = tab === 'internal'
+    }
+  }
+
+  window.sendMessage = async () => {
+    const input = document.getElementById('msgInput')
+    const isInternal = document.getElementById('internalToggle')?.checked || false
+    const text = input?.value?.trim()
+    if (!text) return
+
+    const sentByType = isInternal ? 'admin'
+      : currentMsgTab === 'client' ? 'admin'
+      : 'admin'
+
+    const { error } = await supabase
+      .from('dispute_messages')
+      .insert({
+        dispute_id: disputeId,
+        sent_by_type: 'admin',
+        sent_by_id: adminData.id,
+        message: text,
+        is_internal: isInternal,
+        message_type: isInternal ? 'AdminNote' : 'FreeFormFollowUp'
+      })
+
+    if (!error) {
+      if (input) input.value = ''
+      await updateDisputeStatus('UnderReview')
+      const { data: newMsgs } = await supabase
+        .from('dispute_messages')
+        .select('*')
+        .eq('dispute_id', disputeId)
+        .order('created_at', { ascending: true })
+      messages = newMsgs || []
+      document.getElementById('messagesContainer').innerHTML = renderMessages()
+      showToast('Message sent')
+    } else {
+      showToast('Error sending message', 'error')
+    }
+  }
+
+  window.selectResolution = (val) => {
+    selectedResolution = val
+    document.querySelectorAll('.resolution-option').forEach(el => {
+      el.classList.toggle('selected', el.querySelector('input').value === val)
+      el.querySelector('input').checked = el.querySelector('input').value === val
+    })
+    const confirmBtn = document.getElementById('confirmResBtn')
+    if (confirmBtn) confirmBtn.disabled = false
+  }
+
+  window.saveDraft = async () => {
+    await updateDisputeStatus('UnderReview')
+    showToast('Draft saved')
+  }
+
+  window.confirmResolution = async () => {
+    if (!selectedResolution) return
+    const notes = document.getElementById('resolutionNotes')?.value?.trim()
+    const confirmBtn = document.getElementById('confirmResBtn')
+    if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Processing...'; }
+
+    const { error } = await supabase
+      .from('disputes')
+      .update({
+        status: selectedResolution === 'Dismissed' ? 'Dismissed' : 'Resolved',
+        resolution: selectedResolution,
+        resolution_notes: notes || null,
+        resolved_by: adminData.id,
+        resolved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', disputeId)
+
+    if (!error) {
+      if (selectedResolution === 'FullRefundToClient' || selectedResolution === 'PartialRefundToClient') {
+        await supabase.from('inspections').update({ status: 'Cancelled', updated_at: new Date().toISOString() }).eq('id', inspection.id)
+      } else if (selectedResolution === 'PaymentReleasedToScout') {
+        await supabase.from('inspections').update({ status: 'PendingPayment', updated_at: new Date().toISOString() }).eq('id', inspection.id)
+      }
+
+      await supabase.from('admin_actions').insert({
+        admin_id: adminData.id,
+        action_type: 'DisputeResolution',
+        target_table: 'disputes',
+        target_id: disputeId,
+        new_value: selectedResolution,
+        notes: notes || null
+      })
+
+      showToast('Dispute resolved successfully')
+      setTimeout(() => loadDispute(), 1000)
+    } else {
+      showToast('Error resolving dispute', 'error')
+      if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm resolution'; }
+    }
+  }
+
+  async function updateDisputeStatus(status) {
+    await supabase
+      .from('disputes')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', disputeId)
+      .not('status', 'in', '("Resolved","Dismissed")')
+  }
+
+  window.showStatusModal = () => {
+    const statuses = ['Submitted','UnderReview','AwaitingResponse','DecisionMade']
+    const current = dispute.status
+    const next = statuses[statuses.indexOf(current) + 1] || current
+    if (confirm(`Update status from "${current}" to "${next.replace(/([A-Z])/g,' $1').trim()}"?`)) {
+      updateDisputeStatus(next).then(() => {
+        showToast('Status updated')
+        loadDispute()
+      })
+    }
+  }
+
+  init()
+</script>
+</body>
+</html>
