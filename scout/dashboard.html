@@ -9,16 +9,11 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
   <style>
-    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; }
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; --red: #DC2626; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
     .shell { display: flex; min-height: 100vh; }
-    .sidebar {
-      width: 220px; background: var(--purple);
-      display: flex; flex-direction: column;
-      padding: 28px 0; flex-shrink: 0;
-      position: fixed; top: 0; left: 0; height: 100vh; z-index: 100;
-    }
+    .sidebar { width: 220px; background: var(--purple); display: flex; flex-direction: column; padding: 28px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
     .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,0.1); }
     .s-mark { width: 36px; height: 36px; background: rgba(255,255,255,0.15); border-radius: 9px; border: 1px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .s-name { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -1.5px; }
@@ -65,6 +60,8 @@
     .btn-accept:hover { background: #16a34a; }
     .btn-view { flex: 1; height: 38px; background: var(--tint); color: var(--purple); border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
     .btn-view:hover { background: #EAD5FC; }
+    .btn-decline { flex: 1; height: 38px; background: #fff; color: var(--red); border: 1.5px solid #FCA5A5; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .btn-decline:hover { background: #FFF8F8; }
     .badge { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
     .badge-Posted { background: #EDE4F7; color: #560591; }
     .badge-Accepted { background: #E0F2FE; color: #0369A1; }
@@ -81,7 +78,6 @@
     .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
     .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .pending-badge { background: #FEF9C3; color: #854D0E; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 10px; }
     @media (max-width: 700px) {
       .sidebar { display: none; }
       .main { margin-left: 0; }
@@ -156,7 +152,7 @@
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
   const supabase = createClient(
     'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
-    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+    sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL
   )
 
   let currentUser = null
@@ -190,10 +186,7 @@
   }
 
   async function loadAll() {
-    await Promise.all([
-      loadAvailable(),
-      loadMyJobs()
-    ])
+    await Promise.all([loadAvailable(), loadMyJobs()])
     updateStats()
     renderTab(currentTab)
   }
@@ -284,6 +277,10 @@
       let actionsHtml = ''
       if (tab === 'available') {
         actionsHtml = `<button class="btn-accept" onclick="acceptJob('${insp.id}', this)"><i class="ti ti-check" style="font-size:14px"></i> Accept Job</button>`
+      } else if (tab === 'active') {
+        actionsHtml = `
+          <button class="btn-decline" onclick="declineJob(event, '${insp.id}')">Decline</button>
+          <button class="btn-view" onclick="viewJob('${insp.id}')">View Details</button>`
       } else {
         actionsHtml = `<button class="btn-view" onclick="viewJob('${insp.id}')">View Details</button>`
       }
@@ -361,6 +358,34 @@
     }
   }
 
+  window.declineJob = async (event, inspectionId) => {
+    event.stopPropagation()
+
+    const confirmed = confirm('Are you sure you want to decline this job? It will be returned to the available jobs pool for another Scout to accept.')
+    if (!confirmed) return
+
+    const { error } = await supabase
+      .from('inspections')
+      .update({
+        scout_id: null,
+        status: 'Posted',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', inspectionId)
+      .eq('scout_id', currentUser.id)
+      .in('status', ['Accepted', 'InProgress'])
+
+    if (!error) {
+      await loadAll()
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+      document.querySelector('[data-tab="available"]').classList.add('active')
+      currentTab = 'available'
+      renderTab('available')
+    } else {
+      alert('Could not decline this job. Please try again.')
+    }
+  }
+
   window.viewJob = (id) => {
     window.location.href = `inspection-detail.html?id=${id}`
   }
@@ -373,7 +398,6 @@
         .eq('id', currentUser.id)
       window.location.href = '../client/dashboard.html'
     })
-
     document.getElementById('switchToScout').addEventListener('click', () => {})
   }
 
