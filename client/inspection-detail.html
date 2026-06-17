@@ -151,7 +151,7 @@
           <option value="VideoBlurry">Video is blurry or out of focus</option>
           <option value="WrongLocation">Wrong location captured</option>
           <option value="IncompleteWalkthrough">Incomplete walkthrough</option>
-          <option value="VideoTooDark">Video too dark or unviewable</option>
+          <option value="TooDark">Video too dark or unviewable</option>
           <option value="Other">Other</option>
         </select>
         <input type="text" class="dispute-select" id="disputeDescription" placeholder="Additional details (optional)" style="flex:1;min-width:220px">
@@ -454,7 +454,7 @@
       .insert({
         inspection_id: inspectionId,
         raised_by: currentUser.id,
-        dispute_type: reason,
+        dispute_type: 'QualityDispute',
         reason: reason,
         description: description || null,
         status: 'Submitted',
