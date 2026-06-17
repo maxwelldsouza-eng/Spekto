@@ -39,11 +39,18 @@
     .badge-PendingPayment { background: #FEF9C3; color: #854D0E; }
     .badge-Disputed { background: #FEE2E2; color: #991B1B; }
     .badge-Paid { background: #D1FAE5; color: #065F46; }
-    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .btn-action { height: 40px; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 6px; padding: 0 18px; }
     .btn-record { background: var(--green); color: #fff; }
     .btn-record:hover { background: #16a34a; }
-    .btn-close { background: #fff; color: #444; border: 1.5px solid #E0E0E0; }
+    .btn-close { background: #fff; color: #444; border: 1.5px solid #E0E0E0 !important; }
+    .btn-decline-job { background: #fff; color: var(--red); border: 1.5px solid #FCA5A5 !important; }
+    .btn-decline-job:hover { background: #FFF8F8; }
+    .decline-confirm-panel { background: #FFF8F8; border-bottom: 1px solid #FEE2E2; padding: 14px 28px; display: none; }
+    .decline-inner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .decline-msg { font-size: 13px; color: #991B1B; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+    .btn-confirm-decline { background: #991B1B; color: #fff; border: none; border-radius: 7px; padding: 0 16px; height: 36px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .btn-cancel-decline { background: #fff; color: #666; border: 1.5px solid #E0E0E0; border-radius: 7px; padding: 0 14px; height: 36px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
     .dispute-banner { background: #FFF8F8; border-bottom: 1px solid #FEE2E2; padding: 14px 28px; }
     .dispute-inner { display: flex; align-items: center; gap: 10px; }
     .dispute-icon { color: #991B1B; font-size: 18px; }
@@ -137,6 +144,14 @@
       </div>
     </div>
 
+    <div class="decline-confirm-panel" id="declinePanel">
+      <div class="decline-inner">
+        <div class="decline-msg"><i class="ti ti-alert-triangle"></i> Are you sure you want to decline this job? It will be returned to the available pool for another Scout.</div>
+        <button class="btn-confirm-decline" id="confirmDeclineBtn">Yes, decline job</button>
+        <button class="btn-cancel-decline" id="cancelDeclineBtn">Keep job</button>
+      </div>
+    </div>
+
     <div class="content" id="mainContent">
       <div class="loading"><div class="spinner"></div> Loading job details...</div>
     </div>
@@ -147,7 +162,7 @@
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
   const supabase = createClient(
     'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
-    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+    sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL
   )
 
   let inspection = null
@@ -221,6 +236,7 @@
 
     renderActions()
     renderContent()
+    setupDeclinePanel()
   }
 
   function renderActions() {
@@ -234,12 +250,49 @@
     container.appendChild(closeBtn)
 
     if (inspection.status === 'Accepted' || inspection.status === 'InProgress') {
+      const declineBtn = document.createElement('button')
+      declineBtn.className = 'btn-action btn-decline-job'
+      declineBtn.innerHTML = '<i class="ti ti-x"></i> Decline Job'
+      declineBtn.addEventListener('click', () => {
+        document.getElementById('declinePanel').style.display = 'block'
+        declineBtn.disabled = true
+      })
+      container.insertBefore(declineBtn, closeBtn)
+
       const recordBtn = document.createElement('a')
       recordBtn.href = `recording.html?id=${inspection.id}`
       recordBtn.className = 'btn-action btn-record'
       recordBtn.innerHTML = '<i class="ti ti-video"></i> Start Recording'
-      container.insertBefore(recordBtn, closeBtn)
+      container.insertBefore(recordBtn, declineBtn)
     }
+  }
+
+  function setupDeclinePanel() {
+    document.getElementById('confirmDeclineBtn').addEventListener('click', async () => {
+      const { error } = await supabase
+        .from('inspections')
+        .update({
+          scout_id: null,
+          status: 'Posted',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', inspectionId)
+        .eq('scout_id', currentUser.id)
+        .in('status', ['Accepted', 'InProgress'])
+
+      if (!error) {
+        window.location.href = 'dashboard.html'
+      } else {
+        alert('Could not decline this job. Please try again.')
+        document.getElementById('declinePanel').style.display = 'none'
+      }
+    })
+
+    document.getElementById('cancelDeclineBtn').addEventListener('click', () => {
+      document.getElementById('declinePanel').style.display = 'none'
+      const declineBtn = document.querySelector('.btn-decline-job')
+      if (declineBtn) declineBtn.disabled = false
+    })
   }
 
   function renderContent() {
