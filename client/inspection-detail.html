@@ -148,12 +148,13 @@
       <div class="dispute-inner">
         <select class="dispute-select" id="disputeReason">
           <option value="">Select a reason...</option>
-          <option>Video is blurry or out of focus</option>
-          <option>Wrong location captured</option>
-          <option>Incomplete walkthrough</option>
-          <option>Video too dark or unviewable</option>
-          <option>Other</option>
+          <option value="VideoBlurry">Video is blurry or out of focus</option>
+          <option value="WrongLocation">Wrong location captured</option>
+          <option value="IncompleteWalkthrough">Incomplete walkthrough</option>
+          <option value="VideoTooDark">Video too dark or unviewable</option>
+          <option value="Other">Other</option>
         </select>
+        <input type="text" class="dispute-select" id="disputeDescription" placeholder="Additional details (optional)" style="flex:1;min-width:220px">
         <button class="btn-confirm-dispute" id="confirmDisputeBtn">Confirm Dispute</button>
         <button class="btn-cancel-dispute" id="cancelDisputeBtn">Cancel</button>
       </div>
@@ -437,14 +438,52 @@
   document.getElementById('confirmDisputeBtn').addEventListener('click', async () => {
     const reason = document.getElementById('disputeReason').value
     if (!reason) { alert('Please select a reason for the dispute.'); return; }
+    const description = document.getElementById('disputeDescription').value.trim()
 
-    const { error } = await supabase
+    const confirmBtn = document.getElementById('confirmDisputeBtn')
+    confirmBtn.disabled = true
+    confirmBtn.textContent = 'Submitting...'
+
+    // Scout gets 48 hours to respond before Spekto may decide without their input.
+    const scoutResponseDueAt = new Date(Date.now() + 48 * 3600 * 1000).toISOString()
+    // Overall SLA for the dispute to be resolved.
+    const dueAt = new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString()
+
+    const { data: disputeRow, error: disputeError } = await supabase
+      .from('disputes')
+      .insert({
+        inspection_id: inspectionId,
+        raised_by: currentUser.id,
+        dispute_type: reason,
+        reason: reason,
+        description: description || null,
+        status: 'Submitted',
+        priority: 'Medium',
+        due_at: dueAt,
+        scout_response_due_at: scoutResponseDueAt,
+        client_notified: true,
+        scout_notified: false
+      })
+      .select()
+      .single()
+
+    if (disputeError) {
+      confirmBtn.disabled = false
+      confirmBtn.textContent = 'Confirm Dispute'
+      alert('Could not submit dispute. Please try again.')
+      return
+    }
+
+    const { error: statusError } = await supabase
       .from('inspections')
       .update({ status: 'Disputed', dispute_reason: reason, updated_at: new Date().toISOString() })
       .eq('id', inspectionId)
       .eq('client_id', currentUser.id)
 
-    if (!error) {
+    confirmBtn.disabled = false
+    confirmBtn.textContent = 'Confirm Dispute'
+
+    if (!statusError) {
       inspection.status = 'Disputed'
       inspection.dispute_reason = reason
       document.getElementById('disputePanel').style.display = 'none'
@@ -453,6 +492,10 @@
       badge.textContent = 'Disputed'
       renderActions()
       renderContent()
+    } else {
+      // Dispute record exists even if the status update failed; let the
+      // Client know rather than silently leaving things inconsistent.
+      alert('Dispute submitted, but the inspection status could not be updated. Please contact support.')
     }
   })
 
