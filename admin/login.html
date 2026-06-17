@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login - Spekto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #E0E0E0; --red: #E53935; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .container { display: flex; width: 100%; max-width: 1100px; min-height: 100vh; background: #fff; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+    .left-panel { width: 42%; background: #1A0533; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; position: relative; overflow: hidden; }
+    .left-panel::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 30% 50%, rgba(86,5,145,0.6) 0%, transparent 70%); }
+    .left-content { position: relative; z-index: 1; text-align: center; }
+    .admin-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 6px 14px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 24px; }
+    .logo-wrap { display: flex; align-items: center; gap: 14px; justify-content: center; margin-bottom: 28px; }
+    .s-mark { width: 52px; height: 52px; background: rgba(255,255,255,0.15); border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 36px; font-weight: 800; color: #fff; letter-spacing: -2px; }
+    .left-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    .left-sub { font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.6; max-width: 260px; margin: 0 auto; }
+    .right-panel { width: 58%; display: flex; flex-direction: column; justify-content: center; padding: 3rem 4rem; }
+    h1 { font-size: 22px; font-weight: 700; color: #0D0D0D; letter-spacing: -0.4px; margin-bottom: 6px; }
+    .sub { font-size: 13px; color: #888; margin-bottom: 28px; }
+    .field { margin-bottom: 18px; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: #444; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 7px; }
+    .field input { width: 100%; height: 44px; border: 1.5px solid var(--border); border-radius: 8px; padding: 0 14px; font-size: 14px; color: #0D0D0D; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.15s; }
+    .field input:focus { border-color: var(--purple); }
+    .field input.invalid { border-color: var(--red); }
+    .error-msg { font-size: 12px; color: var(--red); margin-top: 4px; display: none; }
+    .global-error { background: #FEE2E2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #991B1B; margin-bottom: 16px; display: none; }
+    .btn-login { width: 100%; height: 44px; background: #1A0533; color: #fff; font-size: 15px; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s; }
+    .btn-login:hover { opacity: 0.85; }
+    .btn-login:disabled { opacity: 0.5; cursor: not-allowed; }
+    .security-note { display: flex; align-items: center; gap: 8px; background: var(--tint); border-radius: 8px; padding: 12px 14px; margin-top: 20px; }
+    .security-note-text { font-size: 12px; color: var(--purple); line-height: 1.5; }
+    @media (max-width: 640px) {
+      .container { flex-direction: column; }
+      .left-panel { width: 100%; min-height: 120px; padding: 20px; }
+      .left-title, .left-sub { display: none; }
+      .right-panel { width: 100%; padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+<main class="container">
+  <section class="left-panel">
+    <div class="left-content">
+      <div class="admin-badge">⚙ Admin Portal</div>
+      <div class="logo-wrap">
+        <div class="s-mark">
+          <svg width="30" height="26" viewBox="0 0 30 26" fill="none">
+            <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+            <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+            <circle cx="15" cy="15" r="2" fill="white"/>
+            <circle cx="24" cy="9" r="1.5" fill="white"/>
+          </svg>
+        </div>
+        <div class="s-name">SPEKTO</div>
+      </div>
+      <div class="left-title">Spekto Admin Portal</div>
+      <div class="left-sub">Manage inspections, disputes, payouts and platform operations from one place.</div>
+    </div>
+  </section>
+
+  <section class="right-panel">
+    <h1>Admin sign in</h1>
+    <div class="sub">This portal is restricted to authorised Spekto staff only.</div>
+
+    <div class="global-error" id="globalError"></div>
+
+    <div class="field">
+      <label>Email address</label>
+      <input type="email" id="email" placeholder="admin@spekto.com.au">
+      <div class="error-msg" id="emailError">Please enter your email address</div>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="••••••••">
+      <div class="error-msg" id="passwordError">Please enter your password</div>
+    </div>
+
+    <button class="btn-login" id="loginBtn">Sign in to Admin Portal</button>
+
+    <div class="security-note">
+      <div class="security-note-text">🔒 This is a restricted area. Unauthorised access attempts are logged and monitored. If you are not a Spekto staff member please return to the <a href="../auth/login.html" style="color:var(--purple);font-weight:600">main app</a>.</div>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL
+  )
+
+  const emailInput = document.getElementById('email')
+  const passwordInput = document.getElementById('password')
+  const loginBtn = document.getElementById('loginBtn')
+  const globalError = document.getElementById('globalError')
+
+  function showFieldError(inputId, msgId) {
+    document.getElementById(inputId).classList.add('invalid')
+    document.getElementById(msgId).style.display = 'block'
+  }
+
+  function clearErrors() {
+    emailInput.classList.remove('invalid')
+    passwordInput.classList.remove('invalid')
+    document.getElementById('emailError').style.display = 'none'
+    document.getElementById('passwordError').style.display = 'none'
+    globalError.style.display = 'none'
+  }
+
+  emailInput.addEventListener('input', clearErrors)
+  passwordInput.addEventListener('input', clearErrors)
+
+  loginBtn.addEventListener('click', async () => {
+    clearErrors()
+    const email = emailInput.value.trim()
+    const password = passwordInput.value
+    let valid = true
+
+    if (!email) { showFieldError('email', 'emailError'); valid = false; }
+    if (!password) { showFieldError('password', 'passwordError'); valid = false; }
+    if (!valid) return
+
+    loginBtn.disabled = true
+    loginBtn.textContent = 'Signing in...'
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (error) {
+      loginBtn.disabled = false
+      loginBtn.textContent = 'Sign in to Admin Portal'
+      globalError.textContent = 'Invalid email or password.'
+      globalError.style.display = 'block'
+      return
+    }
+
+    const { data: adminData } = await supabase
+      .from('admins')
+      .select('id, first_name, last_name, role, is_active')
+      .eq('email', email)
+      .single()
+
+    if (!adminData || !adminData.is_active) {
+      await supabase.auth.signOut()
+      loginBtn.disabled = false
+      loginBtn.textContent = 'Sign in to Admin Portal'
+      globalError.textContent = 'You do not have admin access to this portal.'
+      globalError.style.display = 'block'
+      return
+    }
+
+    await supabase
+      .from('admins')
+      .update({ last_login_at: new Date().toISOString() })
+      .eq('id', adminData.id)
+
+    window.location.href = 'dashboard.html'
+  })
+</script>
+</body>
+</html>
