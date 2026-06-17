@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scout Verification - Spekto Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --dark: #1A0533; --red: #DC2626; --green: #16A34A; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 230px; background: var(--dark); display: flex; flex-direction: column; padding: 24px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .s-mark { width: 34px; height: 34px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -1px; }
+    .admin-tag { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+    .nav-section { padding: 16px 12px 4px; }
+    .nav-section-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px; margin-bottom: 4px; }
+    .nav { display: flex; flex-direction: column; gap: 1px; padding: 0 12px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px; font-size: 13px; color: rgba(255,255,255,0.55); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
+    .nav-item i { font-size: 16px; flex-shrink: 0; }
+    .nav-badge { margin-left: auto; background: #DC2626; color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+    .sidebar-foot { margin-top: auto; padding: 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .admin-user { display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+    .admin-avatar { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .admin-info { flex: 1; min-width: 0; }
+    .admin-name-s { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .admin-role-s { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+    .btn-logout-sm { width: 28px; height: 28px; background: rgba(255,255,255,0.08); border: none; border-radius: 6px; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .main { flex: 1; margin-left: 230px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .topbar-title { font-size: 17px; font-weight: 700; color: #0D0D0D; }
+    .content { padding: 24px 28px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: #fff; border-radius: 10px; border: 1px solid var(--border); padding: 14px 16px; }
+    .stat-label { font-size: 10px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+    .stat-val { font-size: 22px; font-weight: 800; color: #0D0D0D; font-family: 'DM Sans', sans-serif; }
+    .tabs { display: flex; border-bottom: 2px solid #F0F0F0; margin-bottom: 20px; }
+    .tab { padding: 10px 20px; font-size: 13px; font-weight: 600; color: #999; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; }
+    .tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+    .tab .count { display: inline-flex; align-items: center; justify-content: center; background: var(--tint); color: var(--purple); font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px; margin-left: 6px; }
+    .tab.active .count { background: var(--purple); color: #fff; }
+    .scout-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+    .scout-card { background: #fff; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; transition: box-shadow 0.15s; }
+    .scout-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+    .scout-card-header { padding: 16px 18px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #F3F3F3; }
+    .scout-avatar { width: 44px; height: 44px; border-radius: 50%; background: #EDE4F7; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--purple); flex-shrink: 0; }
+    .scout-info { flex: 1; min-width: 0; }
+    .scout-name { font-size: 14px; font-weight: 700; color: #0D0D0D; }
+    .scout-email { font-size: 12px; color: #999; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .scout-badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 10px; white-space: nowrap; }
+    .badge-pending { background: #FEF9C3; color: #854D0E; }
+    .badge-verified { background: #DCFCE7; color: #166534; }
+    .badge-rejected { background: #FEE2E2; color: #991B1B; }
+    .scout-card-body { padding: 14px 18px; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .info-label { font-size: 11px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+    .info-val { font-size: 12px; font-weight: 600; color: #0D0D0D; }
+    .id-document-box { border: 1.5px solid #E0E0E0; border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
+    .id-document-header { padding: 8px 12px; background: #F7F5FA; border-bottom: 1px solid #E0E0E0; display: flex; align-items: center; justify-content: space-between; }
+    .id-document-label { font-size: 11px; font-weight: 600; color: #666; }
+    .id-document-preview { padding: 14px; text-align: center; background: #FAFAFA; }
+    .id-document-preview img { max-height: 120px; border-radius: 6px; }
+    .id-document-icon { font-size: 32px; color: var(--purple); }
+    .btn-view-doc { font-size: 11px; font-weight: 600; color: var(--purple); text-decoration: none; display: flex; align-items: center; gap: 4px; }
+    .scout-actions { display: flex; gap: 8px; padding: 14px 18px; border-top: 1px solid #F3F3F3; }
+    .btn-approve { flex: 1; height: 38px; background: #DCFCE7; color: #166534; border: 1.5px solid #86EFAC; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .btn-approve:hover { background: #BBF7D0; }
+    .btn-reject { flex: 1; height: 38px; background: #FEE2E2; color: #991B1B; border: 1.5px solid #FCA5A5; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .btn-reject:hover { background: #FECACA; }
+    .btn-view-full { flex: 1; height: 38px; background: var(--tint); color: var(--purple); border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .verified-banner { background: #F0FDF4; border: 1px solid #86EFAC; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .verified-banner i { font-size: 16px; color: var(--green); }
+    .verified-banner-text { font-size: 12px; font-weight: 600; color: #166534; }
+    .empty-state { text-align: center; padding: 60px 20px; background: #fff; border-radius: 14px; border: 1px solid var(--border); }
+    .empty-state i { font-size: 36px; color: #ddd; margin-bottom: 12px; display: block; }
+    .empty-state p { font-size: 13px; color: #999; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #1F2937; color: #fff; font-size: 13px; font-weight: 500; padding: 12px 20px; border-radius: 10px; z-index: 999; display: none; }
+    .toast.success { background: #166534; }
+    .toast.error { background: #991B1B; }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .scout-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div class="s-name">SPEKTO</div>
+        <div class="admin-tag">Admin Portal</div>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Overview</div>
+      <div class="nav"><a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Operations</div>
+      <div class="nav">
+        <a class="nav-item" href="inspections.html"><i class="ti ti-clipboard-list"></i> Inspections</a>
+        <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> Disputes</a>
+        <a class="nav-item" href="payouts.html"><i class="ti ti-wallet"></i> Payouts</a>
+        <a class="nav-item active" href="verification.html"><i class="ti ti-id-badge"></i> Verification <span class="nav-badge" id="verifyBadge">0</span></a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Users</div>
+      <div class="nav">
+        <a class="nav-item" href="users.html"><i class="ti ti-users"></i> All Users</a>
+        <a class="nav-item" href="scouts.html"><i class="ti ti-camera"></i> Scouts</a>
+        <a class="nav-item" href="clients.html"><i class="ti ti-building"></i> Clients</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Platform</div>
+      <div class="nav">
+        <a class="nav-item" href="marketplace.html"><i class="ti ti-shopping-bag"></i> Marketplace</a>
+        <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+      </div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="admin-user">
+        <div class="admin-avatar" id="adminAvatar">?</div>
+        <div class="admin-info">
+          <div class="admin-name-s" id="adminName">Loading...</div>
+          <div class="admin-role-s" id="adminRole">Admin</div>
+        </div>
+        <button class="btn-logout-sm" id="logoutBtn"><i class="ti ti-logout"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">Scout Verification</div>
+    </div>
+    <div class="content" id="mainContent">
+      <div class="loading"><div class="spinner"></div> Loading verifications...</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let allScouts = []
+  let currentTab = 'pending'
+  let adminData = null
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast')
+    t.textContent = msg
+    t.className = `toast ${type}`
+    t.style.display = 'block'
+    setTimeout(() => { t.style.display = 'none' }, 3000)
+  }
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = 'login.html'; return; }
+
+    const { data: admin } = await supabase
+      .from('admins')
+      .select('id, first_name, last_name, role, is_active')
+      .eq('email', user.email)
+      .single()
+
+    if (!admin || !admin.is_active) {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+      return
+    }
+
+    adminData = admin
+    const initials = (admin.first_name?.[0] || '') + (admin.last_name?.[0] || '')
+    document.getElementById('adminAvatar').textContent = initials.toUpperCase()
+    document.getElementById('adminName').textContent = admin.first_name + ' ' + admin.last_name
+    document.getElementById('adminRole').textContent = admin.role === 'superadmin' ? 'Super Admin' : 'Admin'
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+    })
+
+    await loadScouts()
+  }
+
+  async function loadScouts() {
+    const { data: profiles, error } = await supabase
+      .from('scout_profiles')
+      .select(`
+        *,
+        user:user_id(first_name, last_name, email, created_at)
+      `)
+      .not('id_document_url', 'is', null)
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      document.getElementById('mainContent').innerHTML =
+        '<div class="loading">Error loading scouts. Please refresh.</div>'
+      return
+    }
+
+    allScouts = profiles || []
+    document.getElementById('verifyBadge').textContent =
+      allScouts.filter(s => !s.id_verified && s.scout_status === 'PendingVerification').length
+    renderPage()
+  }
+
+  function renderPage() {
+    const pending = allScouts.filter(s => !s.id_verified && s.scout_status === 'PendingVerification')
+    const verified = allScouts.filter(s => s.id_verified)
+    const rejected = allScouts.filter(s => s.scout_status === 'Rejected')
+
+    const filtered = currentTab === 'pending' ? pending
+      : currentTab === 'verified' ? verified
+      : rejected
+
+    const html = `
+      <div class="stats">
+        <div class="stat-card" style="${pending.length > 0 ? 'border-left:3px solid #F59E0B' : ''}">
+          <div class="stat-label">Pending review</div>
+          <div class="stat-val" style="color:${pending.length > 0 ? '#854D0E' : '#0D0D0D'}">${pending.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Verified scouts</div>
+          <div class="stat-val" style="color:#166534">${verified.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Rejected</div>
+          <div class="stat-val">${rejected.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total with ID</div>
+          <div class="stat-val">${allScouts.length}</div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab ${currentTab === 'pending' ? 'active' : ''}" onclick="setTab('pending')">
+          Pending review <span class="count">${pending.length}</span>
+        </div>
+        <div class="tab ${currentTab === 'verified' ? 'active' : ''}" onclick="setTab('verified')">
+          Verified <span class="count">${verified.length}</span>
+        </div>
+        <div class="tab ${currentTab === 'rejected' ? 'active' : ''}" onclick="setTab('rejected')">
+          Rejected <span class="count">${rejected.length}</span>
+        </div>
+      </div>
+
+      ${filtered.length === 0
+        ? `<div class="empty-state">
+            <i class="ti ti-circle-check"></i>
+            <p>${currentTab === 'pending' ? 'No scouts pending verification' : currentTab === 'verified' ? 'No verified scouts yet' : 'No rejected scouts'}</p>
+          </div>`
+        : `<div class="scout-grid">${filtered.map(scout => renderScoutCard(scout)).join('')}</div>`}`
+
+    document.getElementById('mainContent').innerHTML = html
+  }
+
+  function renderScoutCard(scout) {
+    const user = scout.user
+    const name = user ? user.first_name + ' ' + user.last_name : 'Unknown Scout'
+    const initials = user ? (user.first_name?.[0] || '') + (user.last_name?.[0] || '') : '?'
+    const email = user?.email || '—'
+    const joinedAt = user?.created_at
+      ? new Date(user.created_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' })
+      : '—'
+    const submittedAt = scout.created_at
+      ? new Date(scout.created_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' })
+      : '—'
+    const daysWaiting = scout.created_at
+      ? Math.floor((new Date() - new Date(scout.created_at)) / 86400000)
+      : 0
+    const idType = scout.id_type === 'passport' ? 'Passport'
+      : scout.id_type === 'drivers_licence' ? "Driver's Licence"
+      : 'ID Document'
+    const isPdf = scout.id_document_url?.toLowerCase().endsWith('.pdf')
+    const isVerified = scout.id_verified
+    const isRejected = scout.scout_status === 'Rejected'
+
+    return `
+      <div class="scout-card">
+        <div class="scout-card-header">
+          <div class="scout-avatar">${initials.toUpperCase()}</div>
+          <div class="scout-info">
+            <div class="scout-name">${name}</div>
+            <div class="scout-email">${email}</div>
+          </div>
+          <span class="scout-badge ${isVerified ? 'badge-verified' : isRejected ? 'badge-rejected' : 'badge-pending'}">
+            ${isVerified ? 'Verified' : isRejected ? 'Rejected' : 'Pending'}
+          </span>
+        </div>
+        <div class="scout-card-body">
+          ${isVerified ? `
+            <div class="verified-banner">
+              <i class="ti ti-circle-check"></i>
+              <div class="verified-banner-text">Identity verified on ${scout.id_verified_at ? new Date(scout.id_verified_at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}) : '—'}</div>
+            </div>` : ''}
+          <div class="info-row">
+            <div class="info-label">Document type</div>
+            <div class="info-val">${idType}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Joined</div>
+            <div class="info-val">${joinedAt}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">ID submitted</div>
+            <div class="info-val">${submittedAt}${!isVerified && !isRejected && daysWaiting > 0 ? ` <span style="color:#854D0E;font-size:11px">(${daysWaiting}d waiting)</span>` : ''}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label">Completions</div>
+            <div class="info-val">${scout.total_completions || 0} jobs</div>
+          </div>
+          <div class="id-document-box">
+            <div class="id-document-header">
+              <div class="id-document-label"><i class="ti ti-file" style="font-size:13px;margin-right:4px"></i>${idType}</div>
+              <a class="btn-view-doc" href="${scout.id_document_url}" target="_blank">
+                <i class="ti ti-external-link" style="font-size:12px"></i> Open full size
+              </a>
+            </div>
+            <div class="id-document-preview">
+              ${isPdf
+                ? `<div style="padding:20px"><i class="ti ti-file-text id-document-icon"></i><div style="font-size:12px;color:#999;margin-top:8px">PDF document — click Open full size to view</div></div>`
+                : `<img src="${scout.id_document_url}" alt="ID Document" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+                   <div style="display:none"><i class="ti ti-photo id-document-icon"></i><div style="font-size:12px;color:#999;margin-top:8px">Image preview unavailable</div></div>`}
+            </div>
+          </div>
+        </div>
+        ${!isVerified && !isRejected ? `
+          <div class="scout-actions">
+            <button class="btn-reject" onclick="rejectScout('${scout.user_id}', '${name}')">
+              <i class="ti ti-x" style="font-size:14px"></i> Reject
+            </button>
+            <button class="btn-approve" onclick="approveScout('${scout.user_id}', '${name}')">
+              <i class="ti ti-check" style="font-size:14px"></i> Approve
+            </button>
+          </div>` : isVerified ? `
+          <div class="scout-actions">
+            <a class="btn-view-full" href="users.html">
+              <i class="ti ti-user" style="font-size:13px"></i> View profile
+            </a>
+          </div>` : `
+          <div class="scout-actions">
+            <button class="btn-approve" onclick="approveScout('${scout.user_id}', '${name}')">
+              <i class="ti ti-check" style="font-size:14px"></i> Approve anyway
+            </button>
+          </div>`}
+      </div>`
+  }
+
+  window.approveScout = async (userId, name) => {
+    if (!confirm(`Approve ${name}'s identity verification? They will be able to accept inspection jobs.`)) return
+
+    const { error } = await supabase
+      .from('scout_profiles')
+      .update({
+        id_verified: true,
+        id_verified_at: new Date().toISOString(),
+        id_verified_by: adminData.id,
+        scout_status: 'Active',
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+
+    if (!error) {
+      await supabase.from('admin_actions').insert({
+        admin_id: adminData.id,
+        action_type: 'ScoutVerificationApproved',
+        target_table: 'scout_profiles',
+        target_id: userId,
+        new_value: 'Active'
+      })
+      showToast(`${name} has been approved and can now accept jobs`)
+      await loadScouts()
+    } else {
+      showToast('Error approving scout. Please try again.', 'error')
+    }
+  }
+
+  window.rejectScout = async (userId, name) => {
+    const reason = prompt(`Why is ${name}'s ID being rejected? This message will be sent to the scout.`)
+    if (reason === null) return
+
+    const { error } = await supabase
+      .from('scout_profiles')
+      .update({
+        scout_status: 'Rejected',
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', userId)
+
+    if (!error) {
+      await supabase.from('admin_actions').insert({
+        admin_id: adminData.id,
+        action_type: 'ScoutVerificationRejected',
+        target_table: 'scout_profiles',
+        target_id: userId,
+        new_value: 'Rejected',
+        notes: reason
+      })
+      showToast(`${name}'s verification has been rejected`)
+      await loadScouts()
+    } else {
+      showToast('Error rejecting scout. Please try again.', 'error')
+    }
+  }
+
+  window.setTab = (tab) => {
+    currentTab = tab
+    renderPage()
+  }
+
+  init()
+</script>
+</body>
+</html>
