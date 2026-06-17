@@ -27,6 +27,9 @@
     .address-icon i { font-size: 17px; color: var(--purple); }
     .address-text { font-size: 14px; font-weight: 600; color: #0D0D0D; }
     .address-sub { font-size: 12px; color: #999; margin-top: 2px; }
+    .resume-banner { background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+    .resume-banner i { font-size: 18px; color: #1D4ED8; flex-shrink: 0; }
+    .resume-banner-text { font-size: 13px; color: #1D4ED8; font-weight: 500; }
     .section-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
     .section-tab { flex: 1; padding: 10px; background: #fff; border: 1.5px solid var(--border); border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.15s; }
     .section-tab.active { border-color: var(--purple); background: var(--tint); }
@@ -50,14 +53,19 @@
     .file-input { display: none; }
     .video-preview-list { padding: 0 18px 16px; display: flex; flex-direction: column; gap: 10px; }
     .video-preview-item { display: flex; align-items: center; gap: 10px; background: var(--tint); border-radius: 8px; padding: 10px 12px; border: 1px solid #D4B8F5; }
+    .video-preview-item.uploaded { background: #F0FDF4; border-color: #86EFAC; }
     .video-thumb { width: 44px; height: 44px; background: #D4B8F5; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; }
+    .video-thumb.uploaded-thumb { background: #BBF7D0; }
     .video-thumb video { width: 100%; height: 100%; object-fit: cover; }
     .video-thumb i { font-size: 20px; color: var(--purple); }
+    .video-thumb.uploaded-thumb i { color: #16a34a; }
     .video-info { flex: 1; min-width: 0; }
     .video-name { font-size: 12px; font-weight: 600; color: var(--purple); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .video-preview-item.uploaded .video-name { color: #166534; }
     .video-size { font-size: 11px; color: #999; margin-top: 2px; }
     .video-gps { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #16a34a; font-weight: 500; margin-top: 2px; }
     .video-gps i { font-size: 12px; }
+    .video-saved-tag { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #16a34a; font-weight: 600; margin-top: 2px; }
     .btn-remove-video { width: 28px; height: 28px; border-radius: 6px; border: none; background: rgba(220,38,38,0.1); color: var(--red); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
     .btn-add-more { width: 100%; height: 40px; background: transparent; border: 1.5px dashed #C4A0E8; border-radius: 8px; color: var(--purple); font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0 18px 16px; width: calc(100% - 36px); transition: background 0.15s; }
     .btn-add-more:hover { background: var(--tint); }
@@ -85,13 +93,16 @@
     .check-item-text.fail { color: var(--red); }
     .btn-submit-final { width: 100%; height: 52px; background: var(--purple); color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.15s; }
     .btn-submit-final:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-save-progress { width: 100%; height: 44px; background: #fff; color: var(--purple); border: 1.5px solid var(--purple); border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; margin-bottom: 10px; }
+    .btn-save-progress { width: 100%; height: 44px; background: #fff; color: var(--purple); border: 1.5px solid var(--purple); border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-save-progress:disabled { opacity: 0.6; cursor: not-allowed; }
     .progress-bar-wrap { background: #F0F0F0; border-radius: 20px; height: 6px; margin: 12px 0; overflow: hidden; display: none; }
     .progress-bar { height: 100%; background: var(--purple); border-radius: 20px; transition: width 0.3s; width: 0%; }
     .upload-status { font-size: 12px; color: #999; text-align: center; margin-top: 4px; display: none; }
     .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1F2937; color: #fff; font-size: 13px; font-weight: 500; padding: 12px 20px; border-radius: 10px; z-index: 999; display: none; white-space: nowrap; }
+    .toast.error { background: #991B1B; }
     .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
     .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    .spinner.small { width: 14px; height: 14px; border-width: 2px; }
     @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
@@ -126,17 +137,21 @@
   let inspection = null
   let currentUser = null
   let gpsData = { latitude: null, longitude: null, address: null }
+
+  // Each entry: { file, gps, recorded_at, uploaded (bool), capture_id (if uploaded), file_name, file_size_bytes, video_url (if uploaded) }
   let externalVideos = []
   let internalVideos = []
   let activeSection = 'external'
   let checkedInstructions = new Set()
+  let hadExistingCaptures = false
 
   const urlParams = new URLSearchParams(window.location.search)
   const inspectionId = urlParams.get('id')
 
-  function showToast(msg, duration = 3000) {
+  function showToast(msg, duration = 3000, isError = false) {
     const t = document.getElementById('toast')
     t.textContent = msg
+    t.className = 'toast' + (isError ? ' error' : '')
     t.style.display = 'block'
     setTimeout(() => { t.style.display = 'none' }, duration)
   }
@@ -166,6 +181,7 @@
     document.getElementById('backBtn').href = `inspection-detail.html?id=${inspectionId}`
     getGPS()
     await markInProgress()
+    await loadExistingCaptures()
     renderPage()
   }
 
@@ -176,6 +192,44 @@
         .update({ status: 'InProgress', updated_at: new Date().toISOString() })
         .eq('id', inspectionId)
       inspection.status = 'InProgress'
+    }
+  }
+
+  // Fetch any captures already uploaded for this inspection (e.g. from a previous
+  // Save Progress) and pre-populate the preview lists so the Scout can resume.
+  async function loadExistingCaptures() {
+    const { data: existing, error } = await supabase
+      .from('captures')
+      .select('*')
+      .eq('inspection_id', inspectionId)
+      .eq('is_deleted', false)
+      .eq('is_replaced', false)
+      .order('recorded_at', { ascending: true })
+
+    if (error || !existing || existing.length === 0) return
+
+    hadExistingCaptures = true
+
+    existing.forEach(cap => {
+      const entry = {
+        uploaded: true,
+        capture_id: cap.id,
+        file_name: cap.file_name,
+        file_size_bytes: cap.file_size_bytes,
+        video_url: cap.video_url,
+        gps: { latitude: cap.gps_latitude, longitude: cap.gps_longitude },
+        recorded_at: cap.recorded_at
+      }
+      if (cap.capture_type === 'external') externalVideos.push(entry)
+      else internalVideos.push(entry)
+    })
+
+    // If any existing capture has GPS, reflect that immediately even before
+    // a fresh GPS fix comes back, so the readiness checklist isn't misleading.
+    const anyGps = existing.find(c => c.gps_latitude)
+    if (anyGps && !gpsData.latitude) {
+      gpsData.latitude = anyGps.gps_latitude
+      gpsData.longitude = anyGps.gps_longitude
     }
   }
 
@@ -214,6 +268,14 @@
           <div class="address-sub">${inspection.inspection_type === 'external' ? 'External only' : inspection.inspection_type === 'internal' ? 'Internal only' : 'Internal & External'} · ${inspection.time?.slice(0,5) || ''}</div>
         </div>
       </div>`
+
+    if (hadExistingCaptures) {
+      html += `
+        <div class="resume-banner">
+          <i class="ti ti-history"></i>
+          <div class="resume-banner-text">Welcome back — your previously saved videos are shown below. Continue where you left off.</div>
+        </div>`
+    }
 
     if (isExternal && isInternal) {
       html += `
@@ -298,13 +360,19 @@
     } else {
       html += `<div class="video-preview-list" id="videoList-${activeSection}">`
       videos.forEach((v, idx) => {
+        const name = v.uploaded ? v.file_name : v.file.name
+        const sizeBytes = v.uploaded ? v.file_size_bytes : v.file.size
+        const sizeLabel = sizeBytes ? (sizeBytes / 1024 / 1024).toFixed(1) + ' MB' : ''
+        const hasGps = v.uploaded ? !!v.gps.latitude : !!gpsData.latitude
         html += `
-          <div class="video-preview-item">
-            <div class="video-thumb"><i class="ti ti-video"></i></div>
+          <div class="video-preview-item ${v.uploaded ? 'uploaded' : ''}">
+            <div class="video-thumb ${v.uploaded ? 'uploaded-thumb' : ''}"><i class="ti ${v.uploaded ? 'ti-cloud-check' : 'ti-video'}"></i></div>
             <div class="video-info">
-              <div class="video-name">${v.file.name}</div>
-              <div class="video-size">${(v.file.size / 1024 / 1024).toFixed(1)} MB</div>
-              ${gpsData.latitude ? '<div class="video-gps"><i class="ti ti-map-pin"></i> GPS captured</div>' : ''}
+              <div class="video-name">${name}</div>
+              <div class="video-size">${sizeLabel}</div>
+              ${v.uploaded
+                ? '<div class="video-saved-tag"><i class="ti ti-check"></i> Saved previously</div>'
+                : (hasGps ? '<div class="video-gps"><i class="ti ti-map-pin"></i> GPS captured</div>' : '')}
             </div>
             <button class="btn-remove-video" onclick="removeVideo('${activeSection}', ${idx})">&#215;</button>
           </div>`
@@ -341,7 +409,7 @@
   window.handleFiles = (event, section) => {
     const files = Array.from(event.target.files)
     files.forEach(file => {
-      const entry = { file, gps: { ...gpsData }, recorded_at: new Date().toISOString() }
+      const entry = { file, gps: { ...gpsData }, recorded_at: new Date().toISOString(), uploaded: false }
       if (section === 'external') externalVideos.push(entry)
       else internalVideos.push(entry)
     })
@@ -349,9 +417,21 @@
     updateSubmitChecklist()
   }
 
-  window.removeVideo = (section, idx) => {
-    if (section === 'external') externalVideos.splice(idx, 1)
-    else internalVideos.splice(idx, 1)
+  window.removeVideo = async (section, idx) => {
+    const list = section === 'external' ? externalVideos : internalVideos
+    const entry = list[idx]
+
+    // If this video was already uploaded (from a prior Save Progress), removing
+    // it here should also soft-delete the underlying capture row so it doesn't
+    // silently reappear or get double-counted.
+    if (entry.uploaded && entry.capture_id) {
+      await supabase
+        .from('captures')
+        .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+        .eq('id', entry.capture_id)
+    }
+
+    list.splice(idx, 1)
     renderUploadArea()
     updateSubmitChecklist()
   }
@@ -372,7 +452,7 @@
     const isInternal = ['internal','internalExternal'].includes(inspection.inspection_type)
     const hasExternal = !isExternal || externalVideos.length > 0
     const hasInternal = !isInternal || internalVideos.length > 0
-    const hasGps = !!gpsData.latitude
+    const hasGps = !!gpsData.latitude || externalVideos.some(v => v.uploaded && v.gps.latitude) || internalVideos.some(v => v.uploaded && v.gps.latitude)
     const allReady = hasExternal && hasInternal && hasGps
 
     const items = []
@@ -395,17 +475,16 @@
     if (submitBtn) submitBtn.disabled = !allReady
   }
 
-  async function saveProgress() {
-    showToast('Progress saved. You can continue later from My Jobs.')
-    setTimeout(() => { window.location.href = `inspection-detail.html?id=${inspectionId}` }, 1500)
-  }
+  // Shared upload routine used by both Save Progress and Submit Inspection.
+  // Uploads only videos that haven't already been uploaded (uploaded === false).
+  // Returns true on success, false if any upload failed.
+  async function uploadPendingVideos() {
+    const pending = [
+      ...externalVideos.map((v, i) => ({ v, i, list: externalVideos, type: 'external' })),
+      ...internalVideos.map((v, i) => ({ v, i, list: internalVideos, type: 'internal' }))
+    ].filter(item => !item.v.uploaded)
 
-  async function submitFinal() {
-    const submitBtn = document.getElementById('submitFinalBtn')
-    const saveBtn = document.getElementById('saveProgressBtn')
-    submitBtn.disabled = true
-    submitBtn.innerHTML = '<div class="spinner" style="border-top-color:#fff"></div> Uploading...'
-    saveBtn.disabled = true
+    if (pending.length === 0) return true
 
     const progressWrap = document.getElementById('progressWrap')
     const progressBar = document.getElementById('progressBar')
@@ -413,42 +492,34 @@
     progressWrap.style.display = 'block'
     uploadStatus.style.display = 'block'
 
-    const allVideos = [
-      ...externalVideos.map(v => ({ ...v, type: 'external' })),
-      ...internalVideos.map(v => ({ ...v, type: 'internal' }))
-    ]
+    let done = 0
 
-    let uploaded = 0
-    const captureIds = []
+    for (const item of pending) {
+      const video = item.v
+      uploadStatus.textContent = `Uploading video ${done + 1} of ${pending.length}...`
+      progressBar.style.width = (done / pending.length * 100) + '%'
 
-    for (const video of allVideos) {
-      uploadStatus.textContent = `Uploading video ${uploaded + 1} of ${allVideos.length}...`
-      progressBar.style.width = (uploaded / allVideos.length * 100) + '%'
+      const fileName = `${inspectionId}/${item.type}-${Date.now()}-${video.file.name.replace(/\s/g,'_')}`
 
-      const fileName = `${inspectionId}/${video.type}-${Date.now()}-${video.file.name.replace(/\s/g,'_')}`
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('captures')
         .upload(fileName, video.file, { cacheControl: '3600', upsert: false })
 
       if (uploadError) {
-        showToast('Upload failed: ' + uploadError.message, 5000)
-        submitBtn.disabled = false
-        submitBtn.innerHTML = '<i class="ti ti-send"></i> Submit Inspection'
-        saveBtn.disabled = false
+        showToast('Upload failed: ' + uploadError.message, 5000, true)
         progressWrap.style.display = 'none'
         uploadStatus.style.display = 'none'
-        return
+        return false
       }
 
       const { data: { publicUrl } } = supabase.storage.from('captures').getPublicUrl(fileName)
 
-      const { data: captureRow } = await supabase
+      const { data: captureRow, error: insertError } = await supabase
         .from('captures')
         .insert({
           inspection_id: inspectionId,
           scout_id: currentUser.id,
-          capture_type: video.type,
+          capture_type: item.type,
           video_url: publicUrl,
           file_name: video.file.name,
           file_size_bytes: video.file.size,
@@ -460,12 +531,85 @@
         .select()
         .single()
 
-      if (captureRow) captureIds.push(captureRow.id)
-      uploaded++
+      if (insertError) {
+        showToast('Could not save video record: ' + insertError.message, 5000, true)
+        progressWrap.style.display = 'none'
+        uploadStatus.style.display = 'none'
+        return false
+      }
+
+      // Mark this entry as uploaded in place so re-rendering shows it as saved
+      // and so a subsequent click of either button won't re-upload it.
+      item.list[item.i] = {
+        uploaded: true,
+        capture_id: captureRow.id,
+        file_name: video.file.name,
+        file_size_bytes: video.file.size,
+        video_url: publicUrl,
+        gps: { latitude: video.gps.latitude, longitude: video.gps.longitude },
+        recorded_at: video.recorded_at
+      }
+
+      done++
     }
 
     progressBar.style.width = '100%'
-    uploadStatus.textContent = 'Finalising submission...'
+    uploadStatus.textContent = 'All videos saved.'
+    setTimeout(() => {
+      progressWrap.style.display = 'none'
+      uploadStatus.style.display = 'none'
+    }, 1200)
+
+    return true
+  }
+
+  async function saveProgress() {
+    const saveBtn = document.getElementById('saveProgressBtn')
+    const submitBtn = document.getElementById('submitFinalBtn')
+    saveBtn.disabled = true
+    submitBtn.disabled = true
+    saveBtn.innerHTML = '<div class="spinner small"></div> Saving...'
+
+    const success = await uploadPendingVideos()
+
+    if (!success) {
+      saveBtn.disabled = false
+      submitBtn.disabled = false
+      saveBtn.textContent = 'Save progress and continue later'
+      updateSubmitChecklist()
+      return
+    }
+
+    // Status stays InProgress — this is a save, not a submission.
+    await supabase
+      .from('inspections')
+      .update({ status: 'InProgress', updated_at: new Date().toISOString() })
+      .eq('id', inspectionId)
+
+    renderUploadArea()
+    updateSubmitChecklist()
+
+    showToast('Progress saved. You can continue later from My Jobs.')
+    setTimeout(() => { window.location.href = `inspection-detail.html?id=${inspectionId}` }, 1500)
+  }
+
+  async function submitFinal() {
+    const submitBtn = document.getElementById('submitFinalBtn')
+    const saveBtn = document.getElementById('saveProgressBtn')
+    submitBtn.disabled = true
+    submitBtn.innerHTML = '<div class="spinner small" style="border-top-color:#fff"></div> Uploading...'
+    saveBtn.disabled = true
+
+    const success = await uploadPendingVideos()
+
+    if (!success) {
+      submitBtn.disabled = false
+      submitBtn.innerHTML = '<i class="ti ti-send"></i> Submit Inspection'
+      saveBtn.disabled = false
+      renderUploadArea()
+      updateSubmitChecklist()
+      return
+    }
 
     await supabase
       .from('inspections')
