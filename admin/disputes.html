@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Disputes - Spekto Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --dark: #1A0533; --red: #DC2626; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 230px; background: var(--dark); display: flex; flex-direction: column; padding: 24px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .s-mark { width: 34px; height: 34px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -1px; }
+    .admin-tag { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+    .nav-section { padding: 16px 12px 4px; }
+    .nav-section-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px; margin-bottom: 4px; }
+    .nav { display: flex; flex-direction: column; gap: 1px; padding: 0 12px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px; cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.55); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
+    .nav-item i { font-size: 16px; flex-shrink: 0; }
+    .nav-badge { margin-left: auto; background: #DC2626; color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+    .sidebar-foot { margin-top: auto; padding: 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .admin-user { display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+    .admin-avatar { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .admin-info { flex: 1; min-width: 0; }
+    .admin-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .admin-role { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+    .btn-logout-sm { width: 28px; height: 28px; background: rgba(255,255,255,0.08); border: none; border-radius: 6px; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .btn-logout-sm:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .main { flex: 1; margin-left: 230px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; flex-wrap: wrap; gap: 10px; }
+    .topbar-title { font-size: 17px; font-weight: 700; color: #0D0D0D; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .search-box { display: flex; align-items: center; gap: 8px; background: #F7F5FA; border: 1.5px solid #E0E0E0; border-radius: 8px; padding: 0 12px; height: 36px; }
+    .search-box i { font-size: 15px; color: #aaa; }
+    .search-box input { border: none; background: transparent; outline: none; font-size: 13px; font-family: 'Inter', sans-serif; color: #0D0D0D; width: 200px; }
+    .content { padding: 24px 28px; }
+    .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 20px; }
+    .stat-card { background: #fff; border-radius: 10px; border: 1px solid var(--border); padding: 14px 16px; cursor: pointer; transition: box-shadow 0.15s; }
+    .stat-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .stat-card.active-filter { border-color: var(--purple); background: var(--tint); }
+    .stat-label { font-size: 10px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+    .stat-val { font-size: 22px; font-weight: 800; color: #0D0D0D; font-family: 'DM Sans', sans-serif; }
+    .stat-card.active-filter .stat-label { color: var(--purple); }
+    .stat-card.active-filter .stat-val { color: var(--purple); }
+    .tabs { display: flex; border-bottom: 2px solid #F0F0F0; margin-bottom: 16px; }
+    .tab { padding: 10px 20px; font-size: 13px; font-weight: 600; color: #999; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; }
+    .tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+    .dispute-list { display: flex; flex-direction: column; gap: 10px; }
+    .dispute-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: box-shadow 0.15s; }
+    .dispute-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.06); border-color: #D4B8F5; }
+    .dispute-card-inner { padding: 16px 20px; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 120px; gap: 12px; align-items: center; }
+    .dispute-addr { font-size: 13px; font-weight: 600; color: #0D0D0D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dispute-reason { font-size: 11px; color: #999; margin-top: 2px; }
+    .td { font-size: 13px; color: #555; }
+    .badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; display: inline-block; }
+    .badge-Submitted { background: #EDE4F7; color: #560591; }
+    .badge-UnderReview { background: #E0F2FE; color: #0369A1; }
+    .badge-AwaitingResponse { background: #FEF9C3; color: #854D0E; }
+    .badge-DecisionMade { background: #EDE9FE; color: #5B21B6; }
+    .badge-Resolved { background: #DCFCE7; color: #166534; }
+    .badge-Dismissed { background: #F3F4F6; color: #6B7280; }
+    .sla-pill { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 8px; white-space: nowrap; display: inline-block; }
+    .sla-ok { background: #DCFCE7; color: #166534; }
+    .sla-warn { background: #FEF9C3; color: #854D0E; }
+    .sla-urgent { background: #FEE2E2; color: #991B1B; }
+    .sla-overdue { background: #1F2937; color: #fff; }
+    .btn-sm { height: 28px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 4px; padding: 0 10px; border: none; white-space: nowrap; }
+    .btn-view-sm { background: var(--tint); color: var(--purple); }
+    .btn-assign-sm { background: #1F2937; color: #fff; }
+    .dispute-actions { display: flex; gap: 6px; }
+    .unassigned-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 8px; background: #FEF9C3; color: #854D0E; display: inline-block; }
+    .assigned-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 8px; background: #DCFCE7; color: #166534; display: inline-block; }
+    .empty-state { text-align: center; padding: 60px 20px; background: #fff; border-radius: 14px; border: 1px solid var(--border); }
+    .empty-state i { font-size: 36px; color: #ddd; margin-bottom: 12px; display: block; }
+    .empty-state p { font-size: 13px; color: #999; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 1100px) {
+      .dispute-card-inner { grid-template-columns: 2fr 1fr 1fr 100px; }
+      .td:nth-child(4), .td:nth-child(5) { display: none; }
+    }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .stats { grid-template-columns: repeat(3, 1fr); }
+      .dispute-card-inner { grid-template-columns: 1fr 80px; }
+      .td { display: none; }
+      .dispute-actions { display: flex; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div class="s-name">SPEKTO</div>
+        <div class="admin-tag">Admin Portal</div>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Overview</div>
+      <div class="nav">
+        <a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Operations</div>
+      <div class="nav">
+        <a class="nav-item" href="inspections.html"><i class="ti ti-clipboard-list"></i> Inspections</a>
+        <a class="nav-item active" href="disputes.html"><i class="ti ti-alert-triangle"></i> Disputes <span class="nav-badge" id="disputeBadge">0</span></a>
+        <a class="nav-item" href="payouts.html"><i class="ti ti-wallet"></i> Payouts</a>
+        <a class="nav-item" href="verification.html"><i class="ti ti-id-badge"></i> Verification</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Users</div>
+      <div class="nav">
+        <a class="nav-item" href="users.html"><i class="ti ti-users"></i> All Users</a>
+        <a class="nav-item" href="scouts.html"><i class="ti ti-camera"></i> Scouts</a>
+        <a class="nav-item" href="clients.html"><i class="ti ti-building"></i> Clients</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Platform</div>
+      <div class="nav">
+        <a class="nav-item" href="marketplace.html"><i class="ti ti-shopping-bag"></i> Marketplace</a>
+        <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+      </div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="admin-user">
+        <div class="admin-avatar" id="adminAvatar">?</div>
+        <div class="admin-info">
+          <div class="admin-name" id="adminName">Loading...</div>
+          <div class="admin-role" id="adminRole">Admin</div>
+        </div>
+        <button class="btn-logout-sm" id="logoutBtn"><i class="ti ti-logout"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">Disputes</div>
+      <div class="topbar-right">
+        <div class="search-box">
+          <i class="ti ti-search"></i>
+          <input type="text" id="searchInput" placeholder="Search address...">
+        </div>
+      </div>
+    </div>
+
+    <div class="content" id="mainContent">
+      <div class="loading"><div class="spinner"></div> Loading disputes...</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let allDisputes = []
+  let filteredDisputes = []
+  let currentTab = 'open'
+  let searchQuery = ''
+  let adminData = null
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = 'login.html'; return; }
+
+    const { data: admin } = await supabase
+      .from('admins')
+      .select('id, first_name, last_name, role, is_active')
+      .eq('email', user.email)
+      .single()
+
+    if (!admin || !admin.is_active) {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+      return
+    }
+
+    adminData = admin
+    const initials = (admin.first_name?.[0] || '') + (admin.last_name?.[0] || '')
+    document.getElementById('adminAvatar').textContent = initials.toUpperCase()
+    document.getElementById('adminName').textContent = admin.first_name + ' ' + admin.last_name
+    document.getElementById('adminRole').textContent = admin.role === 'superadmin' ? 'Super Admin' : 'Admin'
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+    })
+
+    await loadDisputes()
+  }
+
+  async function loadDisputes() {
+    const { data, error } = await supabase
+      .from('disputes')
+      .select(`
+        *,
+        inspections(address, inspection_type, pricing_snapshot),
+        raised_by_user:raised_by(first_name, last_name, role),
+        assigned_admin:assigned_to(first_name, last_name)
+      `)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      document.getElementById('mainContent').innerHTML =
+        '<div class="loading">Error loading disputes. Please refresh.</div>'
+      return
+    }
+
+    allDisputes = data || []
+    document.getElementById('disputeBadge').textContent =
+      allDisputes.filter(d => !['Resolved','Dismissed'].includes(d.status)).length
+    applyFilters()
+  }
+
+  function applyFilters() {
+    filteredDisputes = allDisputes.filter(d => {
+      const isOpen = !['Resolved','Dismissed'].includes(d.status)
+      const matchesTab = currentTab === 'open' ? isOpen
+        : currentTab === 'resolved' ? d.status === 'Resolved'
+        : currentTab === 'all'
+      const matchesSearch = !searchQuery ||
+        d.inspections?.address?.toLowerCase().includes(searchQuery.toLowerCase())
+      return matchesTab && matchesSearch
+    })
+    renderPage()
+  }
+
+  function getSlaInfo(dispute) {
+    if (!dispute.due_at || ['Resolved','Dismissed'].includes(dispute.status)) return null
+    const hoursLeft = Math.floor((new Date(dispute.due_at) - new Date()) / 3600000)
+    if (hoursLeft < 0) return { class: 'sla-overdue', text: 'Overdue' }
+    if (hoursLeft <= 6) return { class: 'sla-urgent', text: `${hoursLeft}h left` }
+    if (hoursLeft <= 24) return { class: 'sla-warn', text: `${hoursLeft}h left` }
+    return { class: 'sla-ok', text: `${hoursLeft}h left` }
+  }
+
+  function renderPage() {
+    const open = allDisputes.filter(d => !['Resolved','Dismissed'].includes(d.status))
+    const unassigned = open.filter(d => !d.assigned_to)
+    const overdue = open.filter(d => d.due_at && new Date(d.due_at) < new Date())
+    const resolved = allDisputes.filter(d => d.status === 'Resolved')
+    const dismissed = allDisputes.filter(d => d.status === 'Dismissed')
+
+    const html = `
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Total disputes</div>
+          <div class="stat-val">${allDisputes.length}</div>
+        </div>
+        <div class="stat-card" style="${open.length > 0 ? 'border-left:3px solid #DC2626' : ''}">
+          <div class="stat-label">Open</div>
+          <div class="stat-val" style="color:${open.length > 0 ? '#DC2626' : '#0D0D0D'}">${open.length}</div>
+        </div>
+        <div class="stat-card" style="${overdue.length > 0 ? 'border-left:3px solid #F59E0B' : ''}">
+          <div class="stat-label">Overdue SLA</div>
+          <div class="stat-val" style="color:${overdue.length > 0 ? '#854D0E' : '#0D0D0D'}">${overdue.length}</div>
+        </div>
+        <div class="stat-card" style="${unassigned.length > 0 ? 'border-left:3px solid #F59E0B' : ''}">
+          <div class="stat-label">Unassigned</div>
+          <div class="stat-val">${unassigned.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Resolved</div>
+          <div class="stat-val">${resolved.length}</div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab ${currentTab === 'open' ? 'active' : ''}" onclick="setTab('open')">Open (${open.length})</div>
+        <div class="tab ${currentTab === 'resolved' ? 'active' : ''}" onclick="setTab('resolved')">Resolved (${resolved.length})</div>
+        <div class="tab ${currentTab === 'all' ? 'active' : ''}" onclick="setTab('all')">All (${allDisputes.length})</div>
+      </div>
+
+      <div class="dispute-list" id="disputeList"></div>`
+
+    document.getElementById('mainContent').innerHTML = html
+    renderList()
+
+    document.getElementById('searchInput').value = searchQuery
+    document.getElementById('searchInput').addEventListener('input', e => {
+      searchQuery = e.target.value.trim()
+      applyFilters()
+    })
+  }
+
+  function renderList() {
+    const container = document.getElementById('disputeList')
+    if (!container) return
+
+    if (filteredDisputes.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <i class="ti ti-mood-happy"></i>
+          <p>No disputes found</p>
+        </div>`
+      return
+    }
+
+    container.innerHTML = filteredDisputes.map(d => {
+      const sla = getSlaInfo(d)
+      const assignedName = d.assigned_admin
+        ? d.assigned_admin.first_name + ' ' + d.assigned_admin.last_name
+        : null
+      const raisedBy = d.raised_by_user
+        ? d.raised_by_user.first_name + ' ' + d.raised_by_user.last_name
+        : '—'
+      const amount = d.inspections?.pricing_snapshot?.total
+        ? '$' + parseFloat(d.inspections.pricing_snapshot.total).toFixed(2)
+        : '—'
+      const createdAt = new Date(d.created_at).toLocaleDateString('en-AU', {
+        day: 'numeric', month: 'short', year: 'numeric'
+      })
+      const statusLabel = d.status.replace(/([A-Z])/g, ' $1').trim()
+
+      return `
+        <div class="dispute-card" onclick="window.location.href='dispute-detail.html?id=${d.id}'">
+          <div class="dispute-card-inner">
+            <div>
+              <div class="dispute-addr">${d.inspections?.address || '—'}</div>
+              <div class="dispute-reason">${d.reason?.replace(/([A-Z])/g, ' $1').trim() || '—'} · Raised by ${raisedBy}</div>
+            </div>
+            <div class="td">
+              <span class="badge badge-${d.status}">${statusLabel}</span>
+            </div>
+            <div class="td">
+              ${sla ? `<span class="sla-pill ${sla.class}">${sla.text}</span>` : '—'}
+            </div>
+            <div class="td">
+              ${assignedName
+                ? `<span class="assigned-badge">${assignedName.split(' ')[0]}</span>`
+                : `<span class="unassigned-badge">Unassigned</span>`}
+            </div>
+            <div class="td">${amount} · ${createdAt}</div>
+            <div class="dispute-actions">
+              <button class="btn-sm btn-view-sm" onclick="event.stopPropagation();window.location.href='dispute-detail.html?id=${d.id}'">
+                <i class="ti ti-eye" style="font-size:12px"></i> View
+              </button>
+            </div>
+          </div>
+        </div>`
+    }).join('')
+  }
+
+  window.setTab = (tab) => {
+    currentTab = tab
+    applyFilters()
+  }
+
+  init()
+</script>
+</body>
+</html>
