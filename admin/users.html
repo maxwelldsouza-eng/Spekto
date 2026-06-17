@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Users - Spekto Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --dark: #1A0533; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 230px; background: var(--dark); display: flex; flex-direction: column; padding: 24px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .s-mark { width: 34px; height: 34px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -1px; }
+    .admin-tag { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+    .nav-section { padding: 16px 12px 4px; }
+    .nav-section-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px; margin-bottom: 4px; }
+    .nav { display: flex; flex-direction: column; gap: 1px; padding: 0 12px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px; font-size: 13px; color: rgba(255,255,255,0.55); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
+    .nav-item i { font-size: 16px; flex-shrink: 0; }
+    .nav-badge { margin-left: auto; background: #DC2626; color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+    .sidebar-foot { margin-top: auto; padding: 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .admin-user { display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+    .admin-avatar { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .admin-info { flex: 1; min-width: 0; }
+    .admin-name-s { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .admin-role-s { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+    .btn-logout-sm { width: 28px; height: 28px; background: rgba(255,255,255,0.08); border: none; border-radius: 6px; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .main { flex: 1; margin-left: 230px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; flex-wrap: wrap; gap: 10px; }
+    .topbar-title { font-size: 17px; font-weight: 700; color: #0D0D0D; }
+    .search-box { display: flex; align-items: center; gap: 8px; background: #F7F5FA; border: 1.5px solid #E0E0E0; border-radius: 8px; padding: 0 12px; height: 36px; }
+    .search-box i { font-size: 15px; color: #aaa; }
+    .search-box input { border: none; background: transparent; outline: none; font-size: 13px; font-family: 'Inter', sans-serif; color: #0D0D0D; width: 200px; }
+    .content { padding: 24px 28px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: #fff; border-radius: 10px; border: 1px solid var(--border); padding: 14px 16px; }
+    .stat-label { font-size: 10px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+    .stat-val { font-size: 22px; font-weight: 800; color: #0D0D0D; font-family: 'DM Sans', sans-serif; }
+    .tabs { display: flex; border-bottom: 2px solid #F0F0F0; margin-bottom: 16px; }
+    .tab { padding: 10px 20px; font-size: 13px; font-weight: 600; color: #999; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; }
+    .tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+    .table-wrap { background: #fff; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; }
+    .table-header { display: grid; grid-template-columns: 2fr 2fr 1fr 1fr 1fr 100px; gap: 0; padding: 12px 20px; background: #FAFAFA; border-bottom: 1px solid var(--border); }
+    .th { font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.4px; }
+    .table-row { display: grid; grid-template-columns: 2fr 2fr 1fr 1fr 1fr 100px; gap: 0; padding: 14px 20px; border-bottom: 1px solid #F9F9F9; align-items: center; cursor: pointer; transition: background 0.1s; }
+    .table-row:hover { background: #FAFAFA; }
+    .table-row:last-child { border-bottom: none; }
+    .td { font-size: 13px; color: #555; }
+    .user-cell { display: flex; align-items: center; gap: 10px; }
+    .user-av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .av-client { background: #E1F5EE; color: #085041; }
+    .av-scout { background: #EDE4F7; color: #560591; }
+    .user-name { font-size: 13px; font-weight: 600; color: #0D0D0D; }
+    .user-email { font-size: 11px; color: #999; }
+    .badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; display: inline-block; }
+    .badge-client { background: #E1F5EE; color: #085041; }
+    .badge-scout { background: #EDE4F7; color: #560591; }
+    .badge-active { background: #DCFCE7; color: #166534; }
+    .badge-inactive { background: #F3F4F6; color: #6B7280; }
+    .badge-verified { background: #DCFCE7; color: #166534; }
+    .badge-pending { background: #FEF9C3; color: #854D0E; }
+    .btn-sm { height: 28px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 4px; padding: 0 10px; border: none; }
+    .btn-view-sm { background: var(--tint); color: var(--purple); }
+    .empty-state { text-align: center; padding: 60px 20px; }
+    .empty-state i { font-size: 36px; color: #ddd; margin-bottom: 12px; display: block; }
+    .empty-state p { font-size: 13px; color: #999; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .pagination { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--border); background: #FAFAFA; }
+    .pagination-info { font-size: 12px; color: #999; }
+    .pagination-btns { display: flex; gap: 6px; }
+    .btn-page { height: 30px; padding: 0 12px; border-radius: 6px; border: 1.5px solid #E0E0E0; background: #fff; font-size: 12px; font-weight: 600; color: #444; cursor: pointer; }
+    .btn-page.active { background: var(--purple); border-color: var(--purple); color: #fff; }
+    .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
+    @media (max-width: 1100px) {
+      .table-header { grid-template-columns: 2fr 2fr 1fr 80px; }
+      .table-row { grid-template-columns: 2fr 2fr 1fr 80px; }
+      .th:nth-child(4), .td:nth-child(4),
+      .th:nth-child(5), .td:nth-child(5) { display: none; }
+    }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .search-box input { width: 140px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div class="s-name">SPEKTO</div>
+        <div class="admin-tag">Admin Portal</div>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Overview</div>
+      <div class="nav"><a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Operations</div>
+      <div class="nav">
+        <a class="nav-item" href="inspections.html"><i class="ti ti-clipboard-list"></i> Inspections</a>
+        <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> Disputes <span class="nav-badge" id="disputeBadge">0</span></a>
+        <a class="nav-item" href="payouts.html"><i class="ti ti-wallet"></i> Payouts</a>
+        <a class="nav-item" href="verification.html"><i class="ti ti-id-badge"></i> Verification</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Users</div>
+      <div class="nav">
+        <a class="nav-item active" href="users.html"><i class="ti ti-users"></i> All Users</a>
+        <a class="nav-item" href="scouts.html"><i class="ti ti-camera"></i> Scouts</a>
+        <a class="nav-item" href="clients.html"><i class="ti ti-building"></i> Clients</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Platform</div>
+      <div class="nav">
+        <a class="nav-item" href="marketplace.html"><i class="ti ti-shopping-bag"></i> Marketplace</a>
+        <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+      </div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="admin-user">
+        <div class="admin-avatar" id="adminAvatar">?</div>
+        <div class="admin-info">
+          <div class="admin-name-s" id="adminName">Loading...</div>
+          <div class="admin-role-s" id="adminRole">Admin</div>
+        </div>
+        <button class="btn-logout-sm" id="logoutBtn"><i class="ti ti-logout"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">All Users</div>
+      <div class="search-box">
+        <i class="ti ti-search"></i>
+        <input type="text" id="searchInput" placeholder="Search name or email...">
+      </div>
+    </div>
+    <div class="content" id="mainContent">
+      <div class="loading"><div class="spinner"></div> Loading users...</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let allUsers = []
+  let filteredUsers = []
+  let currentTab = 'all'
+  let searchQuery = ''
+  let currentPage = 1
+  const perPage = 25
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = 'login.html'; return; }
+
+    const { data: admin } = await supabase
+      .from('admins')
+      .select('first_name, last_name, role, is_active')
+      .eq('email', user.email)
+      .single()
+
+    if (!admin || !admin.is_active) {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+      return
+    }
+
+    const initials = (admin.first_name?.[0] || '') + (admin.last_name?.[0] || '')
+    document.getElementById('adminAvatar').textContent = initials.toUpperCase()
+    document.getElementById('adminName').textContent = admin.first_name + ' ' + admin.last_name
+    document.getElementById('adminRole').textContent = admin.role === 'superadmin' ? 'Super Admin' : 'Admin'
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+    })
+
+    const { data: openDisputes } = await supabase
+      .from('disputes').select('id').not('status', 'in', '("Resolved","Dismissed")')
+    document.getElementById('disputeBadge').textContent = (openDisputes || []).length
+
+    await loadUsers()
+  }
+
+  async function loadUsers() {
+    const { data, error } = await supabase
+      .from('users')
+      .select(`
+        *,
+        scout_profile:scout_profiles(scout_status, id_verified, total_completions, rating)
+      `)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      document.getElementById('mainContent').innerHTML =
+        '<div class="loading">Error loading users. Please refresh.</div>'
+      return
+    }
+
+    allUsers = data || []
+    applyFilters()
+  }
+
+  function applyFilters() {
+    filteredUsers = allUsers.filter(u => {
+      const matchesTab = currentTab === 'all'
+        || (currentTab === 'clients' && u.role === 'client')
+        || (currentTab === 'scouts' && u.role === 'scout')
+      const matchesSearch = !searchQuery ||
+        `${u.first_name} ${u.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        u.email?.toLowerCase().includes(searchQuery.toLowerCase())
+      return matchesTab && matchesSearch
+    })
+    currentPage = 1
+    renderPage()
+  }
+
+  function renderPage() {
+    const clients = allUsers.filter(u => u.role === 'client')
+    const scouts = allUsers.filter(u => u.role === 'scout')
+    const active = allUsers.filter(u => u.is_active)
+    const verifiedScouts = allUsers.filter(u => u.role === 'scout' && u.scout_profile?.id_verified)
+
+    const start = (currentPage - 1) * perPage
+    const end = start + perPage
+    const pageItems = filteredUsers.slice(start, end)
+    const totalPages = Math.ceil(filteredUsers.length / perPage)
+
+    const html = `
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Total users</div>
+          <div class="stat-val">${allUsers.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Clients</div>
+          <div class="stat-val">${clients.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Scouts</div>
+          <div class="stat-val">${scouts.length}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Verified scouts</div>
+          <div class="stat-val">${verifiedScouts.length}</div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab ${currentTab==='all'?'active':''}" onclick="setTab('all')">All (${allUsers.length})</div>
+        <div class="tab ${currentTab==='clients'?'active':''}" onclick="setTab('clients')">Clients (${clients.length})</div>
+        <div class="tab ${currentTab==='scouts'?'active':''}" onclick="setTab('scouts')">Scouts (${scouts.length})</div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header">
+          <div class="th">User</div>
+          <div class="th">Email</div>
+          <div class="th">Role</div>
+          <div class="th">Status</div>
+          <div class="th">Joined</div>
+          <div class="th">Actions</div>
+        </div>
+        ${pageItems.length === 0
+          ? `<div class="empty-state"><i class="ti ti-users-off"></i><p>No users found</p></div>`
+          : pageItems.map(u => {
+              const name = u.first_name + ' ' + u.last_name
+              const initials = (u.first_name?.[0]||'') + (u.last_name?.[0]||'')
+              const joined = new Date(u.created_at).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})
+              const scoutStatus = u.scout_profile?.id_verified ? 'verified'
+                : u.scout_profile?.scout_status === 'PendingVerification' ? 'pending'
+                : u.is_active ? 'active' : 'inactive'
+              const statusLabel = u.role === 'scout'
+                ? (u.scout_profile?.id_verified ? 'Verified' : u.scout_profile?.scout_status || 'Pending')
+                : (u.is_active ? 'Active' : 'Inactive')
+              const statusClass = u.role === 'scout'
+                ? (u.scout_profile?.id_verified ? 'badge-verified' : 'badge-pending')
+                : (u.is_active ? 'badge-active' : 'badge-inactive')
+              return `
+                <div class="table-row" onclick="window.location.href='user-detail.html?id=${u.id}'">
+                  <div class="td">
+                    <div class="user-cell">
+                      <div class="user-av ${u.role === 'scout' ? 'av-scout' : 'av-client'}">${initials.toUpperCase()}</div>
+                      <div>
+                        <div class="user-name">${name}</div>
+                        ${u.role === 'scout' && u.scout_profile?.total_completions > 0
+                          ? `<div class="user-email">${u.scout_profile.total_completions} jobs · ${u.scout_profile.rating ? u.scout_profile.rating + '★' : 'no rating'}</div>`
+                          : ''}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="td">${u.email}</div>
+                  <div class="td"><span class="badge badge-${u.role}">${u.role}</span></div>
+                  <div class="td"><span class="badge ${statusClass}">${statusLabel.replace('PendingVerification','Pending')}</span></div>
+                  <div class="td">${joined}</div>
+                  <div class="td">
+                    <button class="btn-sm btn-view-sm" onclick="event.stopPropagation();window.location.href='user-detail.html?id=${u.id}'">
+                      <i class="ti ti-eye" style="font-size:12px"></i> View
+                    </button>
+                  </div>
+                </div>`
+            }).join('')}
+        <div class="pagination">
+          <div class="pagination-info">Showing ${start+1}–${Math.min(end,filteredUsers.length)} of ${filteredUsers.length}</div>
+          <div class="pagination-btns">
+            <button class="btn-page" onclick="goPage(${currentPage-1})" ${currentPage<=1?'disabled':''}>← Prev</button>
+            ${Array.from({length:Math.min(totalPages,5)},(_,i)=>i+1).map(p=>`
+              <button class="btn-page ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`).join('')}
+            <button class="btn-page" onclick="goPage(${currentPage+1})" ${currentPage>=totalPages?'disabled':''}>Next →</button>
+          </div>
+        </div>
+      </div>`
+
+    document.getElementById('mainContent').innerHTML = html
+    document.getElementById('searchInput').value = searchQuery
+    document.getElementById('searchInput').addEventListener('input', e => {
+      searchQuery = e.target.value.trim()
+      applyFilters()
+    })
+  }
+
+  window.setTab = (tab) => { currentTab = tab; applyFilters(); }
+  window.goPage = (page) => {
+    const totalPages = Math.ceil(filteredUsers.length / perPage)
+    if (page < 1 || page > totalPages) return
+    currentPage = page
+    renderPage()
+    window.scrollTo(0, 0)
+  }
+
+  init()
+</script>
+</body>
+</html>
