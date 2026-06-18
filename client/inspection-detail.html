@@ -92,6 +92,20 @@
     .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
     .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .dispute-chat { background: #fff; border: 1.5px solid #EEE; border-radius: 12px; padding: 20px; margin-top: 16px; }
+    .dispute-chat-title { font-size: 13px; font-weight: 700; color: #333; margin-bottom: 14px; }
+    .chat-thread { max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+    .chat-bubble { max-width: 75%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; }
+    .chat-bubble.admin { align-self: flex-start; background: #F3F4F6; color: #333; border-bottom-left-radius: 4px; }
+    .chat-bubble.self { align-self: flex-end; background: #560591; color: #fff; border-bottom-right-radius: 4px; }
+    .chat-sender { font-size: 11px; font-weight: 600; margin-bottom: 3px; opacity: 0.7; }
+    .chat-time { font-size: 10px; margin-top: 4px; opacity: 0.6; }
+    .chat-empty { text-align: center; font-size: 13px; color: #999; padding: 20px 0; }
+    .chat-input-row { display: flex; gap: 8px; }
+    .chat-textarea { flex: 1; border: 1.5px solid #E0E0E0; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: Inter, sans-serif; resize: none; height: 60px; }
+    .chat-textarea:focus { outline: none; border-color: #560591; }
+    .btn-chat-send { height: 60px; padding: 0 18px; background: #560591; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: Inter, sans-serif; }
+    .btn-chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
     @media (max-width: 700px) {
       .sidebar { display: none; }
       .main { margin-left: 0; }
@@ -186,6 +200,7 @@
   )
 
   let inspection = null
+  let dispute = null
   let captures = []
   let currentUser = null
 
@@ -235,6 +250,17 @@
         .order('capture_type', { ascending: true })
         .order('recorded_at', { ascending: true })
       captures = captureData || []
+    }
+
+    if (inspection.status === 'Disputed') {
+      const { data: disputeData } = await supabase
+        .from('disputes')
+        .select('id, status, reason, description')
+        .eq('inspection_id', inspectionId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+      dispute = disputeData
     }
 
     render()
@@ -312,7 +338,25 @@
       html += renderStateCard()
     }
 
+    if (inspection.status === 'Disputed') {
+      html += `
+        <div id="disputeChatSection" class="dispute-chat">
+          <div class="dispute-chat-title"><i class="ti ti-message-circle" style="vertical-align:-2px;margin-right:6px"></i>Dispute Communications</div>
+          <div class="chat-thread" id="clientChatThread">
+            <div class="chat-empty">Loading messages...</div>
+          </div>
+          <div class="chat-input-row">
+            <textarea class="chat-textarea" id="clientChatInput" placeholder="Type a message to Spekto support..."></textarea>
+            <button class="btn-chat-send" id="clientChatSendBtn">Send</button>
+          </div>
+        </div>`
+    }
+
     content.innerHTML = html
+
+    if (inspection.status === 'Disputed') {
+      initDisputeChat()
+    }
   }
 
   function renderStateCard() {
@@ -535,6 +579,74 @@
   document.getElementById('dismissCancelBtn').addEventListener('click', () => {
     document.getElementById('cancelPanel').style.display = 'none'
   })
+
+  async function loadDisputeMessages() {
+    if (!dispute) return []
+    const { data: msgs } = await supabase
+      .from('dispute_messages')
+      .select('*')
+      .eq('dispute_id', dispute.id)
+      .eq('is_internal', false)
+      .neq('sent_by_type', 'Scout')
+      .order('created_at', { ascending: true })
+    return msgs || []
+  }
+
+  function renderChatThread(msgs) {
+    const thread = document.getElementById('clientChatThread')
+    if (!thread) return
+    if (msgs.length === 0) {
+      thread.innerHTML = '<div class="chat-empty">No messages yet — Spekto support will be in touch shortly.</div>'
+      return
+    }
+    thread.innerHTML = msgs.map(msg => {
+      const isSelf = msg.sent_by_type === 'Client'
+      const senderLabel = isSelf ? 'You' : 'Spekto Support'
+      const time = new Date(msg.created_at).toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+      return `
+        <div class="chat-bubble ${isSelf ? 'self' : 'admin'}">
+          <div class="chat-sender">${senderLabel}</div>
+          ${msg.message}
+          <div class="chat-time">${time}</div>
+        </div>`
+    }).join('')
+    thread.scrollTop = thread.scrollHeight
+  }
+
+  async function initDisputeChat() {
+    const chatSection = document.getElementById('disputeChatSection')
+    if (!chatSection || !dispute) return
+    const msgs = await loadDisputeMessages()
+    renderChatThread(msgs)
+
+    document.getElementById('clientChatSendBtn').addEventListener('click', async () => {
+      const textarea = document.getElementById('clientChatInput')
+      const sendBtn = document.getElementById('clientChatSendBtn')
+      const text = textarea.value.trim()
+      if (!text) return
+      sendBtn.disabled = true
+      sendBtn.textContent = 'Sending...'
+      const { error } = await supabase
+        .from('dispute_messages')
+        .insert({
+          dispute_id: dispute.id,
+          sent_by_type: 'Client',
+          sent_by_id: currentUser.id,
+          message: text,
+          message_type: 'FreeFormFollowUp',
+          is_internal: false
+        })
+      sendBtn.disabled = false
+      sendBtn.textContent = 'Send'
+      if (!error) {
+        textarea.value = ''
+        const updated = await loadDisputeMessages()
+        renderChatThread(updated)
+      } else {
+        alert('Failed to send message. Please try again.')
+      }
+    })
+  }
 
   init()
 </script>
