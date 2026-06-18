@@ -86,8 +86,14 @@
     .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
     .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    @media (max-width: 700px) {
-      .sidebar { display: none; }
+    .menu-toggle { display: none; width: 36px; height: 36px; border: none; background: transparent; cursor: pointer; align-items: center; justify-content: center; border-radius: 8px; padding: 0; flex-shrink: 0; }
+    .menu-toggle i { font-size: 22px; color: #555; }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 99; }
+    .sidebar-overlay.open { display: block; }
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-220px); transition: transform 0.25s ease; }
+      .sidebar.open { transform: translateX(0); }
+      .menu-toggle { display: flex; }
       .main { margin-left: 0; }
       .stats { grid-template-columns: repeat(2, 1fr); }
       .content { padding: 16px; }
@@ -97,6 +103,7 @@
 </head>
 <body>
 <div class="shell">
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
   <aside class="sidebar">
     <div class="sidebar-logo">
       <div class="s-mark">
@@ -132,6 +139,7 @@
 
   <div class="main">
     <div class="topbar">
+      <button class="menu-toggle" id="menuToggle"><i class="ti ti-menu-2"></i></button>
       <div class="topbar-title">My Disputes</div>
     </div>
     <div class="content" id="mainContent">
@@ -297,6 +305,21 @@
   })
 
   init()
+
+  document.getElementById('menuToggle').addEventListener('click', () => {
+    document.querySelector('.sidebar').classList.toggle('open')
+    document.getElementById('sidebarOverlay').classList.toggle('open')
+  })
+  document.getElementById('sidebarOverlay').addEventListener('click', () => {
+    document.querySelector('.sidebar').classList.remove('open')
+    document.getElementById('sidebarOverlay').classList.remove('open')
+  })
+  document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelector('.sidebar').classList.remove('open')
+      document.getElementById('sidebarOverlay').classList.remove('open')
+    })
+  })
 </script>
 </body>
 </html>
