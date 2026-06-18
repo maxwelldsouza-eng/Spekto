@@ -159,6 +159,7 @@
     .badge-Disputed { background: #FEE2E2; color: #991B1B; }
     .badge-Paid { background: #D1FAE5; color: #065F46; }
     .badge-Cancelled { background: #F3F4F6; color: #6B7280; }
+    .insp-ref { font-size: 11px; color: #aaa; font-weight: 500; margin-bottom: 6px; letter-spacing: 0.3px; }
 
     /* EMPTY STATE */
     .empty-state {
@@ -364,6 +365,7 @@
           <span class="badge badge-${insp.status}">${insp.status.replace('PendingPayment', 'Pending Payment').replace('InProgress', 'In Progress')}</span>
         </div>
         <div class="tile-addr">${insp.address}</div>
+        <div class="insp-ref">#${insp.ref_number || ''}</div>
         <div class="tile-meta">
           <div class="tile-meta-row"><i class="ti ti-clock"></i> ${insp.time?.slice(0,5) || ''}</div>
           <div class="tile-meta-row"><i class="ti ti-camera"></i> ${typeLabel}</div>
