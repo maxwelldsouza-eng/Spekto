@@ -527,7 +527,7 @@
         await supabase.from('instructions').insert(instructionRows)
       }
 
-      window.location.href = `inspection-detail.html?id=${editId}`
+      window.location.href = 'dashboard.html'
     } else {
       // INSERT new inspection
       const { data: inspection, error } = await supabase
