@@ -16,13 +16,10 @@ Repo: `https://github.com/maxwelldsouza-eng/Spekto` (public)
 Live site: `https://maxwelldsouza-eng.github.io/Spekto/`
 Supabase URL: `https://nyvnvtxhlnjvfhcmnihh.supabase.co`
 Supabase publishable key (safe, client-side): `sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL`
-Every screen creates its own Supabase client inline:
+The Supabase client is centralised in `config/supabase-config.js` and imported by `database/database.js` and all screens. Do not inline a new `createClient(...)` call — import from the shared config instead:
 ```javascript
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-const supabase = createClient(
-  'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
-  'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
-)
+import { supabase } from '../config/supabase-config.js'
+import { someFunction } from '../database/database.js'
 ```
 ---
 3. Brand / Design System
@@ -84,7 +81,7 @@ database/
 ⚠️ NOT yet in the repo, despite having been built in chat and shown to the founder:
 `admin/user-detail.html` — was generated and presented but never committed to GitHub. Exists only as a one-off file output from a past chat session, not on disk in the repo. If continuing this work, regenerate or locate this file before assuming it's live.
 `admin/marketplace.html` — never built at all. Sidebar nav links to it from every admin screen, but the file doesn't exist (404).
-⚠️ Known gap just identified, not yet fixed: Every Client-facing screen except `marketplace.html` and `property-library.html` is missing the "Marketplace" link in its sidebar nav (each screen has its own independent copy of the sidebar HTML, copy-pasted rather than shared via a template, so this kind of drift is structurally easy to introduce). A fix was prepared for 7 files (`dashboard.html`, `new-inspection.html`, `inspection-detail.html`, `property-library.html`, `billing.html`, `disputes.html`, `settings.html`) but may not yet be committed — verify in the live repo before assuming this is resolved.
+⚠️ NOT YET FIXED: Every Client-facing screen except `marketplace.html` and `property-library.html` is missing the "Marketplace" link in its sidebar nav (each screen has its own independent copy of the sidebar HTML, copy-pasted rather than shared via a template, so this kind of drift is structurally easy to introduce). Verified as of the last commit — the fix has NOT been applied to `dashboard.html`, `new-inspection.html`, `inspection-detail.html`, `billing.html`, `disputes.html`, or `settings.html`.
 ⚠️ Mobile navigation is broken across the entire app. Every screen has CSS like:
 ```css
 @media (max-width: 700px) { .sidebar { display: none; } .main { margin-left: 0; } }
@@ -109,10 +106,20 @@ Marketplace pricing: $20 inc GST per listing purchase ($18.18 ex GST + $1.82 GST
 `reason` ∈ `{'VideoBlurry', 'WrongLocation', 'IncompleteWalkthrough', 'TooDark', 'PaymentNotReceived', 'IncorrectAmount', 'UnfairDispute', 'TechnicalError', 'Other'}`
 `priority` ∈ `{'Low', 'Medium', 'High', 'Urgent'}`
 `status` ∈ `{'Submitted', 'UnderReview', 'AwaitingResponse', 'DecisionMade', 'Resolved', 'Dismissed'}`
-`resolution` ∈ `{'FullRefundToClient', 'PartialRefundToClient', 'PaymentReleasedToScout', 'PartialPaymentToScout', 'NoActionRequired', 'Dismissed', ...}` (full list not fully captured — re-check via `pg_get_constraintdef` before inserting a new resolution value)
+`resolution` ∈ `{'FullRefundToClient', 'PartialRefundToClient', 'PaymentReleasedToScout', 'PartialPaymentToScout', 'NoActionRequired', 'Dismissed', ...}` (full list not fully captured — inserting any value outside the real constraint set fails silently with error `23514`. ALWAYS run the query below before inserting a new resolution value or adding a new option to the UI:)
+```sql
+SELECT pg_get_constraintdef(oid) FROM pg_constraint
+WHERE conrelid = 'disputes'::regclass AND conname LIKE '%resolution%';
+```
 Important: `dispute_type` is a coarse category, separate from `reason`. The four quality-related reasons (`VideoBlurry`, `WrongLocation`, `IncompleteWalkthrough`, `TooDark`) all map to `dispute_type = 'QualityDispute'`. The two payment-related reasons map to `'PaymentDispute'`.
 `disputes.assigned_to` and `disputes.resolved_by` are foreign keys to `admins.id`, not `users.id` — easy to assume wrong when writing joins.
 `admins` table is a separate table from `users` — admin identity/authorization is checked by matching the logged-in Supabase Auth user's email against `admins.email` (with `is_active = true`), not via a shared `id`/`user_id` foreign key. There is no column linking `admins` to `auth.users` directly other than email string matching.
+Tables that exist but are not yet wired up
+Three tables in the 23-table schema have no functions in `database.js` and no known UI that reads or writes them:
+- `scout_reviews` — table exists; no CRUD functions, no screen known to create or display reviews. The client "Leave a review" flow either doesn't exist yet or bypasses this table (see Bug Class D).
+- `content_flags` — table exists; no functions and no admin UI path to flag a capture. Content moderation workflow is unbuilt.
+- `deleted_captures` — table exists; the `deleteCapture()` function only soft-deletes via `captures.is_deleted = true` and never inserts here. Either a trigger populates it (not documented in known triggers) or the table is orphaned and was superseded by the soft-delete pattern. Verify in Supabase before building against it.
+
 Storage Buckets
 `captures` (public) — Scout video uploads
 `id-documents` (private) — Scout ID verification documents
@@ -209,6 +216,7 @@ Marketplace purchase flow — browsing and search work; the actual "buy" button 
 Mobile navigation — see Section 4. Affects the entire app.
 Scout response mechanism in disputes — unclear whether `scout/disputes.html`'s "respond" action actually writes to `dispute_messages`, or has the same bypass-the-real-table problem described in Bug Class D. Not yet verified.
 Admin transition of disputes to `AwaitingResponse` — the status lifecycle includes this stage and the Scout's "Needs response" UI depends on it, but at the time of this handoff it wasn't confirmed whether admins have a clear, reliable way to trigger that transition (a `showStatusModal()` confirm-dialog flow exists for stepping through statuses, but hasn't been thoroughly tested end-to-end).
+`saved_properties` table — `client/property-library.html` exists as a live screen but has no backing table and no functions in `database.js`. The screen has nothing to display beyond whatever it reads from `marketplace_searches` or `marketplace_purchases`. A `saved_properties` table (client_id, address, suburb, state, postcode, notes, created_at) is needed before the Property Library screen can offer explicit bookmarking.
 ---
 10. Test Accounts in the Database
 Name	id	email	role	active_role
@@ -221,6 +229,7 @@ Note: Several test inspections created during this debugging session were left i
 11. Recommended First Steps for Whoever (or whatever) Picks This Up
 Resolve the open `is_admin()` / RLS issue (Section 6, Bug Class B) before trusting any admin screen. This is the single biggest unresolved item — likely something subtle about how the Supabase project handles JWTs or grants on `auth.users`, possibly project-specific. Worth checking Supabase's own RLS/JWT documentation for known issues with `SECURITY DEFINER` functions referencing `auth.*` schemas.
 Audit other trigger functions for the same missing-`SECURITY DEFINER` pattern (Bug Class A) before they cause a confusing failure later.
-Verify whether the Marketplace sidebar-link fix and the `client/inspection-detail.html` dispute-insert fix were actually committed to GitHub — both were generated and handed off in chat, but confirmation of an actual commit wasn't captured in this document.
+Apply the Marketplace sidebar-link fix to the 6 remaining Client screens (`dashboard.html`, `new-inspection.html`, `inspection-detail.html`, `billing.html`, `disputes.html`, `settings.html`) — verified NOT yet committed as of the last review. The `client/inspection-detail.html` dispute-insert fix (Bug Class D) IS confirmed committed.
 Decide on mobile navigation approach and roll it out consistently — this is the most visible end-user-facing gap right now.
 Treat every "this screen looks empty" report with suspicion rather than assuming it means "no data exists yet" — given Bug Class B, an empty-looking admin screen is more likely broken than genuinely empty.
+A `CLAUDE.md` file now exists at the repo root — it is loaded automatically by Claude Code sessions and covers the dev workflow, architecture overview, and key business rules. Keep it in sync as the project evolves.
