@@ -263,7 +263,6 @@
       .from('marketplace_listings')
       .select('*, captures(video_url, recorded_at, gps_latitude, gps_longitude)')
       .eq('status', 'Active')
-      .eq('capture_type', 'external')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
 
