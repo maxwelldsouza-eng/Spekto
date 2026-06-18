@@ -649,7 +649,7 @@
         const updated = await loadDisputeMessages()
         renderChatThread(updated)
       } else {
-        alert('Failed to send message. Please try again.')
+        alert('Failed to send message: ' + (error.message || error.code || JSON.stringify(error)))
       }
     })
   }
