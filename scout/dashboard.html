@@ -278,7 +278,7 @@
 
       let actionsHtml = ''
       if (tab === 'available') {
-        actionsHtml = `<button class="btn-accept" onclick="acceptJob('${insp.id}', this)"><i class="ti ti-check" style="font-size:14px"></i> Accept Job</button>`
+        actionsHtml = `<button class="btn-view" onclick="viewJob('${insp.id}')">View Details</button><button class="btn-accept" onclick="acceptJob('${insp.id}', this)"><i class="ti ti-check" style="font-size:14px"></i> Accept Job</button>`
       } else if (tab === 'active') {
         actionsHtml = `
           <button class="btn-decline" onclick="declineJob(event, '${insp.id}')">Decline</button>

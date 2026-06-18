@@ -379,6 +379,29 @@
     const container = document.getElementById('topbarActions')
     container.innerHTML = ''
 
+    if (inspection.status === 'Posted') {
+      const acceptBtn = document.createElement('button')
+      acceptBtn.className = 'btn-action btn-record'  // green button, reuse existing style
+      acceptBtn.innerHTML = '<i class="ti ti-check"></i> Accept Job'
+      acceptBtn.addEventListener('click', async () => {
+        acceptBtn.disabled = true
+        acceptBtn.textContent = 'Accepting...'
+        const { error } = await supabase
+          .from('inspections')
+          .update({ scout_id: currentUser.id, status: 'Accepted', updated_at: new Date().toISOString() })
+          .eq('id', inspectionId)
+          .eq('status', 'Posted')
+        if (error) {
+          alert('Could not accept this job. It may have already been taken.')
+          acceptBtn.disabled = false
+          acceptBtn.innerHTML = '<i class="ti ti-check"></i> Accept Job'
+        } else {
+          window.location.reload()
+        }
+      })
+      container.appendChild(acceptBtn)
+    }
+
     if (inspection.status === 'Accepted' || inspection.status === 'InProgress') {
       const declineBtn = document.createElement('button')
       declineBtn.className = 'btn-action btn-decline-job'
