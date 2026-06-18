@@ -104,8 +104,14 @@
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .two-col { grid-template-columns: 1fr; }
     }
-    @media (max-width: 700px) {
-      .sidebar { display: none; }
+    .menu-toggle { display: none; width: 36px; height: 36px; border: none; background: transparent; cursor: pointer; align-items: center; justify-content: center; border-radius: 8px; padding: 0; flex-shrink: 0; }
+    .menu-toggle i { font-size: 22px; color: #555; }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 99; }
+    .sidebar-overlay.open { display: block; }
+    @media (max-width: 768px) {
+      .menu-toggle { display: flex; }
+      .sidebar { transform: translateX(-230px); transition: transform 0.25s ease; }
+      .sidebar.open { transform: translateX(0); }
       .main { margin-left: 0; }
       .content { padding: 16px; }
       .topbar { padding: 14px 16px; }
@@ -115,6 +121,7 @@
 </head>
 <body>
 <div class="shell">
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
   <aside class="sidebar">
     <div class="sidebar-logo">
       <div class="s-mark">
@@ -180,6 +187,7 @@
 
   <div class="main">
     <div class="topbar">
+      <button class="menu-toggle" id="menuToggle"><i class="ti ti-menu-2"></i></button>
       <div class="topbar-title">Dashboard</div>
       <div class="topbar-right">
         <div class="topbar-date" id="topbarDate"></div>
@@ -420,6 +428,21 @@
     if (diff < 1440) return `${Math.floor(diff/60)}h ago`
     return `${Math.floor(diff/1440)}d ago`
   }
+
+  document.getElementById('menuToggle').addEventListener('click', () => {
+    document.querySelector('.sidebar').classList.toggle('open')
+    document.getElementById('sidebarOverlay').classList.toggle('open')
+  })
+  document.getElementById('sidebarOverlay').addEventListener('click', () => {
+    document.querySelector('.sidebar').classList.remove('open')
+    document.getElementById('sidebarOverlay').classList.remove('open')
+  })
+  document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelector('.sidebar').classList.remove('open')
+      document.getElementById('sidebarOverlay').classList.remove('open')
+    })
+  })
 
   init()
 </script>
