@@ -460,6 +460,7 @@
       <div class="card">
         <div class="section-label">Job Details</div>
         <div class="detail-grid">
+          <div><div class="det-label">Reference</div><div class="det-val">#${inspection.ref_number || '—'}</div></div>
           <div><div class="det-label">Address</div><div class="det-val" style="font-size:13px">${inspection.address}</div></div>
           <div><div class="det-label">Date</div><div class="det-val">${new Date(inspection.date).toLocaleDateString('en-AU', { day:'numeric', month:'long', year:'numeric' })}</div></div>
           <div><div class="det-label">Time</div><div class="det-val">${inspection.time?.slice(0,5) || '—'}</div></div>
