@@ -323,8 +323,12 @@
 
   let pricing = {}
   let currentUser = null
+  let editId = null
 
   async function init() {
+    const params = new URLSearchParams(window.location.search)
+    editId = params.get('id')
+
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { window.location.href = '../auth/login.html'; return; }
     currentUser = user
@@ -343,6 +347,54 @@
 
     initNotificationBell(supabase, currentUser.id)
     await loadPricing()
+
+    if (editId) {
+      await loadInspectionForEdit(editId)
+    }
+  }
+
+  async function loadInspectionForEdit(id) {
+    const { data: insp, error } = await supabase
+      .from('inspections')
+      .select('*, instructions(*)')
+      .eq('id', id)
+      .single()
+
+    if (error || !insp) {
+      alert('Could not load inspection for editing.')
+      return
+    }
+
+    // Pre-populate schedule
+    document.getElementById('inspDate').value = insp.date || ''
+    document.getElementById('inspTime').value = insp.time ? insp.time.slice(0, 5) : ''
+
+    // Pre-populate property
+    document.getElementById('address').value = insp.address || ''
+    document.getElementById('propertyLink').value = insp.property_link || ''
+
+    // Pre-populate inspection type
+    if (insp.inspection_type) {
+      const radio = document.querySelector(`input[name="inspType"][value="${insp.inspection_type}"]`)
+      if (radio) {
+        radio.checked = true
+        document.querySelectorAll('.insp-option').forEach(o => o.classList.remove('selected'))
+        radio.closest('.insp-option').classList.add('selected')
+        updatePricing()
+      }
+    }
+
+    // Pre-populate instructions
+    if (insp.instructions && insp.instructions.length > 0) {
+      const sorted = [...insp.instructions].sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
+      sorted.forEach(inst => addInstruction(inst.text, inst.is_checked))
+    }
+
+    // Switch UI to edit mode
+    document.querySelector('.topbar-title').textContent = 'Edit Inspection'
+    document.querySelector('.status-badge').textContent = 'Edit'
+    document.getElementById('submitBtn').textContent = 'Update Inspection'
+    document.querySelector('.btn-cancel').href = `inspection-detail.html?id=${id}`
   }
 
   async function loadPricing() {
@@ -421,7 +473,7 @@
 
     const submitBtn = document.getElementById('submitBtn')
     submitBtn.disabled = true
-    submitBtn.textContent = 'Submitting...'
+    submitBtn.textContent = editId ? 'Updating...' : 'Submitting...'
 
     const inspectionType = document.querySelector('input[name="inspType"]:checked').value
     const pricingSnapshot = pricing[inspectionType] || null
@@ -433,45 +485,85 @@
       if (text) instructions.push({ text, is_checked: checked, display_order: index + 1 })
     })
 
-    const { data: inspection, error } = await supabase
-      .from('inspections')
-      .insert({
-        client_id: currentUser.id,
-        address: document.getElementById('address').value.trim(),
-        date: document.getElementById('inspDate').value,
-        time: document.getElementById('inspTime').value,
-        inspection_type: inspectionType,
-        property_link: document.getElementById('propertyLink').value.trim() || null,
-        status: 'Posted',
-        pricing_snapshot: pricingSnapshot ? {
-          inspection_type: pricingSnapshot.inspection_type,
-          pay_to_scout: pricingSnapshot.pay_to_scout,
-          fee_excluding_gst: pricingSnapshot.fee_excluding_gst,
-          gst: pricingSnapshot.gst,
-          total: pricingSnapshot.total
-        } : null
-      })
-      .select()
-      .single()
+    const pricingPayload = pricingSnapshot ? {
+      inspection_type: pricingSnapshot.inspection_type,
+      pay_to_scout: pricingSnapshot.pay_to_scout,
+      fee_excluding_gst: pricingSnapshot.fee_excluding_gst,
+      gst: pricingSnapshot.gst,
+      total: pricingSnapshot.total
+    } : null
 
-    if (error) {
-      submitBtn.disabled = false
-      submitBtn.textContent = 'Submit Inspection'
-      alert('Error creating inspection: ' + error.message)
-      return
+    if (editId) {
+      // UPDATE existing inspection
+      const { error: updateError } = await supabase
+        .from('inspections')
+        .update({
+          address: document.getElementById('address').value.trim(),
+          date: document.getElementById('inspDate').value,
+          time: document.getElementById('inspTime').value,
+          inspection_type: inspectionType,
+          property_link: document.getElementById('propertyLink').value.trim() || null,
+          pricing_snapshot: pricingPayload
+        })
+        .eq('id', editId)
+
+      if (updateError) {
+        submitBtn.disabled = false
+        submitBtn.textContent = 'Update Inspection'
+        alert('Error updating inspection: ' + updateError.message)
+        return
+      }
+
+      // Replace instructions: delete old, insert new
+      await supabase.from('instructions').delete().eq('inspection_id', editId)
+
+      if (instructions.length > 0) {
+        const instructionRows = instructions.map(inst => ({
+          inspection_id: editId,
+          text: inst.text,
+          is_checked: inst.is_checked,
+          display_order: inst.display_order
+        }))
+        await supabase.from('instructions').insert(instructionRows)
+      }
+
+      window.location.href = `inspection-detail.html?id=${editId}`
+    } else {
+      // INSERT new inspection
+      const { data: inspection, error } = await supabase
+        .from('inspections')
+        .insert({
+          client_id: currentUser.id,
+          address: document.getElementById('address').value.trim(),
+          date: document.getElementById('inspDate').value,
+          time: document.getElementById('inspTime').value,
+          inspection_type: inspectionType,
+          property_link: document.getElementById('propertyLink').value.trim() || null,
+          status: 'Posted',
+          pricing_snapshot: pricingPayload
+        })
+        .select()
+        .single()
+
+      if (error) {
+        submitBtn.disabled = false
+        submitBtn.textContent = 'Submit Inspection'
+        alert('Error creating inspection: ' + error.message)
+        return
+      }
+
+      if (instructions.length > 0) {
+        const instructionRows = instructions.map(inst => ({
+          inspection_id: inspection.id,
+          text: inst.text,
+          is_checked: inst.is_checked,
+          display_order: inst.display_order
+        }))
+        await supabase.from('instructions').insert(instructionRows)
+      }
+
+      window.location.href = 'dashboard.html'
     }
-
-    if (instructions.length > 0) {
-      const instructionRows = instructions.map(inst => ({
-        inspection_id: inspection.id,
-        text: inst.text,
-        is_checked: inst.is_checked,
-        display_order: inst.display_order
-      }))
-      await supabase.from('instructions').insert(instructionRows)
-    }
-
-    window.location.href = 'dashboard.html'
   })
 
   init()
