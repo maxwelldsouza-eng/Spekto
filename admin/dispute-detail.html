@@ -366,6 +366,7 @@
             </div>
             <div class="card-body">
               <div class="detail-grid">
+                <div><div class="det-label">Reference</div><div class="det-val">#${inspection.ref_number || '—'}</div></div>
                 <div><div class="det-label">Address</div><div class="det-val">${inspection.address}</div></div>
                 <div><div class="det-label">Date & Time</div><div class="det-val">${new Date(inspection.date).toLocaleDateString('en-AU', {day:'numeric',month:'long',year:'numeric'})} at ${inspection.time?.slice(0,5)}</div></div>
                 <div><div class="det-label">Type</div><div class="det-val">${typeLabel}</div></div>

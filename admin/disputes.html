@@ -223,7 +223,7 @@
       .from('disputes')
       .select(`
         *,
-        inspections(address, inspection_type, pricing_snapshot),
+        inspections(address, ref_number, inspection_type, pricing_snapshot),
         raised_by_user:raised_by(first_name, last_name, role),
         assigned_admin:assigned_to(first_name, last_name)
       `)
@@ -345,7 +345,7 @@
         <div class="dispute-card" onclick="window.location.href='dispute-detail.html?id=${d.id}'">
           <div class="dispute-card-inner">
             <div>
-              <div class="dispute-addr">${d.inspections?.address || '—'}</div>
+              <div class="dispute-addr">${d.inspections?.address || '—'}<span style="font-size:11px;color:#aaa;font-weight:500;margin-left:6px">#${d.inspections?.ref_number || ''}</span></div>
               <div class="dispute-reason">${d.reason?.replace(/([A-Z])/g, ' $1').trim() || '—'} · Raised by ${raisedBy}</div>
             </div>
             <div class="td">
