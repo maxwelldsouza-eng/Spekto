@@ -480,6 +480,12 @@
       return
     }
 
+    const idType = document.querySelector('input[name="idType"]:checked')?.value
+    if (!idType) {
+      showToast('Please select Passport or Driver\'s licence before uploading.', 'error')
+      return
+    }
+
     showToast('Uploading document...')
 
     const fileName = `id-documents/${currentUser.id}/${Date.now()}-${file.name.replace(/\s/g, '_')}`
@@ -493,13 +499,15 @@
       return
     }
 
-    const { data: { publicUrl } } = supabase.storage.from('id-documents').getPublicUrl(fileName)
+    const { data: signedData } = await supabase.storage
+      .from('id-documents')
+      .createSignedUrl(fileName, 60 * 60 * 24 * 365 * 10) // 10 years
 
-    const idType = document.querySelector('input[name="idType"]:checked')?.value
+    const docUrl = signedData?.signedUrl || ''
 
     await supabase
       .from('scout_profiles')
-      .update({ id_document_url: publicUrl, id_type: idType || 'other', updated_at: new Date().toISOString() })
+      .update({ id_document_url: docUrl, id_type: idType || 'other', updated_at: new Date().toISOString() })
       .eq('user_id', currentUser.id)
 
     showToast('ID document uploaded. Our team will verify it within 24 hours.')
