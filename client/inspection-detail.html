@@ -649,6 +649,7 @@
         const updated = await loadDisputeMessages()
         renderChatThread(updated)
       } else {
+        console.error('Dispute send error:', error)
         alert('Failed to send message: ' + (error.message || error.code || JSON.stringify(error)))
       }
     })

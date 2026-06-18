@@ -327,7 +327,7 @@
         : listing.recorded_at
           ? new Date(listing.recorded_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' })
           : '—'
-      const typeLabel = listing.capture_type === 'external' ? 'External' : 'Internal'
+      const typeLabel = listing.captures?.capture_type === 'external' ? 'External' : 'Internal'
 
       const card = document.createElement('div')
       card.className = 'listing-card'
@@ -365,7 +365,7 @@
   window.openPurchaseModal = (idx) => {
     selectedListing = filteredListings[idx]
     if (!selectedListing) return
-    const typeLabel = selectedListing.capture_type === 'external' ? 'External capture' : 'Internal capture'
+    const typeLabel = selectedListing.captures?.capture_type === 'external' ? 'External capture' : 'Internal capture'
     const recordedAt = selectedListing.recorded_at
       ? new Date(selectedListing.recorded_at).toLocaleDateString('en-AU', { day:'numeric', month:'long', year:'numeric' })
       : '—'
