@@ -507,7 +507,7 @@
 
     await supabase
       .from('scout_profiles')
-      .update({ id_document_url: docUrl, id_type: idType || 'other', updated_at: new Date().toISOString() })
+      .update({ id_document_url: docUrl, id_type: idType, scout_status: 'PendingVerification', updated_at: new Date().toISOString() })
       .eq('user_id', currentUser.id)
 
     showToast('ID document uploaded. Our team will verify it within 24 hours.')
