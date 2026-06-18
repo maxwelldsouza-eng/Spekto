@@ -379,12 +379,6 @@
     const container = document.getElementById('topbarActions')
     container.innerHTML = ''
 
-    const closeBtn = document.createElement('a')
-    closeBtn.href = 'dashboard.html'
-    closeBtn.className = 'btn-action btn-close'
-    closeBtn.innerHTML = '<i class="ti ti-arrow-left"></i> Back'
-    container.appendChild(closeBtn)
-
     if (inspection.status === 'Accepted' || inspection.status === 'InProgress') {
       const declineBtn = document.createElement('button')
       declineBtn.className = 'btn-action btn-decline-job'
@@ -393,7 +387,7 @@
         document.getElementById('declinePanel').style.display = 'block'
         declineBtn.disabled = true
       })
-      container.insertBefore(declineBtn, closeBtn)
+      container.appendChild(declineBtn)
 
       const recordBtn = document.createElement('a')
       recordBtn.href = `recording.html?id=${inspection.id}`
