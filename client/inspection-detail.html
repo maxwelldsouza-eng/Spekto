@@ -49,7 +49,6 @@
     .btn-release { background: var(--green); color: #fff; }
     .btn-dispute { background: var(--red); color: #fff; }
     .btn-cancel-insp { background: #fff; color: var(--red); border: 1.5px solid var(--red) !important; }
-    .btn-close { background: #fff; color: #444; border: 1.5px solid #E0E0E0; }
     .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
     .dispute-panel { background: #FFF8F8; border-bottom: 1px solid #FEE2E2; padding: 14px 28px; display: none; }
     .dispute-inner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -139,7 +138,10 @@
   <div class="main">
     <div class="topbar">
       <div class="topbar-left">
-        <div class="topbar-title" id="pageTitle">Inspection</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <a href="dashboard.html" style="color:#560591;font-size:20px;text-decoration:none;line-height:1;" title="Back">&#8592;</a>
+          <h1 class="topbar-title" id="pageTitle">Inspection</h1>
+        </div>
         <span class="badge" id="statusBadge"></span>
       </div>
       <div class="topbar-right" id="topbarActions"></div>
@@ -252,12 +254,6 @@
     const container = document.getElementById('topbarActions')
     container.innerHTML = ''
 
-    const closeBtn = document.createElement('a')
-    closeBtn.href = 'dashboard.html'
-    closeBtn.className = 'btn-action btn-close'
-    closeBtn.innerHTML = '<i class="ti ti-arrow-left"></i> Close'
-    container.appendChild(closeBtn)
-
     if (inspection.status === 'Posted') {
       const cancelBtn = document.createElement('button')
       cancelBtn.className = 'btn-action btn-cancel-insp'
@@ -265,7 +261,7 @@
       cancelBtn.addEventListener('click', () => {
         document.getElementById('cancelPanel').style.display = 'block'
       })
-      container.insertBefore(cancelBtn, closeBtn)
+      container.appendChild(cancelBtn)
     }
 
     if (inspection.status === 'Completed') {
@@ -283,8 +279,8 @@
       releaseBtn.innerHTML = '<i class="ti ti-credit-card"></i> Release Payment'
       releaseBtn.addEventListener('click', handleReleasePayment)
 
-      container.insertBefore(disputeBtn, closeBtn)
-      container.insertBefore(releaseBtn, disputeBtn)
+      container.appendChild(releaseBtn)
+      container.appendChild(disputeBtn)
     }
   }
 
