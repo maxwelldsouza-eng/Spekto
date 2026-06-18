@@ -145,6 +145,7 @@
 
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  import { initNotificationBell } from '../config/notifications.js'
   const supabase = createClient(
     'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
     'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
@@ -171,6 +172,7 @@
     if (!user) { window.location.href = '../auth/login.html'; return; }
     currentUser = user
 
+    initNotificationBell(supabase, currentUser.id)
     const [{ data: uData }, { data: sData }] = await Promise.all([
       supabase.from('users').select('*').eq('id', user.id).single(),
       supabase.from('scout_profiles').select('*').eq('user_id', user.id).single()

@@ -713,7 +713,33 @@
     const current = dispute.status
     const next = statuses[statuses.indexOf(current) + 1] || current
     if (confirm(`Update status from "${current}" to "${next.replace(/([A-Z])/g,' $1').trim()}"?`)) {
-      updateDisputeStatus(next).then(() => {
+      updateDisputeStatus(next).then(async () => {
+        // Notify client and scout of status change
+        const statusMessages = {
+          UnderReview: 'Your dispute is now under review by Spekto support.',
+          AwaitingResponse: 'Spekto support requires your response on the dispute.',
+          DecisionMade: 'A decision has been made on your dispute. Please check the dispute details.',
+          Resolved: 'Your dispute has been resolved. Please check the dispute details for the outcome.',
+          Dismissed: 'Your dispute has been dismissed by Spekto support.'
+        }
+        const msg = statusMessages[next]
+        if (msg && dispute.raised_by) {
+          await supabase.from('notifications').insert({
+            user_id: dispute.raised_by,
+            type: 'dispute_status_changed',
+            inspection_id: dispute.inspection_id,
+            message: `Dispute update: ${msg}`
+          })
+        }
+        // If AwaitingResponse, also notify the scout
+        if (next === 'AwaitingResponse' && inspection.scout_id) {
+          await supabase.from('notifications').insert({
+            user_id: inspection.scout_id,
+            type: 'dispute_status_changed',
+            inspection_id: dispute.inspection_id,
+            message: `Spekto support requires your response on the dispute for inspection at ${inspection.address}.`
+          })
+        }
         showToast('Status updated')
         loadDispute()
       })

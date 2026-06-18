@@ -151,6 +151,7 @@
 
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  import { initNotificationBell } from '../config/notifications.js'
   const supabase = createClient(
     'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
     'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
@@ -177,6 +178,7 @@
       document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
     }
 
+    initNotificationBell(supabase, currentUser.id)
     const { data: disputes } = await supabase
       .from('disputes')
       .select(`*, inspections(address, date, inspection_type, pricing_snapshot, scout_id)`)

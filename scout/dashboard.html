@@ -150,6 +150,7 @@
 
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  import { initNotificationBell } from '../config/notifications.js'
   const supabase = createClient(
     'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
     'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
@@ -181,6 +182,7 @@
       }
     }
 
+    initNotificationBell(supabase, currentUser.id)
     await loadAll()
     setupRoleToggle()
   }
