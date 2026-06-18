@@ -271,6 +271,7 @@
     }
 
     const { data, error } = await queryBuilder
+    console.log('Marketplace query:', { data, error })
 
     if (error) {
       document.getElementById('listingsContainer').innerHTML =
