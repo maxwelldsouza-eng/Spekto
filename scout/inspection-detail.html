@@ -370,7 +370,7 @@
       .from('dispute_messages')
       .insert({
         dispute_id: dispute.id,
-        sent_by_type: 'Scout',
+        sent_by_type: 'scout',
         sent_by_id: currentUser.id,
         message: responseText,
         message_type: 'ScoutResponse',
@@ -630,7 +630,7 @@
       .select('*')
       .eq('dispute_id', dispute.id)
       .eq('is_internal', false)
-      .or('sent_by_type.eq.Scout,recipient_type.eq.Scout')
+      .or('sent_by_type.eq.scout,recipient_type.eq.Scout')
       .order('created_at', { ascending: true })
     return msgs || []
   }
@@ -643,7 +643,7 @@
       return
     }
     thread.innerHTML = msgs.map(msg => {
-      const isSelf = msg.sent_by_type === 'Scout'
+      const isSelf = msg.sent_by_type === 'scout'
       const senderLabel = isSelf ? 'You' : 'Spekto Support'
       const time = new Date(msg.created_at).toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
       return `
@@ -673,7 +673,7 @@
         .from('dispute_messages')
         .insert({
           dispute_id: dispute.id,
-          sent_by_type: 'Scout',
+          sent_by_type: 'scout',
           sent_by_id: currentUser.id,
           message: text,
           message_type: 'FreeFormFollowUp',

@@ -569,8 +569,8 @@
   function renderMessages() {
     const filtered = messages.filter(m => {
       if (currentMsgTab === 'internal') return m.is_internal
-      if (currentMsgTab === 'client') return !m.is_internal && (m.sent_by_type === 'Client' || m.recipient_type === 'Client')
-      if (currentMsgTab === 'scout') return !m.is_internal && (m.sent_by_type === 'Scout' || m.recipient_type === 'Scout')
+      if (currentMsgTab === 'client') return !m.is_internal && (m.sent_by_type === 'client' || m.recipient_type === 'Client')
+      if (currentMsgTab === 'scout') return !m.is_internal && (m.sent_by_type === 'scout' || m.recipient_type === 'Scout')
       return true
     })
 
@@ -586,7 +586,7 @@
       return `
         <div class="msg ${isAdmin ? 'outgoing' : 'incoming'}">
           <div class="msg-meta">
-            <span class="msg-sender">${isAdmin ? 'Spekto Support' : m.sent_by_type === 'Client' ? 'Client' : 'Scout'}</span>
+            <span class="msg-sender">${isAdmin ? 'Spekto Support' : m.sent_by_type === 'client' ? 'Client' : 'Scout'}</span>
             <span class="msg-time">${time}</span>
           </div>
           <div class="bubble ${bubbleClass}">${m.message}</div>
