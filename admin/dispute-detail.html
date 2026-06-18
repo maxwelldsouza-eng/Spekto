@@ -695,7 +695,8 @@
       showToast('Dispute resolved successfully')
       setTimeout(() => loadDispute(), 1000)
     } else {
-      showToast('Error resolving dispute', 'error')
+      console.error('Dispute resolve error:', error)
+      showToast('Error: ' + (error.message || error.code || JSON.stringify(error)), 'error')
       if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm resolution'; }
     }
   }
