@@ -622,7 +622,8 @@
         sent_by_id: adminData.id,
         message: text,
         is_internal: isInternal,
-        message_type: isInternal ? 'AdminNote' : 'FreeFormFollowUp'
+        message_type: isInternal ? 'AdminNote' : 'FreeFormFollowUp',
+        recipient_type: isInternal ? null : (currentMsgTab === 'client' ? 'Client' : 'Scout')
       })
 
     if (!error) {

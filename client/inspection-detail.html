@@ -587,7 +587,7 @@
       .select('*')
       .eq('dispute_id', dispute.id)
       .eq('is_internal', false)
-      .neq('sent_by_type', 'Scout')
+      .or('sent_by_type.eq.Client,recipient_type.eq.Client')
       .order('created_at', { ascending: true })
     return msgs || []
   }
@@ -634,7 +634,8 @@
           sent_by_id: currentUser.id,
           message: text,
           message_type: 'FreeFormFollowUp',
-          is_internal: false
+          is_internal: false,
+          recipient_type: 'admin'
         })
       sendBtn.disabled = false
       sendBtn.textContent = 'Send'
