@@ -44,10 +44,6 @@
     .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
     .section-title { font-size: 15px; font-weight: 700; color: #0D0D0D; }
     .section-count { font-size: 13px; color: #999; }
-    .filters { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 2px; }
-    .filters::-webkit-scrollbar { display: none; }
-    .filter-btn { background: #fff; border: 1.5px solid #E0E0E0; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #666; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s; }
-    .filter-btn.active { background: var(--purple); border-color: var(--purple); color: #fff; }
     .listing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
     .listing-card { background: #fff; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; transition: box-shadow 0.15s; }
     .listing-card:hover { box-shadow: 0 4px 16px rgba(86,5,145,0.08); border-color: #D4B8F5; }
@@ -165,11 +161,6 @@
         <div class="coming-soon-text">Marketplace payments via Stripe are coming soon. You can browse listings now — purchasing will be enabled once Stripe integration is complete.</div>
       </div>
 
-      <div class="filters" id="filters">
-        <button class="filter-btn active" data-filter="all">All listings</button>
-        <button class="filter-btn" data-filter="external">External only</button>
-      </div>
-
       <div id="listingsContainer">
         <div class="loading"><div class="spinner"></div> Loading listings...</div>
       </div>
@@ -230,7 +221,6 @@
 
   let allListings = []
   let filteredListings = []
-  let currentFilter = 'all'
   let searchQuery = ''
   let selectedListing = null
   let currentUser = null
@@ -263,7 +253,8 @@
 
     let queryBuilder = supabase
       .from('marketplace_listings')
-      .select('*, captures(video_url, recorded_at, gps_latitude, gps_longitude)')
+      .select('*, captures!inner(video_url, recorded_at, gps_latitude, gps_longitude, capture_type)')
+      .eq('captures.capture_type', 'external')
       .eq('status', 'Active')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
@@ -294,9 +285,7 @@
   }
 
   function applyFilters() {
-    filteredListings = allListings.filter(l => {
-      return currentFilter === 'all' || l.capture_type === currentFilter
-    })
+    filteredListings = [...allListings]
     renderListings()
   }
 
@@ -398,15 +387,6 @@
         searchQuery = e.target.value.trim()
         loadListings(searchQuery)
       }
-    })
-
-    document.getElementById('filters').addEventListener('click', e => {
-      const btn = e.target.closest('.filter-btn')
-      if (!btn) return
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'))
-      btn.classList.add('active')
-      currentFilter = btn.dataset.filter
-      applyFilters()
     })
 
     document.getElementById('cancelPurchaseBtn').addEventListener('click', () => {
