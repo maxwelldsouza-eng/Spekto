@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marketplace - Spekto Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --dark: #1A0533; --red: #DC2626; --green: #22C55E; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 230px; background: var(--dark); display: flex; flex-direction: column; padding: 24px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .s-mark { width: 34px; height: 34px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -1px; }
+    .admin-tag { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+    .nav-section { padding: 16px 12px 4px; }
+    .nav-section-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px; margin-bottom: 4px; }
+    .nav { display: flex; flex-direction: column; gap: 1px; padding: 0 12px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px; cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.55); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
+    .nav-item i { font-size: 16px; flex-shrink: 0; }
+    .sidebar-foot { margin-top: auto; padding: 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .admin-user { display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+    .admin-avatar { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .admin-info { flex: 1; min-width: 0; }
+    .admin-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .admin-role { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+    .btn-logout-sm { width: 28px; height: 28px; background: rgba(255,255,255,0.08); border: none; border-radius: 6px; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .btn-logout-sm:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .main { flex: 1; margin-left: 230px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; flex-wrap: wrap; gap: 10px; }
+    .topbar-title { font-size: 17px; font-weight: 700; color: #0D0D0D; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .content { padding: 24px 28px; }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: #fff; border-radius: 10px; border: 1px solid var(--border); padding: 16px 18px; }
+    .stat-label { font-size: 10px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+    .stat-val { font-size: 24px; font-weight: 800; color: #0D0D0D; font-family: 'DM Sans', sans-serif; }
+    .tabs { display: flex; border-bottom: 2px solid #F0F0F0; margin-bottom: 16px; }
+    .tab { padding: 10px 20px; font-size: 13px; font-weight: 600; color: #999; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; }
+    .tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+    .table-wrap { background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+    .table-header { display: grid; grid-template-columns: 2fr 1.2fr 90px 100px 110px 90px 90px 110px; gap: 12px; padding: 10px 20px; background: #F9F9FB; border-bottom: 1px solid #F0F0F0; }
+    .th { font-size: 10px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.4px; }
+    .table-body { display: flex; flex-direction: column; }
+    .table-row { display: grid; grid-template-columns: 2fr 1.2fr 90px 100px 110px 90px 90px 110px; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #F7F7F7; align-items: center; transition: background 0.1s; }
+    .table-row:last-child { border-bottom: none; }
+    .table-row:hover { background: #FAFAFA; }
+    .td-addr { font-size: 13px; font-weight: 600; color: #0D0D0D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .td-suburb { font-size: 11px; color: #999; margin-top: 2px; }
+    .td { font-size: 13px; color: #555; }
+    .badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; display: inline-block; }
+    .badge-Active { background: #DCFCE7; color: #166534; }
+    .badge-Expired { background: #F3F4F6; color: #6B7280; }
+    .badge-Sold { background: #EDE4F7; color: #560591; }
+    .btn-sm { height: 28px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; gap: 4px; padding: 0 10px; border: 1.5px solid; white-space: nowrap; }
+    .btn-deactivate { background: #fff; color: var(--red); border-color: #FCA5A5; }
+    .btn-deactivate:hover { background: #FFF8F8; }
+    .btn-deactivate:disabled { opacity: 0.5; cursor: not-allowed; }
+    .empty-state { text-align: center; padding: 60px 20px; }
+    .empty-state i { font-size: 36px; color: #ddd; margin-bottom: 12px; display: block; }
+    .empty-state p { font-size: 13px; color: #999; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 1100px) {
+      .table-header, .table-row { grid-template-columns: 2fr 100px 100px 110px; }
+      .table-header .th:nth-child(2),
+      .table-header .th:nth-child(5),
+      .table-header .th:nth-child(6),
+      .table-header .th:nth-child(7) { display: none; }
+      .table-row > *:nth-child(2),
+      .table-row > *:nth-child(5),
+      .table-row > *:nth-child(6),
+      .table-row > *:nth-child(7) { display: none; }
+    }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .table-header, .table-row { grid-template-columns: 1fr 90px 90px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div class="s-name">SPEKTO</div>
+        <div class="admin-tag">Admin Portal</div>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Overview</div>
+      <div class="nav">
+        <a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Operations</div>
+      <div class="nav">
+        <a class="nav-item" href="inspections.html"><i class="ti ti-clipboard-list"></i> Inspections</a>
+        <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> Disputes</a>
+        <a class="nav-item" href="payouts.html"><i class="ti ti-wallet"></i> Payouts</a>
+        <a class="nav-item" href="verification.html"><i class="ti ti-id-badge"></i> Verification</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Users</div>
+      <div class="nav">
+        <a class="nav-item" href="users.html"><i class="ti ti-users"></i> All Users</a>
+        <a class="nav-item" href="scouts.html"><i class="ti ti-camera"></i> Scouts</a>
+        <a class="nav-item" href="clients.html"><i class="ti ti-building"></i> Clients</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Platform</div>
+      <div class="nav">
+        <a class="nav-item active" href="marketplace.html"><i class="ti ti-shopping-bag"></i> Marketplace</a>
+        <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+      </div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="admin-user">
+        <div class="admin-avatar" id="adminAvatar">?</div>
+        <div class="admin-info">
+          <div class="admin-name" id="adminName">Loading...</div>
+          <div class="admin-role" id="adminRole">Admin</div>
+        </div>
+        <button class="btn-logout-sm" id="logoutBtn"><i class="ti ti-logout"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">Marketplace</div>
+      <div class="topbar-right"></div>
+    </div>
+
+    <div class="content" id="mainContent">
+      <div class="loading"><div class="spinner"></div> Loading listings...</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let allListings = []
+  let currentTab = 'all'
+  const now = new Date()
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = 'login.html'; return; }
+
+    const { data: admin } = await supabase
+      .from('admins')
+      .select('id, first_name, last_name, role, is_active')
+      .eq('email', user.email)
+      .single()
+
+    if (!admin || !admin.is_active) {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+      return
+    }
+
+    const initials = (admin.first_name?.[0] || '') + (admin.last_name?.[0] || '')
+    document.getElementById('adminAvatar').textContent = initials.toUpperCase()
+    document.getElementById('adminName').textContent = admin.first_name + ' ' + admin.last_name
+    document.getElementById('adminRole').textContent = admin.role === 'superadmin' ? 'Super Admin' : 'Admin'
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+    })
+
+    await loadListings()
+  }
+
+  async function loadListings() {
+    const { data, error } = await supabase
+      .from('marketplace_listings')
+      .select('*, captures(capture_type, video_url)')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      document.getElementById('mainContent').innerHTML =
+        '<div class="loading">Error loading listings. Please refresh.</div>'
+      return
+    }
+
+    allListings = data || []
+    renderPage()
+  }
+
+  function isExpired(listing) {
+    return listing.status === 'Expired' ||
+      (listing.status === 'Active' && listing.expires_at && new Date(listing.expires_at) < now)
+  }
+
+  function isActive(listing) {
+    return listing.status === 'Active' &&
+      (!listing.expires_at || new Date(listing.expires_at) >= now)
+  }
+
+  function getFilteredListings() {
+    if (currentTab === 'all') return allListings
+    if (currentTab === 'active') return allListings.filter(isActive)
+    if (currentTab === 'expired') return allListings.filter(isExpired)
+    if (currentTab === 'sold') return allListings.filter(l => l.status === 'Sold')
+    return allListings
+  }
+
+  function getDisplayStatus(listing) {
+    if (isExpired(listing)) return 'Expired'
+    return listing.status
+  }
+
+  function renderPage() {
+    const activeCount = allListings.filter(isActive).length
+    const expiredCount = allListings.filter(isExpired).length
+    const soldCount = allListings.filter(l => l.status === 'Sold').length
+    const totalPurchases = allListings.reduce((s, l) => s + (l.total_purchases || 0), 0)
+    const totalRevenue = allListings.reduce((s, l) => s + (parseFloat(l.total_revenue) || 0), 0)
+
+    const filtered = getFilteredListings()
+
+    const html = `
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Active Listings</div>
+          <div class="stat-val">${activeCount}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Expired</div>
+          <div class="stat-val">${expiredCount}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Purchases</div>
+          <div class="stat-val">${totalPurchases}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Revenue</div>
+          <div class="stat-val">$${totalRevenue.toFixed(2)}</div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab ${currentTab === 'all' ? 'active' : ''}" onclick="setTab('all')">All (${allListings.length})</div>
+        <div class="tab ${currentTab === 'active' ? 'active' : ''}" onclick="setTab('active')">Active (${activeCount})</div>
+        <div class="tab ${currentTab === 'expired' ? 'active' : ''}" onclick="setTab('expired')">Expired (${expiredCount})</div>
+        <div class="tab ${currentTab === 'sold' ? 'active' : ''}" onclick="setTab('sold')">Sold (${soldCount})</div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header">
+          <div class="th">Address</div>
+          <div class="th">Suburb / State</div>
+          <div class="th">Price</div>
+          <div class="th">Status</div>
+          <div class="th">Recorded</div>
+          <div class="th">Expires</div>
+          <div class="th">Purchases</div>
+          <div class="th">Actions</div>
+        </div>
+        <div class="table-body" id="listingsBody">
+          ${renderRows(filtered)}
+        </div>
+      </div>`
+
+    document.getElementById('mainContent').innerHTML = html
+  }
+
+  function renderRows(listings) {
+    if (listings.length === 0) {
+      return `
+        <div class="empty-state">
+          <i class="ti ti-shopping-bag"></i>
+          <p>No marketplace listings yet</p>
+        </div>`
+    }
+
+    return listings.map(listing => {
+      const displayStatus = getDisplayStatus(listing)
+      const price = listing.price != null ? '$' + parseFloat(listing.price).toFixed(2) : '—'
+      const recorded = listing.recorded_at
+        ? new Date(listing.recorded_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+        : listing.created_at
+          ? new Date(listing.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+          : '—'
+      const expires = listing.expires_at
+        ? new Date(listing.expires_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+        : '—'
+      const purchases = listing.total_purchases ?? 0
+      const addrParts = (listing.address || '').split(',')
+      const street = addrParts[0]?.trim() || listing.address || '—'
+      const suburbState = addrParts.slice(1).join(',').trim() || '—'
+
+      const showDeactivate = listing.status === 'Active' && (!listing.expires_at || new Date(listing.expires_at) >= now)
+
+      return `
+        <div class="table-row">
+          <div>
+            <div class="td-addr">${street}</div>
+            <div class="td-suburb">${suburbState}</div>
+          </div>
+          <div class="td">${suburbState}</div>
+          <div class="td">${price}</div>
+          <div class="td"><span class="badge badge-${displayStatus}">${displayStatus}</span></div>
+          <div class="td">${recorded}</div>
+          <div class="td">${expires}</div>
+          <div class="td">${purchases}</div>
+          <div class="td">
+            ${showDeactivate
+              ? `<button class="btn-sm btn-deactivate" data-id="${listing.id}" onclick="deactivateListing('${listing.id}', this)">
+                  <i class="ti ti-ban" style="font-size:12px"></i> Deactivate
+                </button>`
+              : '<span style="font-size:12px;color:#ccc">—</span>'}
+          </div>
+        </div>`
+    }).join('')
+  }
+
+  window.setTab = (tab) => {
+    currentTab = tab
+    renderPage()
+  }
+
+  window.deactivateListing = async (id, btn) => {
+    btn.disabled = true
+    btn.innerHTML = '<i class="ti ti-loader" style="animation:spin 0.8s linear infinite;font-size:12px"></i> Working...'
+
+    const { error } = await supabase
+      .from('marketplace_listings')
+      .update({ status: 'Expired' })
+      .eq('id', id)
+
+    if (error) {
+      btn.disabled = false
+      btn.innerHTML = '<i class="ti ti-ban" style="font-size:12px"></i> Deactivate'
+      alert('Failed to deactivate listing. Please try again.')
+      return
+    }
+
+    const listing = allListings.find(l => l.id === id)
+    if (listing) listing.status = 'Expired'
+    renderPage()
+  }
+
+  init()
+</script>
+</body>
+</html>

@@ -89,7 +89,24 @@
     .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
     .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .dispute-response-panel { background: #FFFBEB; border-bottom: 1px solid #FDE68A; padding: 20px 28px; }
+    .dispute-response-inner { max-width: 680px; }
+    .dispute-response-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .dispute-response-heading i { font-size: 20px; color: #B45309; }
+    .dispute-response-title { font-size: 15px; font-weight: 700; color: #92400E; }
+    .dispute-response-sub { font-size: 13px; color: #92400E; line-height: 1.55; margin-bottom: 14px; }
+    .dispute-response-textarea { width: 100%; min-height: 80px; border: 1.5px solid #FCD34D; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: 'Inter', sans-serif; color: #0D0D0D; background: #fff; resize: vertical; outline: none; transition: border-color 0.15s; }
+    .dispute-response-textarea:focus { border-color: #B45309; }
+    .btn-submit-response { margin-top: 10px; height: 40px; background: var(--purple); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; padding: 0 20px; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-submit-response:disabled { opacity: 0.6; cursor: not-allowed; }
+    .dispute-response-error { font-size: 12px; color: var(--red); margin-top: 6px; display: none; }
+    .dispute-submitted-panel { background: #EFF6FF; border-bottom: 1px solid #BFDBFE; padding: 16px 28px; }
+    .dispute-submitted-inner { display: flex; align-items: center; gap: 10px; }
+    .dispute-submitted-inner i { font-size: 18px; color: #1D4ED8; }
+    .dispute-submitted-text { font-size: 13px; color: #1E40AF; font-weight: 500; }
     @media (max-width: 700px) {
+      .btn-submit-response { width: 100%; justify-content: center; }
+    }
       .sidebar { display: none; }
       .main { margin-left: 0; }
       .content { padding: 16px; }
@@ -137,12 +154,7 @@
       <div class="topbar-right" id="topbarActions"></div>
     </div>
 
-    <div id="disputeBanner" style="display:none" class="dispute-banner">
-      <div class="dispute-inner">
-        <i class="ti ti-alert-triangle dispute-icon"></i>
-        <div class="dispute-text">A dispute has been raised on this inspection. Your payment is on hold pending resolution by Spekto support.</div>
-      </div>
-    </div>
+    <div id="disputeBanner"></div>
 
     <div class="decline-confirm-panel" id="declinePanel">
       <div class="decline-inner">
@@ -166,6 +178,7 @@
   )
 
   let inspection = null
+  let dispute = null
   let captures = []
   let currentUser = null
 
@@ -220,6 +233,17 @@
       captures = captureData || []
     }
 
+    if (inspection.status === 'Disputed') {
+      const { data: disputeData } = await supabase
+        .from('disputes')
+        .select('id, status, reason, description, scout_responded, due_at')
+        .eq('inspection_id', inspectionId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+      dispute = disputeData
+    }
+
     render()
   }
 
@@ -231,12 +255,122 @@
       .replace('InProgress','In Progress')
 
     if (inspection.status === 'Disputed') {
-      document.getElementById('disputeBanner').style.display = 'block'
+      renderDisputeBanner()
     }
 
     renderActions()
     renderContent()
     setupDeclinePanel()
+  }
+
+  function renderDisputeBanner() {
+    const banner = document.getElementById('disputeBanner')
+
+    if (!dispute) {
+      banner.innerHTML = `
+        <div class="dispute-banner">
+          <div class="dispute-inner">
+            <i class="ti ti-alert-triangle dispute-icon"></i>
+            <div class="dispute-text">A dispute has been raised on this inspection. Your payment is on hold pending resolution by Spekto support.</div>
+          </div>
+        </div>`
+      return
+    }
+
+    if (dispute.status === 'AwaitingResponse' && !dispute.scout_responded) {
+      const dueText = dispute.due_at
+        ? new Date(dispute.due_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+        : 'as soon as possible'
+      banner.innerHTML = `
+        <div class="dispute-response-panel" id="disputeResponsePanel">
+          <div class="dispute-response-inner">
+            <div class="dispute-response-heading">
+              <i class="ti ti-alert-circle"></i>
+              <div class="dispute-response-title">Your response is required</div>
+            </div>
+            <div class="dispute-response-sub">Spekto support is reviewing this dispute and requires your account of the recording. Please respond by ${dueText}.</div>
+            <textarea id="disputeResponseText" class="dispute-response-textarea" placeholder="Describe what happened during the recording — the more detail the better."></textarea>
+            <div class="dispute-response-error" id="disputeResponseError">Please enter a response before submitting.</div>
+            <button class="btn-submit-response" id="submitResponseBtn">
+              <i class="ti ti-send"></i> Submit Response
+            </button>
+          </div>
+        </div>`
+
+      document.getElementById('submitResponseBtn').addEventListener('click', handleSubmitResponse)
+    } else if (dispute.status === 'AwaitingResponse' && dispute.scout_responded) {
+      renderDisputeSubmittedPanel()
+    } else {
+      banner.innerHTML = `
+        <div class="dispute-banner">
+          <div class="dispute-inner">
+            <i class="ti ti-alert-triangle dispute-icon"></i>
+            <div class="dispute-text">A dispute has been raised on this inspection. Your payment is on hold pending resolution by Spekto support.</div>
+          </div>
+        </div>`
+    }
+  }
+
+  function renderDisputeSubmittedPanel() {
+    document.getElementById('disputeBanner').innerHTML = `
+      <div class="dispute-submitted-panel">
+        <div class="dispute-submitted-inner">
+          <i class="ti ti-info-circle"></i>
+          <div class="dispute-submitted-text">Response submitted — Spekto support will review your response and notify you of the outcome.</div>
+        </div>
+      </div>`
+  }
+
+  async function handleSubmitResponse() {
+    const textarea = document.getElementById('disputeResponseText')
+    const errorEl = document.getElementById('disputeResponseError')
+    const btn = document.getElementById('submitResponseBtn')
+    const responseText = textarea.value.trim()
+
+    errorEl.style.display = 'none'
+
+    if (!responseText) {
+      errorEl.style.display = 'block'
+      return
+    }
+
+    btn.disabled = true
+    btn.innerHTML = '<i class="ti ti-loader" style="animation:spin 0.8s linear infinite"></i> Submitting...'
+
+    const { error: msgError } = await supabase
+      .from('dispute_messages')
+      .insert({
+        dispute_id: dispute.id,
+        sent_by_type: 'Scout',
+        sent_by_id: currentUser.id,
+        message: responseText,
+        message_type: 'ScoutResponse',
+        is_internal: false
+      })
+
+    if (msgError) {
+      btn.disabled = false
+      btn.innerHTML = '<i class="ti ti-send"></i> Submit Response'
+      errorEl.textContent = 'Failed to submit response. Please try again.'
+      errorEl.style.display = 'block'
+      return
+    }
+
+    const { error: updateError } = await supabase
+      .from('disputes')
+      .update({ scout_responded: true })
+      .eq('id', dispute.id)
+
+    if (updateError) {
+      btn.disabled = false
+      btn.innerHTML = '<i class="ti ti-send"></i> Submit Response'
+      errorEl.textContent = 'Response saved but status could not be updated. Please contact support.'
+      errorEl.style.display = 'block'
+      return
+    }
+
+    dispute.scout_responded = true
+    renderDisputeSubmittedPanel()
   }
 
   function renderActions() {

@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Detail - Spekto Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --dark: #1A0533; --red: #DC2626; --green: #22C55E; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 230px; background: var(--dark); display: flex; flex-direction: column; padding: 24px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .s-mark { width: 34px; height: 34px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -1px; }
+    .admin-tag { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+    .nav-section { padding: 16px 12px 4px; }
+    .nav-section-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px; margin-bottom: 4px; }
+    .nav { display: flex; flex-direction: column; gap: 1px; padding: 0 12px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px; cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.55); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
+    .nav-item i { font-size: 16px; flex-shrink: 0; }
+    .sidebar-foot { margin-top: auto; padding: 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .admin-user { display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+    .admin-avatar { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .admin-info { flex: 1; min-width: 0; }
+    .admin-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .admin-role-label { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+    .btn-logout-sm { width: 28px; height: 28px; background: rgba(255,255,255,0.08); border: none; border-radius: 6px; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .btn-logout-sm:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .main { flex: 1; margin-left: 230px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 50; flex-wrap: wrap; }
+    .back-btn { width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid #E0E0E0; background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--purple); font-size: 18px; text-decoration: none; flex-shrink: 0; }
+    .topbar-title { font-size: 17px; font-weight: 700; color: #0D0D0D; }
+    .topbar-subtitle { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 12px; background: var(--tint); color: var(--purple); }
+    .content { padding: 24px 28px; max-width: 900px; }
+    .profile-card { background: #fff; border-radius: 14px; border: 1px solid var(--border); padding: 24px 28px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
+    .profile-avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--tint); border: 2px solid #D4B8F5; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: var(--purple); font-family: 'DM Sans', sans-serif; flex-shrink: 0; }
+    .profile-main { flex: 1; min-width: 0; }
+    .profile-name { font-size: 20px; font-weight: 800; color: #0D0D0D; font-family: 'DM Sans', sans-serif; letter-spacing: -0.5px; }
+    .profile-email { font-size: 13px; color: #666; margin-top: 4px; }
+    .profile-meta { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; display: inline-block; }
+    .badge-scout { background: #EDE4F7; color: #560591; }
+    .badge-client { background: #DBEAFE; color: #1D4ED8; }
+    .badge-active { background: #DCFCE7; color: #166534; }
+    .badge-inactive { background: #FEE2E2; color: #991B1B; }
+    .badge-Verified { background: #DCFCE7; color: #166534; }
+    .badge-Pending { background: #FEF9C3; color: #854D0E; }
+    .badge-Rejected { background: #FEE2E2; color: #991B1B; }
+    .profile-joined { font-size: 11px; color: #999; }
+    .profile-right { display: flex; flex-direction: column; gap: 8px; min-width: 180px; }
+    .profile-right-item { display: flex; flex-direction: column; gap: 2px; }
+    .profile-right-label { font-size: 10px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+    .profile-right-val { font-size: 14px; font-weight: 600; color: #0D0D0D; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+    .stat-card { background: #fff; border-radius: 10px; border: 1px solid var(--border); padding: 16px 18px; }
+    .stat-label { font-size: 10px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+    .stat-val { font-size: 24px; font-weight: 800; color: #0D0D0D; font-family: 'DM Sans', sans-serif; }
+    .section-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 16px; }
+    .section-header { padding: 14px 20px; border-bottom: 1px solid #F0F0F0; display: flex; align-items: center; gap: 8px; }
+    .section-title { font-size: 14px; font-weight: 700; color: #0D0D0D; }
+    .section-count { font-size: 11px; font-weight: 600; background: var(--tint); color: var(--purple); padding: 2px 8px; border-radius: 10px; }
+    .table-header { display: grid; gap: 10px; padding: 10px 20px; background: #F9F9FB; border-bottom: 1px solid #F0F0F0; }
+    .insp-table-header { grid-template-columns: 2.5fr 100px 110px 100px 90px; }
+    .disp-table-header { grid-template-columns: 2.5fr 1fr 110px 100px; }
+    .th { font-size: 10px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.4px; }
+    .table-row { display: grid; gap: 10px; padding: 12px 20px; border-bottom: 1px solid #F7F7F7; align-items: center; }
+    .table-row:last-child { border-bottom: none; }
+    .insp-row { grid-template-columns: 2.5fr 100px 110px 100px 90px; }
+    .disp-row { grid-template-columns: 2.5fr 1fr 110px 100px; }
+    .td-addr { font-size: 13px; font-weight: 600; color: #0D0D0D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .td { font-size: 13px; color: #555; }
+    .badge-Posted { background: #EDE4F7; color: #560591; }
+    .badge-Accepted { background: #E0F2FE; color: #0369A1; }
+    .badge-InProgress { background: #EDE9FE; color: #5B21B6; }
+    .badge-Completed { background: #DCFCE7; color: #166534; }
+    .badge-PendingPayment { background: #FEF9C3; color: #854D0E; }
+    .badge-Disputed { background: #FEE2E2; color: #991B1B; }
+    .badge-Paid { background: #D1FAE5; color: #065F46; }
+    .badge-Submitted { background: #EDE4F7; color: #560591; }
+    .badge-UnderReview { background: #E0F2FE; color: #0369A1; }
+    .badge-AwaitingResponse { background: #FEF9C3; color: #854D0E; }
+    .badge-DecisionMade { background: #EDE9FE; color: #5B21B6; }
+    .badge-Resolved { background: #DCFCE7; color: #166534; }
+    .badge-Dismissed { background: #F3F4F6; color: #6B7280; }
+    .empty-row { padding: 24px 20px; text-align: center; font-size: 13px; color: #999; }
+    .actions-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 20px 24px; margin-bottom: 16px; }
+    .actions-title { font-size: 14px; font-weight: 700; color: #0D0D0D; margin-bottom: 14px; }
+    .actions-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .btn-suspend { height: 38px; background: #fff; color: var(--red); border: 1.5px solid #FCA5A5; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; gap: 6px; padding: 0 16px; }
+    .btn-suspend:hover { background: #FFF8F8; }
+    .btn-activate { height: 38px; background: #fff; color: #166534; border: 1.5px solid #86EFAC; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; gap: 6px; padding: 0 16px; }
+    .btn-activate:hover { background: #F0FDF4; }
+    .btn-suspend:disabled, .btn-activate:disabled { opacity: 0.5; cursor: not-allowed; }
+    .action-note { font-size: 12px; color: #999; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 900px) {
+      .insp-table-header, .insp-row { grid-template-columns: 2fr 100px 100px; }
+      .insp-table-header .th:nth-child(4),
+      .insp-table-header .th:nth-child(5),
+      .insp-row > *:nth-child(4),
+      .insp-row > *:nth-child(5) { display: none; }
+    }
+    @media (max-width: 700px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .profile-card { flex-direction: column; }
+      .insp-table-header, .insp-row { grid-template-columns: 1fr 90px; }
+      .disp-table-header, .disp-row { grid-template-columns: 1fr 90px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        <div class="s-name">SPEKTO</div>
+        <div class="admin-tag">Admin Portal</div>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Overview</div>
+      <div class="nav">
+        <a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Operations</div>
+      <div class="nav">
+        <a class="nav-item" href="inspections.html"><i class="ti ti-clipboard-list"></i> Inspections</a>
+        <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> Disputes</a>
+        <a class="nav-item" href="payouts.html"><i class="ti ti-wallet"></i> Payouts</a>
+        <a class="nav-item" href="verification.html"><i class="ti ti-id-badge"></i> Verification</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Users</div>
+      <div class="nav">
+        <a class="nav-item" href="users.html"><i class="ti ti-users"></i> All Users</a>
+        <a class="nav-item" href="scouts.html"><i class="ti ti-camera"></i> Scouts</a>
+        <a class="nav-item" href="clients.html"><i class="ti ti-building"></i> Clients</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Platform</div>
+      <div class="nav">
+        <a class="nav-item" href="marketplace.html"><i class="ti ti-shopping-bag"></i> Marketplace</a>
+        <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+      </div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="admin-user">
+        <div class="admin-avatar" id="adminAvatar">?</div>
+        <div class="admin-info">
+          <div class="admin-name" id="adminName">Loading...</div>
+          <div class="admin-role-label" id="adminRole">Admin</div>
+        </div>
+        <button class="btn-logout-sm" id="logoutBtn"><i class="ti ti-logout"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <a class="back-btn" href="javascript:history.back()">&#8592;</a>
+      <div class="topbar-title">User Detail</div>
+      <span class="topbar-subtitle" id="topbarName" style="display:none"></span>
+    </div>
+
+    <div class="content" id="mainContent">
+      <div class="loading"><div class="spinner"></div> Loading user...</div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  const urlParams = new URLSearchParams(window.location.search)
+  const userId = urlParams.get('id')
+
+  let userData = null
+  let scoutProfile = null
+  let clientProfile = null
+  let inspections = []
+  let disputes = []
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = 'login.html'; return; }
+
+    const { data: admin } = await supabase
+      .from('admins')
+      .select('id, first_name, last_name, role, is_active')
+      .eq('email', user.email)
+      .single()
+
+    if (!admin || !admin.is_active) {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+      return
+    }
+
+    const initials = (admin.first_name?.[0] || '') + (admin.last_name?.[0] || '')
+    document.getElementById('adminAvatar').textContent = initials.toUpperCase()
+    document.getElementById('adminName').textContent = admin.first_name + ' ' + admin.last_name
+    document.getElementById('adminRole').textContent = admin.role === 'superadmin' ? 'Super Admin' : 'Admin'
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut()
+      window.location.href = 'login.html'
+    })
+
+    if (!userId) { window.location.href = 'users.html'; return; }
+
+    await loadUser()
+  }
+
+  async function loadUser() {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (error || !user) {
+      document.getElementById('mainContent').innerHTML =
+        '<div class="loading">User not found.</div>'
+      return
+    }
+    userData = user
+
+    const topbarName = document.getElementById('topbarName')
+    topbarName.textContent = (user.first_name || '') + ' ' + (user.last_name || '')
+    topbarName.style.display = 'inline-block'
+
+    if (user.role === 'scout') {
+      const { data } = await supabase
+        .from('scout_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single()
+      scoutProfile = data
+    } else {
+      const { data } = await supabase
+        .from('client_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single()
+      clientProfile = data
+    }
+
+    const inspField = user.role === 'scout' ? 'scout_id' : 'client_id'
+    const { data: inspData } = await supabase
+      .from('inspections')
+      .select('id, address, status, inspection_type, date, pricing_snapshot')
+      .eq(inspField, userId)
+      .order('created_at', { ascending: false })
+      .limit(10)
+    inspections = inspData || []
+
+    const { data: dispData } = await supabase
+      .from('disputes')
+      .select('id, status, reason, created_at, inspections(address)')
+      .eq('raised_by', userId)
+      .order('created_at', { ascending: false })
+      .limit(5)
+    disputes = dispData || []
+
+    renderPage()
+  }
+
+  function renderPage() {
+    const u = userData
+    const name = (u.first_name || '') + ' ' + (u.last_name || '')
+    const initials = ((u.first_name?.[0] || '') + (u.last_name?.[0] || '')).toUpperCase() || '?'
+    const joined = u.created_at
+      ? new Date(u.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+      : '—'
+
+    const totalInspections = inspections.length
+    const openDisputes = disputes.filter(d => !['Resolved', 'Dismissed'].includes(d.status)).length
+
+    let financialLabel, financialVal
+    if (u.role === 'scout') {
+      financialLabel = 'Total Earned'
+      const earned = inspections.reduce((sum, i) => {
+        const val = parseFloat(i.pricing_snapshot?.pay_to_scout)
+        return sum + (isNaN(val) ? 0 : val)
+      }, 0)
+      financialVal = '$' + earned.toFixed(2)
+    } else {
+      financialLabel = 'Total Spent'
+      const spent = inspections.reduce((sum, i) => {
+        const val = parseFloat(i.pricing_snapshot?.total)
+        return sum + (isNaN(val) ? 0 : val)
+      }, 0)
+      financialVal = '$' + spent.toFixed(2)
+    }
+
+    let profileRight = ''
+    if (u.role === 'scout' && scoutProfile) {
+      const verificationStatus = scoutProfile.verification_status || 'Pending'
+      profileRight = `
+        <div class="profile-right">
+          <div class="profile-right-item">
+            <div class="profile-right-label">Scout Status</div>
+            <div class="profile-right-val"><span class="badge badge-${verificationStatus}">${verificationStatus}</span></div>
+          </div>
+          <div class="profile-right-item">
+            <div class="profile-right-label">Completions</div>
+            <div class="profile-right-val">${scoutProfile.total_completions ?? 0}</div>
+          </div>
+          <div class="profile-right-item">
+            <div class="profile-right-label">Rating</div>
+            <div class="profile-right-val">${scoutProfile.average_rating != null ? parseFloat(scoutProfile.average_rating).toFixed(1) + ' / 5.0' : '—'}</div>
+          </div>
+        </div>`
+    } else if (u.role === 'client' && clientProfile) {
+      profileRight = `
+        <div class="profile-right">
+          ${clientProfile.company_name ? `
+          <div class="profile-right-item">
+            <div class="profile-right-label">Company</div>
+            <div class="profile-right-val">${clientProfile.company_name}</div>
+          </div>` : ''}
+          <div class="profile-right-item">
+            <div class="profile-right-label">Inspections</div>
+            <div class="profile-right-val">${totalInspections}</div>
+          </div>
+        </div>`
+    }
+
+    const inspRows = inspections.length === 0
+      ? '<div class="empty-row">No inspections found</div>'
+      : inspections.map(i => {
+          const dateStr = i.date
+            ? new Date(i.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+            : '—'
+          const typeLabel = i.inspection_type === 'external' ? 'External'
+            : i.inspection_type === 'internal' ? 'Internal'
+            : 'Both'
+          const statusLabel = i.status
+            .replace('PendingPayment', 'Pending Pay')
+            .replace('InProgress', 'In Progress')
+          const payout = u.role === 'scout'
+            ? (i.pricing_snapshot?.pay_to_scout ? '$' + parseFloat(i.pricing_snapshot.pay_to_scout).toFixed(2) : '—')
+            : (i.pricing_snapshot?.total ? '$' + parseFloat(i.pricing_snapshot.total).toFixed(2) : '—')
+          return `
+            <div class="table-row insp-row">
+              <div class="td-addr">${i.address || '—'}</div>
+              <div class="td">${typeLabel}</div>
+              <div class="td"><span class="badge badge-${i.status}">${statusLabel}</span></div>
+              <div class="td">${dateStr}</div>
+              <div class="td">${payout}</div>
+            </div>`
+        }).join('')
+
+    const dispRows = disputes.length === 0
+      ? '<div class="empty-row">No disputes found</div>'
+      : disputes.map(d => {
+          const dateStr = new Date(d.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+          const reasonLabel = d.reason?.replace(/([A-Z])/g, ' $1').trim() || '—'
+          const statusLabel = d.status?.replace(/([A-Z])/g, ' $1').trim() || '—'
+          return `
+            <div class="table-row disp-row">
+              <div class="td-addr">${d.inspections?.address || '—'}</div>
+              <div class="td">${reasonLabel}</div>
+              <div class="td"><span class="badge badge-${d.status}">${statusLabel}</span></div>
+              <div class="td">${dateStr}</div>
+            </div>`
+        }).join('')
+
+    const isActive = u.is_active !== false
+    const actionBtn = isActive
+      ? `<button class="btn-suspend" id="toggleActiveBtn"><i class="ti ti-ban"></i> Suspend user</button>`
+      : `<button class="btn-activate" id="toggleActiveBtn"><i class="ti ti-circle-check"></i> Activate user</button>`
+
+    const html = `
+      <div class="profile-card">
+        <div class="profile-avatar">${initials}</div>
+        <div class="profile-main">
+          <div class="profile-name">${name}</div>
+          <div class="profile-email">${u.email || '—'}</div>
+          <div class="profile-meta">
+            <span class="badge badge-${u.role}">${u.role === 'scout' ? 'Scout' : 'Client'}</span>
+            <span class="badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? 'Active' : 'Suspended'}</span>
+            <span class="profile-joined">Joined ${joined}</span>
+          </div>
+        </div>
+        ${profileRight}
+      </div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Total Inspections</div>
+          <div class="stat-val">${totalInspections}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Open Disputes</div>
+          <div class="stat-val" style="${openDisputes > 0 ? 'color:var(--red)' : ''}">${openDisputes}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">${financialLabel}</div>
+          <div class="stat-val">${financialVal}</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">Recent Inspections</div>
+          <span class="section-count">${inspections.length}</span>
+        </div>
+        <div class="table-header insp-table-header">
+          <div class="th">Address</div>
+          <div class="th">Type</div>
+          <div class="th">Status</div>
+          <div class="th">Date</div>
+          <div class="th">${u.role === 'scout' ? 'Payout' : 'Fee'}</div>
+        </div>
+        <div>${inspRows}</div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title">Recent Disputes</div>
+          <span class="section-count">${disputes.length}</span>
+        </div>
+        <div class="table-header disp-table-header">
+          <div class="th">Address</div>
+          <div class="th">Reason</div>
+          <div class="th">Status</div>
+          <div class="th">Date</div>
+        </div>
+        <div>${dispRows}</div>
+      </div>
+
+      <div class="actions-card">
+        <div class="actions-title">Admin Actions</div>
+        <div class="actions-row">
+          ${actionBtn}
+          <div class="action-note" id="actionNote"></div>
+        </div>
+      </div>`
+
+    document.getElementById('mainContent').innerHTML = html
+
+    document.getElementById('toggleActiveBtn').addEventListener('click', handleToggleActive)
+  }
+
+  async function handleToggleActive() {
+    const isActive = userData.is_active !== false
+    const action = isActive ? 'suspend' : 'activate'
+    const confirmed = window.confirm(
+      isActive
+        ? `Suspend ${userData.first_name} ${userData.last_name}? They will not be able to log in.`
+        : `Activate ${userData.first_name} ${userData.last_name}? They will regain access to the platform.`
+    )
+    if (!confirmed) return
+
+    const btn = document.getElementById('toggleActiveBtn')
+    btn.disabled = true
+
+    const { error } = await supabase
+      .from('users')
+      .update({ is_active: !isActive })
+      .eq('id', userId)
+
+    if (error) {
+      btn.disabled = false
+      document.getElementById('actionNote').textContent = 'Failed to update user status. Please try again.'
+      document.getElementById('actionNote').style.color = 'var(--red)'
+      return
+    }
+
+    userData.is_active = !isActive
+    renderPage()
+
+    const noteEl = document.getElementById('actionNote')
+    noteEl.textContent = `User ${action === 'suspend' ? 'suspended' : 'activated'} successfully.`
+    noteEl.style.color = action === 'activate' ? '#166534' : '#991B1B'
+  }
+
+  init()
+</script>
+</body>
+</html>
