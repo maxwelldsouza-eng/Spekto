@@ -1,0 +1,244 @@
+# Spekto — Stripe & Xero Orchestration: Process Flows and Schema Design
+
+**Purpose:** This document describes, for each of the six payment scenarios in Spekto, exactly what happens at each step (Spekto DB → Stripe → Xero), and the database tables/columns needed to support it. This builds directly on `STRIPE_XERO_PLAN.md` — read that first for the overall principles (seamless charging, no Stripe Invoicing product, direct Edge Function → Xero sync rather than a third-party connector, refunds as new rows never edits). This document goes one level deeper into the actual schema and the less-common scenarios (partial refund, partial Scout payment, marketplace purchase) that the original plan only sketched.
+
+---
+
+## 0. New / Modified Tables Needed
+
+These are additions on top of the existing schema — nothing here removes or renames anything already in place.
+
+### `payments` (existing table — needs new columns)
+This table already exists and is used by `handle_dispute_raised()`. It needs to become the **ledger of every money movement on the Client side** — one row per event, never edited after creation.
+
+New columns needed:
+- `payment_type` — text, CHECK constraint: `'Charge'`, `'Refund'`, `'PartialRefund'`, `'MarketplacePurchase'`
+- `related_payment_id` — uuid, nullable, self-referencing FK to `payments.id` — set on a `Refund`/`PartialRefund` row to point back at the original `Charge` row it refunds. This is the mechanism that makes "never edit, always link" actually queryable.
+- `stripe_payment_intent_id` — text (already noted as a planned column in `PROJECT_NOTES.md`)
+- `stripe_refund_id` — text, nullable — populated only on refund rows
+- `stripe_receipt_url` — text, nullable — store the **Payment Intent ID**, not a cached URL (per the expiry caution already documented); fetch a fresh receipt URL from Stripe at view time
+- `xero_invoice_id` — text, nullable — the Xero-side record this payment was synced to
+- `xero_sync_status` — text, CHECK: `'Pending'`, `'Synced'`, `'Failed'` — lets you detect and retry failed Xero syncs rather than silently losing them
+- `amount` — numeric — always positive for `Charge`, always negative for `Refund`/`PartialRefund` (so summing all rows for an inspection gives the correct net amount directly)
+
+### `payout_batch_items` (existing table — needs new columns)
+Same ledger principle, applied to the Scout side.
+
+New columns needed:
+- `item_type` — text, CHECK: `'Payout'`, `'PartialPayout'`, `'PayoutAdjustment'`
+- `related_item_id` — uuid, nullable, self-referencing FK — links an adjustment/reduction row back to the original payout item it modifies
+- `stripe_transfer_id` — text, nullable
+- `xero_bill_id` — text, nullable
+- `xero_sync_status` — text, CHECK: `'Pending'`, `'Synced'`, `'Failed'`
+- `amount` — numeric — the actual amount transferred for this specific row (may differ from the inspection's full Scout-payout amount if this is a `PartialPayout`)
+
+### `marketplace_purchases` (existing table — needs new columns)
+Currently has no Stripe/Xero linkage at all, since the purchase flow was stubbed. Needs the same treatment as `payments`.
+
+New columns needed:
+- `stripe_payment_intent_id` — text
+- `stripe_receipt_url` — store Payment Intent ID, fetch receipt fresh (same pattern as above)
+- `xero_invoice_id` — text, nullable
+- `xero_sync_status` — text, CHECK: `'Pending'`, `'Synced'`, `'Failed'`
+- `download_count` — integer, default 0 — needed to enforce the "max 3 downloads" rule already documented in pricing
+- `access_expires_at` — timestamptz — needed to enforce the "48hr buyer access" rule already documented
+
+### New table: `webhook_events`
+A small but important addition not yet discussed. This is a log of every Stripe/Xero webhook received, used for two things: idempotency (never process the same webhook event twice, since Stripe/Xero can and do retry deliveries) and debugging (when something goes wrong, you need to see what was actually received, not just what your code did with it).
+
+Columns: `id` (uuid), `source` (text — `'stripe'` or `'xero'`), `event_type` (text — e.g. `'payment_intent.succeeded'`), `event_id` (text — the provider's own unique event ID, with a UNIQUE constraint to enforce idempotency), `payload` (jsonb — the full raw event body), `processed` (boolean, default false), `processed_at` (timestamptz, nullable), `error` (text, nullable), `created_at` (timestamptz, default now()).
+
+### New table: `fraud_flags`
+Supports the mistake-vs-fraud classification described in Section 5/5a — full column definitions are in Section 5a, listed here for completeness of the schema overview. One row per detected signal, linked to `inspection_id`, `scout_id`, and optionally `capture_id`.
+
+---
+
+## 1. Charging the Client (new inspection request)
+
+**Trigger:** Client submits the "New Inspection" form.
+
+**Sequence:**
+1. Edge Function receives the request. Calculates total from `pricing` table based on `inspection_type`.
+2. Create the `inspections` row in a transient state (not yet `Posted`).
+3. Call Stripe: create and confirm a **Payment Intent** against the Client's saved `stripe_customer_id` / payment method, for the calculated total.
+4. **If the Payment Intent succeeds:**
+   - Insert a `payments` row: `payment_type = 'Charge'`, `amount` = positive total, `stripe_payment_intent_id` set, `xero_sync_status = 'Pending'`.
+   - Update `inspections.status = 'Posted'`.
+   - Return success to the Client; surface the receipt link (fetched fresh from Stripe) in `client/billing.html`.
+5. **If the Payment Intent fails:**
+   - Do not create/finalize the `inspections` row as `Posted` — leave it (or explicitly mark it) as `PaymentFailed`.
+   - Surface a clear retry path to the Client (update card / try again).
+   - No `payments` row is created for a failed attempt — only successful charges get a ledger row. (Optionally log the failure to `webhook_events` or a separate light error log for your own visibility, but it shouldn't pollute the financial ledger.)
+6. **Asynchronously, via Stripe's `payment_intent.succeeded` webhook:**
+   - Edge Function receives the webhook, checks `webhook_events` for this `event_id` to avoid double-processing.
+   - Calls Xero's API to create the corresponding sales record, tagged with the appropriate Tracking Category (e.g. `"App: Spekto"`, per our earlier discussion on multi-app accounting).
+   - Updates the `payments` row: `xero_invoice_id` set, `xero_sync_status = 'Synced'` (or `'Failed'` if the Xero call errors — and this should trigger a retry mechanism or at least an admin-visible alert, since a `'Failed'` Xero sync means your books are out of sync with reality).
+
+---
+
+## 2. Paying the Scout (full payout, weekly batch)
+
+**Trigger:** Admin clicks the weekly batch-processing action in `admin/payouts.html`.
+
+**Sequence:**
+1. Gather all `inspections` with `status = 'PendingPayment'` not already in an open batch (existing logic, unchanged).
+2. Create a `payout_batches` row.
+3. For each qualifying inspection, create a `payout_batch_items` row: `item_type = 'Payout'`, `amount` = full Scout-payout amount from `pricing_snapshot`, status starts `Pending`.
+4. For each item, call Stripe: create a **Connect Transfer** to the Scout's `stripe_account_id` for that item's `amount`.
+5. **On transfer success:** update the `payout_batch_items` row — `stripe_transfer_id` set, status → `Paid`, `xero_sync_status = 'Pending'`.
+6. **Asynchronously, via Stripe's transfer-succeeded webhook:**
+   - Edge Function calls Xero's API to create a bill/expense record for this payout, tagged appropriately.
+   - Updates `xero_bill_id` and `xero_sync_status = 'Synced'` on the `payout_batch_items` row.
+7. Scout sees the payout confirmation in `scout/earnings.html`, with a receipt link fetched fresh from Stripe at view time.
+
+---
+
+## 3. Refunding the Client (full refund)
+
+**Trigger:** Admin resolves a dispute with "Full refund to Client" (the existing `admin/dispute-detail.html` resolution action).
+
+**Sequence:**
+1. Look up the original `payments` row for this inspection where `payment_type = 'Charge'`.
+2. Call Stripe: create a **Refund** against that Payment Intent for the full amount.
+3. **On success:**
+   - Insert a **new** `payments` row: `payment_type = 'Refund'`, `amount` = negative full amount, `related_payment_id` = the original charge's `id`, `stripe_refund_id` set, `xero_sync_status = 'Pending'`. **Do not modify the original `Charge` row.**
+   - Update `inspections.status` and `disputes.resolution = 'FullRefundToClient'` (existing constraint value).
+4. **Asynchronously, via Stripe's refund-succeeded webhook:**
+   - Edge Function calls Xero's API to create a **credit note** against the original Xero invoice (`xero_invoice_id` from the original `payments` row) — not an edit to that invoice.
+   - Updates the new refund `payments` row with the resulting `xero_invoice_id` (here repurposed to mean "the Xero credit note ID for this refund row") and `xero_sync_status = 'Synced'`.
+5. Client sees both rows in `client/billing.html` for this inspection: the original charge and the refund, net displayed as $0 — not a single row that's been zeroed out.
+
+---
+
+## 4. Partially Refunding the Client
+
+**Trigger:** Admin resolves a dispute with "Partial refund to Client," entering a specific amount.
+
+**Sequence:** Identical to Section 3, with two differences:
+- `payment_type = 'PartialRefund'` instead of `'Refund'`.
+- `amount` is the negative of whatever specific amount the admin entered, not the full original charge.
+- `disputes.resolution = 'PartialRefundToClient'`.
+
+Everything else — the Stripe Refund call (Stripe natively supports partial refund amounts on a Payment Intent), the Xero credit note (also natively supports partial amounts), the `related_payment_id` linkage — works identically. **This confirms the schema design is already correct for this case without any special-casing**, which is exactly the point of building it as a generic "any payment-type row can reference an original via `related_payment_id`" ledger rather than hard-coding "refund = full reversal" logic anywhere.
+
+A Client could in principle have multiple `PartialRefund` rows against the same original charge over time (e.g. a dispute resolved with a small refund, then re-opened and resolved with an additional refund later) — the ledger model handles this naturally; just sum all rows with the same `inspection_id` (or trace via `related_payment_id`) to get the running net total at any point.
+
+---
+
+## 5. Partially Paying the Scout — and the Fraud vs. Mistake Fork
+
+**This section now starts from a decided business policy, not an open question.** Every dispute resolution that results in a Client refund must first be classified as one of two categories, and the category determines what happens to the Scout's payment:
+
+- **Mistake (genuine attempt, fell short)** — e.g. blurry video, dark video, incomplete walkthrough, wrong room missed. The Scout made a real, good-faith attempt at the job. **Policy: refund the Client, and still pay the Scout in full.** This mirrors the industry-standard pattern researched directly from Uber/Lyft/DoorDash practice: platforms absorb the cost of service-quality refunds rather than penalizing the worker financially for an honest shortfall, reserving financial consequences (lower ratings, fewer future jobs, eventual account review) rather than payment clawback.
+- **Fraud (no genuine attempt — fabricated, empty, or wrong-property footage submitted as if complete)** — **Policy: refund the Client, and withhold the Scout's payment entirely.** This is not a quality dispute; treating it as one would directly reward fabrication. This mirrors how the same platforms handle deactivation-worthy fraud very differently from ordinary service complaints, even though the customer-facing refund looks superficially similar in both cases.
+
+**This classification is an admin judgment call, made via the existing dispute resolution UI in `admin/dispute-detail.html` — not something a piece of software decides on its own.** The "fraud detection" mechanism described in Section 5a below exists to **flag suspicious cases for an admin's attention and to track repeat patterns**, not to autonomously withhold someone's pay. Given that wrongly accusing a Scout of fraud has real consequences for their livelihood, a human must always make the final call.
+
+### Schema addition: `disputes.resolution` needs a new value
+
+The existing CHECK constraint values (`FullRefundToClient`, `PartialRefundToClient`, `PaymentReleasedToScout`, `PartialPaymentToScout`, `NoActionRequired`, `Dismissed`) have no clean option for "refund the Client AND withhold/claw back the Scout's payment due to fraud." Add:
+
+```sql
+ALTER TABLE disputes DROP CONSTRAINT disputes_resolution_check;
+ALTER TABLE disputes ADD CONSTRAINT disputes_resolution_check
+  CHECK (resolution = ANY (ARRAY[
+    'FullRefundToClient', 'PartialRefundToClient', 'PaymentReleasedToScout',
+    'PartialPaymentToScout', 'NoActionRequired', 'Dismissed',
+    'WithheldFraud'
+  ]::text[]));
+```
+
+`'WithheldFraud'` is selected by the admin when the dispute is classified as fraud rather than a mistake.
+
+### Orchestration when `resolution = 'WithheldFraud'`
+
+**Case A — dispute resolved before the Scout has been paid (most common, since `prevent_disputed_batch_entry` already blocks disputed inspections from entering a payout batch):**
+1. Client refund proceeds exactly as Section 3/4 (Stripe Refund, new `payments` row, Xero credit note).
+2. The inspection's `payout_batch_items` row is simply **never created** — the inspection never re-enters a future batch run. No Stripe Transfer happens at all for this inspection. There is no "payout to reverse" because none was ever made.
+3. Separately, trigger the account-flagging logic described below.
+
+**Case B — dispute surfaces after the Scout has already been paid (rarer, but must be handled deliberately rather than ignored):**
+1. Client refund proceeds the same way.
+2. Per the same industry-pattern research, **Spekto absorbs this specific loss rather than attempting to claw back funds from the Scout's bank account** — Stripe Connect doesn't support pulling money back out of a connected account once paid out to their bank, and even where a *delivery-style* clawback exists in this industry, it targets the restaurant/merchant, not the courier; there is no real precedent for clawing back from the worker.
+3. Create a `payout_batch_items` row with `item_type = 'PayoutAdjustment'`, `amount` = negative full original payout, `related_item_id` = original payout row — **but this row's purpose is now record-keeping and account-flagging, not an actual deduction mechanism.** It documents "this Scout was paid for fabricated work" for the account history and the fraud-pattern tracking in Section 5a, without assuming the money is actually recoverable.
+4. Xero side: this loss is booked as a write-off/bad-debt-style expense, not a credit note against the Scout (since, again, no money is actually flowing back) — tag it distinctly (e.g. "Fraud Loss") so it's visible in your own management reporting as a cost of doing business worth monitoring, separate from ordinary refund-driven credit notes.
+5. **This case is exactly why catching fraud before payout (Case A) matters far more than handling it after the fact (Case B)** — Case B is fundamentally a loss-acceptance and account-action exercise, not a money-recovery one. The fraud-detection function in Section 5a is partly motivated by trying to surface likely-fraudulent submissions as early as possible, ideally before a payout batch ever runs.
+
+---
+
+## 5a. Fraud Detection — Flagging, Not Deciding
+
+**Design principle:** this is a **signal-surfacing system for admins**, not an autonomous decision-maker. It should never auto-withhold a payout or auto-resolve a dispute. Its job is to make likely-fraudulent submissions easier for an admin to notice and prioritize, and to track repeat offenders so a pattern is visible rather than each incident being reviewed in isolation with no memory of past behavior.
+
+### New table: `fraud_flags`
+
+One row per detected signal (not per Scout) — a single submission could trigger multiple flags, and a Scout's history is built by querying all flags linked to their `scout_id` over time.
+
+Columns: `id` (uuid), `inspection_id` (uuid, FK), `scout_id` (uuid, FK), `capture_id` (uuid, FK, nullable — which specific capture triggered this), `flag_type` (text, CHECK: `'ZeroMotionVideo'`, `'DurationTooShort'`, `'GpsMismatch'`, `'DuplicateVideoHash'`, `'RepeatOffender'`), `severity` (text, CHECK: `'Low'`, `'Medium'`, `'High'`), `details` (jsonb — the specific values that triggered the flag, e.g. `{"duration_seconds": 4, "minimum_expected": 60}`), `reviewed` (boolean, default false), `reviewed_by` (uuid, FK to `admins`, nullable), `reviewed_at` (timestamptz, nullable), `created_at` (timestamptz, default now()).
+
+### What can realistically be detected automatically, and how
+
+Listed roughly in order of how cheap/reliable they are to build, since not all of these need to ship at once:
+
+**Duration check (cheapest, build first):** Every video upload already has metadata available at upload time. If a capture's duration falls below a sensible minimum (e.g. under 15–30 seconds for an external walkthrough, tunable per inspection type), flag it `'DurationTooShort'`. This alone would have caught the "video of nothing" scenario you described, assuming a fabricated/lazy submission is also typically a very short one.
+
+**Zero-motion / static-frame detection (moderate effort):** A genuinely empty or fabricated video (e.g. pointed at a wall, or a still/looped clip) often has near-zero frame-to-frame visual difference throughout its duration. A lightweight server-side check — sampling frames at intervals and measuring pixel-level difference — can flag `'ZeroMotionVideo'` when variance stays suspiciously low across the whole clip. This requires actual video processing (e.g. via an Edge Function calling a video-analysis library or service) rather than just reading metadata, so it's a meaningfully bigger build than the duration check.
+
+**GPS mismatch (uses data you already collect):** Captures already store `gps_latitude`/`gps_longitude` per the existing schema. If a capture's recorded GPS coordinates fall outside a reasonable radius (e.g. 200m) of the inspection's actual address, flag `'GpsMismatch'` — a strong signal the Scout wasn't actually at the property when recording.
+
+**Duplicate video detection (catches re-using old footage across jobs):** Compute and store a perceptual hash (not a cryptographic hash — something tolerant of minor re-encoding) of each uploaded video at upload time. If a new capture's hash closely matches a hash already stored against a *different* inspection, flag `'DuplicateVideoHash'` — this catches a Scout re-uploading the same generic footage across multiple jobs rather than actually visiting each property.
+
+**Repeat-offender pattern (account-level, not submission-level):** Independent of any single capture, periodically (or on each new flag) check: does this `scout_id` have 2+ unresolved or admin-confirmed fraud flags within a rolling window (e.g. 90 days)? If so, raise a `'RepeatOffender'` flag at `severity = 'High'` and surface it prominently — this is the mechanism that actually drives the "kick him off the platform" outcome you described, by making a pattern visible rather than relying on an admin happening to remember a Scout's prior history.
+
+### Where this surfaces to admins
+
+Add a small section to `admin/dispute-detail.html`: when reviewing a dispute, show any `fraud_flags` rows linked to the relevant `capture_id`/`inspection_id`, plus a "Scout history" summary (total flags, how many were confirmed as fraud in past resolved disputes) — giving the admin the context to make the mistake-vs-fraud call confidently, rather than reviewing each dispute as if it's the Scout's first.
+
+Consider also a dedicated `admin/fraud-review.html` screen (not yet built, not in this iteration's scope) that lists all unreviewed `fraud_flags` across the platform, independent of whether a Client has actually raised a dispute yet — since a fabricated video might never get disputed at all if the Client doesn't notice or doesn't bother, and proactive flagging closes that gap rather than relying entirely on Client complaints to ever catch fraud.
+
+### What this explicitly does NOT do
+
+It does not auto-reject a capture, auto-deny a payout, or auto-resolve a dispute as fraud. A `'DurationTooShort'` flag on its own could just as easily mean a small studio apartment took genuinely less time to walk through — the flag is a prompt for human judgment, not a verdict. The actual `'WithheldFraud'` resolution in `disputes.resolution` is set by an admin, always, informed by these flags but never automated by them.
+
+---
+
+## 6. Charging for an Existing Recording (Marketplace purchase)
+
+**Trigger:** A different Client clicks "Purchase" on a listing in `client/marketplace.html` (currently stubbed with a "coming soon" alert — this section describes what replaces that stub).
+
+**Sequence:**
+1. Edge Function looks up the `marketplace_listings` row, confirms it's still `Active` and not expired (`expires_at` check).
+2. Call Stripe: create and confirm a **Payment Intent** for the marketplace price (per `marketplace_pricing` — $20 inc GST currently).
+3. **On success:**
+   - Insert a `marketplace_purchases` row: `buyer_id` (the purchasing Client), `listing_id`, `stripe_payment_intent_id` set, `access_expires_at` = now + 48 hours (per existing documented business rule), `download_count = 0`, `xero_sync_status = 'Pending'`.
+   - This is a genuinely separate financial event from the original inspection charge — it does **not** touch the original `payments` row or the original inspection's `Scout` in any way, since (per the business rule established earlier in this project) Scouts have no ownership stake in marketplace resale revenue. This revenue belongs entirely to Spekto.
+4. **Asynchronously, via webhook:** Edge Function syncs this to Xero as a separate sales record — likely worth its own distinct Xero tracking category or account code (e.g. "Marketplace Resale Revenue" vs. "Inspection Service Revenue"), since for your own management reporting you'll likely want to see these two revenue streams separately, even though both ultimately come through the same Stripe account.
+5. Buyer's access: every time they click "Play" or "Download" on their purchased video, check `download_count < 3` and `now() < access_expires_at` before serving the video URL; increment `download_count` on each successful access.
+6. **No Scout-side event happens at all for this scenario** — confirmed correct per the existing business rule. The Scout's `scout/earnings.html` should never show or reference marketplace resale activity.
+
+---
+
+## 7. Summary Table — Every Scenario at a Glance
+
+| Scenario | Stripe action | New `payments` row? | New `payout_batch_items` row? | Xero action |
+|---|---|---|---|---|
+| Client charged (new inspection) | Payment Intent | Yes (`Charge`) | — | Create invoice |
+| Scout paid (full) | Connect Transfer | — | Yes (`Payout`) | Create bill |
+| Client refunded (full) | Refund | Yes (`Refund`, linked) | — | Credit note |
+| Client refunded (partial) | Refund (partial amount) | Yes (`PartialRefund`, linked) | — | Credit note (partial) |
+| Dispute = Mistake, pre-payout | Refund (Client) | Yes (`Refund`/`PartialRefund`) | Yes (`Payout`, full amount, proceeds normally) | Credit note + bill |
+| Dispute = Fraud, pre-payout | Refund (Client) | Yes (`Refund`/`PartialRefund`) | **None created** — Scout never paid | Credit note only |
+| Dispute = Fraud, post-payout (Case B) | Refund (Client) | Yes (`Refund`/`PartialRefund`) | Yes (`PayoutAdjustment`, record-keeping only — Spekto absorbs the loss, no actual clawback attempted) | Credit note (Client) + write-off/bad-debt entry (loss) |
+| Marketplace purchase | Payment Intent | — (separate `marketplace_purchases` row, not `payments`) | — | Create invoice (separate revenue category) |
+
+---
+
+## 8. Open Decisions Carried Over / Added
+
+- **~~Scout clawback mechanism (Section 5, Case B)~~ — RESOLVED.** Decided policy: mistake → Client refunded, Scout still paid in full (platform absorbs the cost, matching industry-standard practice). Fraud → Client refunded, Scout payment withheld (pre-payout) or treated as an absorbed loss with no attempted clawback (post-payout, Case B) — see Sections 5 and 5a.
+- **New, not yet decided: what counts as "Mistake" vs. "Fraud" needs a written guideline for admins**, even though the final call is always a human judgment. Worth drafting a short rubric (e.g. "blurry/dark/incomplete = mistake by default; under-15-second clips, static/motionless footage, or GPS far from the property = treat as likely fraud pending review") so different admins apply the distinction consistently rather than each developing their own informal sense of where the line sits.
+- **New, not yet decided: fraud flag thresholds** — exact duration cutoffs, motion-variance thresholds, GPS mismatch radius, and the rolling window/count for `'RepeatOffender'` all need real values, ideally tuned using some real submission data once available rather than guessed in the abstract before any Scout has used the system.
+- **New, not yet decided: does a `'WithheldFraud'` resolution automatically suspend the Scout's account, or just flag it for separate admin review?** Given the "kick him off the platform" intent behind this whole discussion, I'd lean toward: a single `'WithheldFraud'` resolution flags the account for mandatory review (not automatic suspension, since a human should still look at the specific case), but a `'RepeatOffender'` flag (2+ confirmed fraud resolutions) triggers a strong recommended-suspension prompt in the admin UI. Not yet built or confirmed as the actual policy.
+- Whether `marketplace_purchases` should sync to Xero under the same account/tracking category as inspection revenue, or a distinct one for cleaner reporting — leaning toward distinct, not yet confirmed.
+- `webhook_events` retention policy — how long to keep raw webhook payloads (compliance/storage consideration, not just a technical one).
+- Whether a `'Failed'` `xero_sync_status` should trigger an automatic retry, an admin alert, or both — not yet decided. Given the earlier-established principle of "never silently lose a record of money movement," I'd lean toward both: an automatic retry (e.g. 3 attempts with backoff) and, if all retries fail, a visible flag somewhere in the admin portal (a new "Sync Issues" indicator, perhaps on `admin/dashboard.html`) so a human notices rather than this failing silently the way several other things did earlier in this project.
