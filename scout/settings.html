@@ -218,16 +218,18 @@
   }
 
   function getStripeStatus() {
-    const connected = !!scoutProfile?.stripe_account_id
+    const status = scoutProfile?.stripe_connect_status
+    const active = status === 'Active'
+    const pending = status === 'Pending' && !!scoutProfile?.stripe_account_id
     return `
-      <div class="stripe-connect-box ${connected ? 'connected' : ''}">
+      <div class="stripe-connect-box ${active ? 'connected' : ''}">
         <div class="stripe-logo">stripe</div>
         <div class="stripe-info">
-          <div class="stripe-title">${connected ? 'Bank account connected' : 'Connect your bank account'}</div>
-          <div class="stripe-sub ${connected ? 'connected' : ''}">${connected ? 'You will receive payouts every Tuesday directly to your account' : 'Required to receive payouts from completed inspections'}</div>
+          <div class="stripe-title">${active ? 'Bank account connected' : pending ? 'Onboarding in progress' : 'Connect your bank account'}</div>
+          <div class="stripe-sub ${active ? 'connected' : ''}">${active ? 'You will receive payouts every Tuesday directly to your account' : pending ? 'Complete your Stripe setup to start receiving payouts' : 'Required to receive payouts from completed inspections'}</div>
         </div>
-        <button class="btn-stripe ${connected ? 'connected' : ''}" onclick="handleStripeConnect()">
-          ${connected ? 'Manage' : 'Connect'}
+        <button class="btn-stripe ${active ? 'connected' : ''}" onclick="handleStripeConnect()">
+          ${active ? 'Manage' : pending ? 'Continue setup' : 'Connect'}
         </button>
       </div>`
   }
@@ -446,8 +448,27 @@
     }
   }
 
-  window.handleStripeConnect = () => {
-    showToast('Stripe Connect integration coming soon. Your bank details will be connected here.', 'success')
+  window.handleStripeConnect = async () => {
+    const btn = document.querySelector('.btn-stripe')
+    if (btn) { btn.disabled = true; btn.textContent = 'Connecting...' }
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/stripe-connect-onboard', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
+      })
+      const result = await res.json()
+      if (result.error) throw new Error(result.error)
+      if (result.already_active) {
+        showToast('Your bank account is already connected and active.')
+        if (btn) { btn.disabled = false; btn.textContent = 'Manage' }
+        return
+      }
+      window.location.href = result.url
+    } catch (err) {
+      showToast('Could not start bank account setup: ' + err.message, 'error')
+      if (btn) { btn.disabled = false; btn.textContent = 'Connect' }
+    }
   }
 
   async function savePersonal() {
@@ -583,7 +604,16 @@
     window.location.href = '../auth/login.html'
   }
 
-  init()
+  init().then(() => {
+    const stripeParam = new URLSearchParams(window.location.search).get('stripe')
+    if (stripeParam === 'connected') {
+      showToast('Bank account connected successfully! You can now receive payouts.')
+      window.history.replaceState({}, '', 'settings.html')
+    } else if (stripeParam === 'refresh') {
+      showToast('Your setup link expired. Click Connect to try again.', 'error')
+      window.history.replaceState({}, '', 'settings.html')
+    }
+  })
 
   document.getElementById('menuToggle').addEventListener('click', () => {
     document.querySelector('.sidebar').classList.toggle('open')

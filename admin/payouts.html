@@ -331,34 +331,49 @@
   }
 
   window.processBatch = async () => {
-    if (!confirm(`Process payout batch of $${pendingInspections.reduce((s,i) => s + (parseFloat(i.pricing_snapshot?.pay_to_scout)||0), 0).toFixed(2)} to ${pendingInspections.length} scouts?\n\nNote: Stripe Connect integration required for real payouts. This will mark inspections as Paid in the database.`)) return
+    const total = pendingInspections.reduce((s,i) => s + (parseFloat(i.pricing_snapshot?.pay_to_scout)||0), 0).toFixed(2)
+    if (!confirm(`Process Stripe payouts of $${total} to ${pendingInspections.length} scouts?\n\nScouts without an active Stripe Connect account will be skipped and remain pending.`)) return
 
     const btn = document.getElementById('processBtn')
     btn.disabled = true
     btn.innerHTML = '<div class="spinner" style="border-top-color:#fff"></div> Processing...'
 
-    let processed = 0
-    for (const insp of pendingInspections) {
-      const { error } = await supabase
-        .from('inspections')
-        .update({ status: 'Paid', updated_at: new Date().toISOString() })
-        .eq('id', insp.id)
-        .eq('status', 'PendingPayment')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/stripe-payout-batch', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
+      })
+      const result = await res.json()
 
-      if (!error) {
-        await supabase.from('admin_actions').insert({
-          admin_id: adminData.id,
-          action_type: 'PayoutProcessed',
-          target_table: 'inspections',
-          target_id: insp.id,
-          new_value: 'Paid',
-          notes: 'Manual batch payout processed by admin'
-        })
-        processed++
+      if (result.error) {
+        showToast('Batch failed: ' + result.error, 'error')
+        btn.disabled = false
+        btn.innerHTML = 'Process batch'
+        return
       }
+
+      const skipped = result.results?.filter(r => r.status === 'skipped').length || 0
+      const failed = result.results?.filter(r => r.status === 'failed').length || 0
+      let msg = `${result.processed} of ${result.total} payouts sent via Stripe`
+      if (skipped) msg += ` · ${skipped} skipped (no Connect account)`
+      if (failed) msg += ` · ${failed} failed`
+      showToast(msg, result.processed > 0 ? 'success' : 'error')
+
+      await supabase.from('admin_actions').insert({
+        admin_id: adminData.id,
+        action_type: 'PayoutBatchProcessed',
+        target_table: 'payout_batches',
+        target_id: result.batch_id,
+        new_value: result.processed + ' paid',
+        notes: `Stripe batch: ${result.processed}/${result.total} processed`
+      })
+    } catch (err) {
+      showToast('Unexpected error: ' + err.message, 'error')
     }
 
-    showToast(`${processed} of ${pendingInspections.length} payouts processed successfully`)
+    btn.disabled = false
+    btn.innerHTML = 'Process batch'
     await loadPayouts()
   }
 
