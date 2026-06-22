@@ -210,6 +210,7 @@
   let currentUser = null
   let scoutVerified = false
   let scoutConnectActive = false
+  let scoutRTWApproved = false
 
   const urlParams = new URLSearchParams(window.location.search)
   const inspectionId = urlParams.get('id')
@@ -231,13 +232,17 @@
       document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
     }
 
-    const { data: scoutProfileData } = await supabase
-      .from('scout_profiles')
-      .select('id_verified, stripe_connect_status')
-      .eq('user_id', currentUser.id)
-      .single()
+    const [{ data: scoutProfileData }, { data: rtwData }] = await Promise.all([
+      supabase.from('scout_profiles').select('id_verified, stripe_connect_status').eq('user_id', currentUser.id).single(),
+      supabase.from('rights_to_work').select('vsure_status, admin_decision, visa_expiry_date').eq('scout_id', currentUser.id).eq('is_current', true).maybeSingle()
+    ])
     scoutVerified = scoutProfileData?.id_verified === true
     scoutConnectActive = scoutProfileData?.stripe_connect_status === 'Active'
+    scoutRTWApproved = !!rtwData && (
+      rtwData.vsure_status === 'citizen_pr' ||
+      rtwData.vsure_status === 'verified_unlimited' ||
+      rtwData.admin_decision === 'allowed'
+    ) && (!rtwData.visa_expiry_date || new Date(rtwData.visa_expiry_date) > new Date())
 
     initNotificationBell(supabase, currentUser.id)
     if (!inspectionId) { window.location.href = 'dashboard.html'; return; }
@@ -427,6 +432,10 @@
         }
         if (!scoutConnectActive) {
           showConnectModal()
+          return
+        }
+        if (!scoutRTWApproved) {
+          showRTWModal()
           return
         }
         acceptBtn.disabled = true
@@ -719,6 +728,27 @@
         <div style="font-size:13px;color:#666;line-height:1.6;margin-bottom:24px">You need to verify your identity before accepting inspection jobs. Upload your Passport or Driver's Licence in Settings and our team will review it within 24 hours.</div>
         <div style="display:flex;gap:10px;justify-content:center">
           <button onclick="document.getElementById('verifyGateModal').remove()" style="height:40px;padding:0 20px;background:#fff;color:#666;border:1.5px solid #E0E0E0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Cancel</button>
+          <a href="settings.html" style="height:40px;padding:0 20px;background:#560591;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;display:inline-flex;align-items:center;text-decoration:none">Go to Settings</a>
+        </div>
+      </div>`
+    document.body.appendChild(modal)
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove() })
+  }
+
+  function showRTWModal() {
+    document.getElementById('rtwGateModal')?.remove()
+    const modal = document.createElement('div')
+    modal.id = 'rtwGateModal'
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px'
+    modal.innerHTML = `
+      <div style="background:#fff;border-radius:16px;padding:32px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+        <div style="width:56px;height:56px;background:#FFF7ED;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+          <i class="ti ti-passport" style="font-size:26px;color:#C2410C"></i>
+        </div>
+        <div style="font-size:17px;font-weight:700;color:#1A0533;margin-bottom:10px">Work rights verification required</div>
+        <div style="font-size:13px;color:#666;line-height:1.6;margin-bottom:24px">You need to verify your right to work in Australia before accepting inspection jobs. Submit your passport details in Settings — results are usually instant.</div>
+        <div style="display:flex;gap:10px;justify-content:center">
+          <button onclick="document.getElementById('rtwGateModal').remove()" style="height:40px;padding:0 20px;background:#fff;color:#666;border:1.5px solid #E0E0E0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Cancel</button>
           <a href="settings.html" style="height:40px;padding:0 20px;background:#560591;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;display:inline-flex;align-items:center;text-decoration:none">Go to Settings</a>
         </div>
       </div>`

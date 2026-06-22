@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rights to Work - Spekto Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --dark: #1A0533; --red: #DC2626; --green: #16A34A; --amber: #D97706; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 230px; background: var(--dark); display: flex; flex-direction: column; padding: 24px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.25s; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .s-mark { width: 34px; height: 34px; background: rgba(255,255,255,0.1); border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -1px; }
+    .admin-tag { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+    .nav-section { padding: 16px 12px 4px; }
+    .nav-section-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px; margin-bottom: 4px; }
+    .nav { display: flex; flex-direction: column; gap: 1px; padding: 0 12px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px; font-size: 13px; color: rgba(255,255,255,0.55); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
+    .nav-item i { font-size: 16px; flex-shrink: 0; }
+    .sidebar-foot { margin-top: auto; padding: 12px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .admin-user { display: flex; align-items: center; gap: 10px; padding: 8px 12px; }
+    .admin-avatar { width: 30px; height: 30px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .admin-info { flex: 1; min-width: 0; }
+    .admin-name-s { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .admin-role-s { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 1px; }
+    .btn-logout-sm { width: 28px; height: 28px; background: rgba(255,255,255,0.08); border: none; border-radius: 6px; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .main { flex: 1; margin-left: 230px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .menu-toggle { display: none; background: none; border: none; font-size: 22px; color: #444; cursor: pointer; padding: 4px; }
+    .topbar-title { font-size: 17px; font-weight: 700; color: #0D0D0D; }
+    .content { padding: 24px 28px; }
+    .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: #fff; border-radius: 10px; border: 1px solid var(--border); padding: 14px 16px; }
+    .stat-label { font-size: 10px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+    .stat-val { font-size: 22px; font-weight: 800; color: #0D0D0D; font-family: 'DM Sans', sans-serif; }
+    .stat-val.amber { color: var(--amber); }
+    .stat-val.green { color: var(--green); }
+    .stat-val.red { color: var(--red); }
+    .tabs { display: flex; border-bottom: 2px solid #F0F0F0; margin-bottom: 20px; gap: 2px; overflow-x: auto; }
+    .tab { padding: 10px 16px; font-size: 13px; font-weight: 600; color: #999; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; }
+    .tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+    .tab .count { display: inline-flex; align-items: center; justify-content: center; background: var(--tint); color: var(--purple); font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px; margin-left: 6px; }
+    .tab.active .count { background: var(--purple); color: #fff; }
+    .layout { display: grid; grid-template-columns: 1fr 420px; gap: 16px; align-items: start; }
+    .list-panel { background: #fff; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; }
+    .list-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .list-count { font-size: 12px; color: #999; }
+    .rtw-row { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #F7F7F7; cursor: pointer; transition: background 0.1s; }
+    .rtw-row:last-child { border-bottom: none; }
+    .rtw-row:hover { background: #FAFAFA; }
+    .rtw-row.selected { background: var(--tint); }
+    .rtw-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--tint); color: var(--purple); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .rtw-info { flex: 1; min-width: 0; }
+    .rtw-name { font-size: 13px; font-weight: 600; color: #0D0D0D; }
+    .rtw-meta { font-size: 11px; color: #999; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rtw-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+    .badge-vs { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
+    .vs-citizen_pr, .vs-verified_unlimited { background: #DCFCE7; color: #166534; }
+    .vs-verified_limited { background: #FEF9C3; color: #854D0E; }
+    .vs-no_rights { background: #FEE2E2; color: #991B1B; }
+    .vs-mismatch, .vs-failed_technical { background: #FFF7ED; color: #9A3412; }
+    .vs-pending { background: #F3F4F6; color: #374151; }
+    .badge-dec { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px; }
+    .dec-allowed { background: #DCFCE7; color: #166534; }
+    .dec-denied { background: #FEE2E2; color: #991B1B; }
+    .dec-pending_review { background: #FEF9C3; color: #854D0E; }
+    .detail-panel { background: #fff; border-radius: 14px; border: 1px solid var(--border); position: sticky; top: 78px; }
+    .detail-empty { padding: 60px 24px; text-align: center; color: #bbb; }
+    .detail-empty i { font-size: 40px; display: block; margin-bottom: 12px; }
+    .detail-empty p { font-size: 13px; }
+    .detail-head { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+    .detail-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--tint); color: var(--purple); font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .detail-name { font-size: 15px; font-weight: 700; color: #0D0D0D; }
+    .detail-email { font-size: 12px; color: #999; margin-top: 2px; }
+    .detail-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+    .detail-section { font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .detail-field label { font-size: 10px; color: #bbb; font-weight: 600; text-transform: uppercase; display: block; margin-bottom: 3px; }
+    .detail-field span { font-size: 13px; color: #0D0D0D; font-weight: 500; }
+    .conditions-list { display: flex; flex-direction: column; gap: 8px; }
+    .condition-item { background: #F9F9F9; border-radius: 8px; padding: 10px 12px; }
+    .condition-code { font-size: 10px; font-weight: 700; color: var(--purple); margin-bottom: 4px; }
+    .condition-desc { font-size: 12px; color: #444; line-height: 1.5; }
+    .pdf-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--purple); font-weight: 600; text-decoration: none; padding: 7px 12px; border: 1.5px solid var(--purple); border-radius: 7px; }
+    .pdf-link:hover { background: var(--tint); }
+    .action-section { border-top: 1px solid var(--border); padding: 18px 20px; }
+    .action-section .detail-section { margin-bottom: 12px; }
+    .action-note { width: 100%; border: 1.5px solid #E0E0E0; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: Inter, sans-serif; resize: vertical; min-height: 72px; }
+    .action-note:focus { outline: none; border-color: var(--purple); }
+    .action-btns { display: flex; gap: 8px; margin-top: 10px; }
+    .btn-allow { flex: 1; height: 38px; background: var(--green); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: Inter, sans-serif; }
+    .btn-deny { flex: 1; height: 38px; background: var(--red); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: Inter, sans-serif; }
+    .btn-allow:disabled, .btn-deny:disabled { opacity: 0.6; cursor: not-allowed; }
+    .history-toggle { font-size: 12px; color: var(--purple); cursor: pointer; font-weight: 600; background: none; border: none; padding: 4px 0; display: block; margin-top: 4px; }
+    .history-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+    .history-item { background: #F9F9F9; border-radius: 8px; padding: 10px 12px; }
+    .history-item-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+    .history-date { font-size: 11px; color: #999; }
+    .empty-state { padding: 40px 24px; text-align: center; color: #bbb; }
+    .empty-state i { font-size: 36px; display: block; margin-bottom: 10px; }
+    .empty-state p { font-size: 13px; }
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #1A0533; color: #fff; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 9999; transform: translateY(80px); opacity: 0; transition: all 0.3s; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.error { background: #DC2626; }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 90; }
+    @media (max-width: 1200px) { .layout { grid-template-columns: 1fr; } .detail-panel { position: static; } }
+    @media (max-width: 900px) { .stats { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-230px); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay { display: block; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+      .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
+      .main { margin-left: 0; }
+      .menu-toggle { display: block; }
+      .content { padding: 16px; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div><div class="s-name">Spekto</div><div class="admin-tag">Admin</div></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Overview</div>
+      <div class="nav"><a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Operations</div>
+      <div class="nav">
+        <a class="nav-item" href="inspections.html"><i class="ti ti-clipboard-list"></i> Inspections</a>
+        <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> Disputes</a>
+        <a class="nav-item" href="payouts.html"><i class="ti ti-wallet"></i> Payouts</a>
+        <a class="nav-item" href="verification.html"><i class="ti ti-id-badge"></i> Verification</a>
+        <a class="nav-item active" href="rights-to-work.html"><i class="ti ti-passport"></i> Rights to Work</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Users</div>
+      <div class="nav"><a class="nav-item" href="users.html"><i class="ti ti-users"></i> All Users</a></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Platform</div>
+      <div class="nav">
+        <a class="nav-item" href="marketplace.html"><i class="ti ti-shopping-bag"></i> Marketplace</a>
+        <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+      </div>
+    </div>
+    <div class="sidebar-foot">
+      <div class="admin-user">
+        <div class="admin-avatar" id="adminAvatar">A</div>
+        <div class="admin-info">
+          <div class="admin-name-s" id="adminName">Admin</div>
+          <div class="admin-role-s">Administrator</div>
+        </div>
+        <button class="btn-logout-sm" id="sidebarLogoutBtn" title="Log out"><i class="ti ti-logout"></i></button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" id="menuToggle"><i class="ti ti-menu-2"></i></button>
+        <div class="topbar-title">Rights to Work</div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="stats" id="statsBar">
+        <div class="stat-card"><div class="stat-label">Total checks</div><div class="stat-val" id="statTotal">—</div></div>
+        <div class="stat-card"><div class="stat-label">Need review</div><div class="stat-val amber" id="statReview">—</div></div>
+        <div class="stat-card"><div class="stat-label">Verified</div><div class="stat-val green" id="statVerified">—</div></div>
+        <div class="stat-card"><div class="stat-label">Blocked</div><div class="stat-val red" id="statBlocked">—</div></div>
+        <div class="stat-card"><div class="stat-label">Expiring soon</div><div class="stat-val amber" id="statExpiring">—</div></div>
+      </div>
+
+      <div class="tabs" id="tabBar">
+        <div class="tab active" data-tab="all">All <span class="count" id="cntAll">0</span></div>
+        <div class="tab" data-tab="review">Need Review <span class="count" id="cntReview">0</span></div>
+        <div class="tab" data-tab="limited">Limited Rights <span class="count" id="cntLimited">0</span></div>
+        <div class="tab" data-tab="blocked">Blocked <span class="count" id="cntBlocked">0</span></div>
+        <div class="tab" data-tab="expiring">Expiring Soon <span class="count" id="cntExpiring">0</span></div>
+      </div>
+
+      <div class="layout">
+        <div class="list-panel">
+          <div class="list-header">
+            <span style="font-size:13px;font-weight:600;color:#0D0D0D">Checks</span>
+            <span class="list-count" id="listCount">0 records</span>
+          </div>
+          <div id="listBody"></div>
+        </div>
+        <div class="detail-panel" id="detailPanel">
+          <div class="detail-empty"><i class="ti ti-passport"></i><p>Select a check to view details and take action</p></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  const supabase = createClient('https://nyvnvtxhlnjvfhcmnihh.supabase.co', 'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL')
+
+  let allRecords = []
+  let currentTab = 'all'
+  let selectedId = null
+  let adminData = null
+
+  const COUNTRY_NAMES = { AUS:'Australia',NZL:'New Zealand',GBR:'United Kingdom',IND:'India',CHN:'China',PHL:'Philippines',USA:'United States',NPL:'Nepal',PAK:'Pakistan',LKA:'Sri Lanka',BGD:'Bangladesh',KOR:'South Korea',JPN:'Japan',MYS:'Malaysia',IDN:'Indonesia',VNM:'Vietnam',ZAF:'South Africa',IRL:'Ireland',FRA:'France',DEU:'Germany' }
+
+  const STATUS_LABELS = { citizen_pr:'Citizen / PR', verified_unlimited:'Unlimited Rights', verified_limited:'Limited Rights', no_rights:'No Rights', mismatch:'Data Mismatch', failed_technical:'Tech Failure', pending:'Pending' }
+  const DEC_LABELS = { allowed:'Allowed', denied:'Denied', pending_review:'Needs Review' }
+
+  function showToast(msg, type='success') {
+    const t = document.getElementById('toast')
+    t.textContent = msg
+    t.className = `toast${type === 'error' ? ' error' : ''} show`
+    setTimeout(() => t.classList.remove('show'), 3500)
+  }
+
+  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000
+  const SIXTY_DAYS = 60 * 24 * 60 * 60 * 1000
+
+  function isExpiringSoon(r) {
+    if (!r.visa_expiry_date) return false
+    const exp = new Date(r.visa_expiry_date)
+    const now = new Date()
+    return exp > now && (exp - now) < SIXTY_DAYS
+  }
+
+  function filterRecords(tab) {
+    const now = new Date()
+    switch (tab) {
+      case 'review': return allRecords.filter(r => r.admin_decision === 'pending_review')
+      case 'limited': return allRecords.filter(r => r.vsure_status === 'verified_limited')
+      case 'blocked': return allRecords.filter(r => r.vsure_status === 'no_rights' || r.admin_decision === 'denied')
+      case 'expiring': return allRecords.filter(r => isExpiringSoon(r))
+      default: return allRecords
+    }
+  }
+
+  function renderList() {
+    const records = filterRecords(currentTab)
+    const body = document.getElementById('listBody')
+    document.getElementById('listCount').textContent = `${records.length} record${records.length !== 1 ? 's' : ''}`
+
+    if (records.length === 0) {
+      body.innerHTML = '<div class="empty-state"><i class="ti ti-circle-check"></i><p>No records in this category</p></div>'
+      return
+    }
+
+    body.innerHTML = records.map(r => {
+      const scout = r.scout || {}
+      const initials = ((scout.first_name?.[0] || '') + (scout.last_name?.[0] || '')).toUpperCase() || '?'
+      const name = `${scout.first_name || ''} ${scout.last_name || ''}`.trim() || 'Unknown Scout'
+      const country = COUNTRY_NAMES[r.passport_country] || r.passport_country
+      const visa = r.visa_type_name ? r.visa_type_name : (r.vsure_status === 'citizen_pr' ? 'Australian Citizen/PR' : '—')
+      const expiry = r.visa_expiry_date ? `· Expires ${new Date(r.visa_expiry_date).toLocaleDateString('en-AU', {day:'numeric',month:'short',year:'numeric'})}` : ''
+      const statusLabel = STATUS_LABELS[r.vsure_status] || r.vsure_status
+      const decLabel = DEC_LABELS[r.admin_decision] || r.admin_decision
+      return `
+        <div class="rtw-row${selectedId === r.id ? ' selected' : ''}" onclick="selectRecord('${r.id}')">
+          <div class="rtw-avatar">${initials}</div>
+          <div class="rtw-info">
+            <div class="rtw-name">${name}</div>
+            <div class="rtw-meta">${country} · ${visa} ${expiry}</div>
+          </div>
+          <div class="rtw-badges">
+            <span class="badge-vs vs-${r.vsure_status}">${statusLabel}</span>
+            <span class="badge-dec dec-${r.admin_decision}">${decLabel}</span>
+          </div>
+        </div>`
+    }).join('')
+  }
+
+  window.selectRecord = function(id) {
+    selectedId = id
+    renderList()
+    const r = allRecords.find(x => x.id === id)
+    if (!r) return
+    renderDetail(r)
+  }
+
+  function renderDetail(r) {
+    const scout = r.scout || {}
+    const initials = ((scout.first_name?.[0] || '') + (scout.last_name?.[0] || '')).toUpperCase() || '?'
+    const name = `${scout.first_name || ''} ${scout.last_name || ''}`.trim() || 'Unknown'
+    const country = COUNTRY_NAMES[r.passport_country] || r.passport_country
+    const checkedAt = r.checked_at ? new Date(r.checked_at).toLocaleString('en-AU') : '—'
+    const expiryStr = r.visa_expiry_date ? new Date(r.visa_expiry_date).toLocaleDateString('en-AU', {day:'numeric',month:'long',year:'numeric'}) : 'N/A'
+    const daysLeft = r.visa_expiry_date ? Math.ceil((new Date(r.visa_expiry_date) - new Date()) / 86400000) : null
+    const statusLabel = STATUS_LABELS[r.vsure_status] || r.vsure_status
+    const decLabel = DEC_LABELS[r.admin_decision] || r.admin_decision
+
+    const conditionsHtml = r.visa_conditions && r.visa_conditions.length > 0
+      ? `<div class="conditions-list">${r.visa_conditions.map(c => `
+          <div class="condition-item">
+            <div class="condition-code">Condition ${c.code}</div>
+            <div class="condition-desc">${c.description}</div>
+          </div>`).join('')}</div>`
+      : `<p style="font-size:12px;color:#999">No conditions — unrestricted work rights</p>`
+
+    const existingDecision = r.admin_decision !== 'pending_review'
+    const decisionHtml = existingDecision
+      ? `<div style="background:${r.admin_decision === 'allowed' ? '#F0FDF4' : '#FEF2F2'};border:1.5px solid ${r.admin_decision === 'allowed' ? '#86EFAC' : '#FECACA'};border-radius:10px;padding:12px 14px;font-size:13px;color:${r.admin_decision === 'allowed' ? '#166534' : '#991B1B'}">
+          <strong>${decLabel}</strong>${r.admin_note ? ` — ${r.admin_note}` : ''}
+          ${r.admin_decided_at ? `<div style="font-size:11px;margin-top:4px;opacity:0.7">${new Date(r.admin_decided_at).toLocaleString('en-AU')}</div>` : ''}
+         </div>
+         <div style="margin-top:10px">
+           <p style="font-size:12px;color:#999;margin-bottom:8px">Override decision:</p>
+           <textarea class="action-note" id="noteInput" placeholder="Note (required for override)"></textarea>
+           <div class="action-btns">
+             <button class="btn-allow" onclick="applyDecision('${r.id}','allowed')">Allow</button>
+             <button class="btn-deny" onclick="applyDecision('${r.id}','denied')">Deny</button>
+           </div>
+         </div>`
+      : `<textarea class="action-note" id="noteInput" placeholder="Add a note (required)"></textarea>
+         <div class="action-btns">
+           <button class="btn-allow" onclick="applyDecision('${r.id}','allowed')">Allow</button>
+           <button class="btn-deny" onclick="applyDecision('${r.id}','denied')">Deny</button>
+         </div>`
+
+    document.getElementById('detailPanel').innerHTML = `
+      <div class="detail-head">
+        <div class="detail-avatar">${initials}</div>
+        <div>
+          <div class="detail-name">${name}</div>
+          <div class="detail-email">${scout.email || ''}</div>
+        </div>
+        <div style="margin-left:auto">
+          <span class="badge-vs vs-${r.vsure_status}">${statusLabel}</span>
+        </div>
+      </div>
+      <div class="detail-body">
+        <div>
+          <div class="detail-section">Passport Details</div>
+          <div class="detail-grid">
+            <div class="detail-field"><label>Country</label><span>${country}</span></div>
+            <div class="detail-field"><label>Check type</label><span>${r.check_type === 'citizen_au_passport' ? 'AU Citizen' : 'VEVO Work Check'}</span></div>
+            <div class="detail-field"><label>Given name</label><span>${r.given_name}</span></div>
+            <div class="detail-field"><label>Family name</label><span>${r.family_name}</span></div>
+            <div class="detail-field"><label>Date of birth</label><span>${r.date_of_birth}</span></div>
+            <div class="detail-field"><label>Checked</label><span>${checkedAt}</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="detail-section">vSure Result</div>
+          <div class="detail-grid">
+            <div class="detail-field"><label>Status</label><span class="badge-vs vs-${r.vsure_status}">${statusLabel}</span></div>
+            <div class="detail-field"><label>Result code</label><span style="font-family:monospace;font-size:12px">${r.vsure_result_code || '—'}</span></div>
+            <div class="detail-field"><label>Visa type</label><span>${r.visa_type_name || '—'}</span></div>
+            <div class="detail-field"><label>Expiry${daysLeft !== null ? ` (${daysLeft > 0 ? daysLeft + 'd left' : 'EXPIRED'})` : ''}</label><span${daysLeft !== null && daysLeft < 30 ? ' style="color:var(--red);font-weight:700"' : ''}>${expiryStr}</span></div>
+          </div>
+          ${r.vevo_pdf_url ? `<a href="${r.vevo_pdf_url}" target="_blank" class="pdf-link" style="margin-top:10px"><i class="ti ti-file-text"></i> View VEVO PDF</a>` : ''}
+        </div>
+        <div>
+          <div class="detail-section">Visa Conditions</div>
+          ${conditionsHtml}
+        </div>
+      </div>
+      <div class="action-section">
+        <div class="detail-section">Admin Decision</div>
+        ${decisionHtml}
+      </div>`
+  }
+
+  window.applyDecision = async function(recordId, decision) {
+    const note = document.getElementById('noteInput')?.value.trim()
+    if (!note) { showToast('A note is required before making a decision.', 'error'); return }
+
+    const allowBtn = document.querySelector('.btn-allow')
+    const denyBtn = document.querySelector('.btn-deny')
+    if (allowBtn) allowBtn.disabled = true
+    if (denyBtn) denyBtn.disabled = true
+
+    const { error } = await supabase.from('rights_to_work').update({
+      admin_decision: decision,
+      admin_id: adminData?.id || null,
+      admin_note: note,
+      admin_decided_at: new Date().toISOString()
+    }).eq('id', recordId)
+
+    if (error) {
+      showToast('Failed to save decision: ' + error.message, 'error')
+      if (allowBtn) allowBtn.disabled = false
+      if (denyBtn) denyBtn.disabled = false
+      return
+    }
+
+    const idx = allRecords.findIndex(r => r.id === recordId)
+    if (idx !== -1) {
+      allRecords[idx].admin_decision = decision
+      allRecords[idx].admin_note = note
+      allRecords[idx].admin_decided_at = new Date().toISOString()
+    }
+    renderList()
+    renderDetail(allRecords.find(r => r.id === recordId))
+    updateStats()
+    showToast(`Decision recorded: ${decision === 'allowed' ? 'Allowed' : 'Denied'}`)
+  }
+
+  function updateStats() {
+    const now = new Date()
+    document.getElementById('statTotal').textContent = allRecords.length
+    document.getElementById('statReview').textContent = allRecords.filter(r => r.admin_decision === 'pending_review').length
+    document.getElementById('statVerified').textContent = allRecords.filter(r => r.admin_decision === 'allowed').length
+    document.getElementById('statBlocked').textContent = allRecords.filter(r => r.admin_decision === 'denied' || r.vsure_status === 'no_rights').length
+    document.getElementById('statExpiring').textContent = allRecords.filter(r => isExpiringSoon(r)).length
+
+    document.getElementById('cntAll').textContent = allRecords.length
+    document.getElementById('cntReview').textContent = allRecords.filter(r => r.admin_decision === 'pending_review').length
+    document.getElementById('cntLimited').textContent = allRecords.filter(r => r.vsure_status === 'verified_limited').length
+    document.getElementById('cntBlocked').textContent = allRecords.filter(r => r.admin_decision === 'denied' || r.vsure_status === 'no_rights').length
+    document.getElementById('cntExpiring').textContent = allRecords.filter(r => isExpiringSoon(r)).length
+  }
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = 'login.html'; return }
+
+    const { data: admin } = await supabase.from('admins').select('id, email').eq('email', user.email).single()
+    if (!admin) { window.location.href = 'login.html'; return }
+    adminData = admin
+
+    const { data: userData } = await supabase.from('users').select('first_name, last_name').eq('id', user.id).single()
+    if (userData) {
+      const initials = ((userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')).toUpperCase()
+      document.getElementById('adminAvatar').textContent = initials
+      document.getElementById('adminName').textContent = `${userData.first_name} ${userData.last_name}`
+    }
+
+    const { data: records } = await supabase
+      .from('rights_to_work')
+      .select('*, scout:scout_id(first_name, last_name, email)')
+      .eq('is_current', true)
+      .order('created_at', { ascending: false })
+
+    allRecords = records || []
+    updateStats()
+    renderList()
+  }
+
+  document.getElementById('tabBar').addEventListener('click', e => {
+    const tab = e.target.closest('[data-tab]')
+    if (!tab) return
+    currentTab = tab.dataset.tab
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === currentTab))
+    selectedId = null
+    document.getElementById('detailPanel').innerHTML = '<div class="detail-empty"><i class="ti ti-passport"></i><p>Select a check to view details and take action</p></div>'
+    renderList()
+  })
+
+  document.getElementById('sidebarLogoutBtn').addEventListener('click', async () => {
+    await supabase.auth.signOut(); window.location.href = 'login.html'
+  })
+
+  document.getElementById('menuToggle').addEventListener('click', () => {
+    document.querySelector('.sidebar').classList.toggle('open')
+    document.getElementById('sidebarOverlay').classList.toggle('open')
+  })
+  document.getElementById('sidebarOverlay').addEventListener('click', () => {
+    document.querySelector('.sidebar').classList.remove('open')
+    document.getElementById('sidebarOverlay').classList.remove('open')
+  })
+  document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelector('.sidebar').classList.remove('open')
+      document.getElementById('sidebarOverlay').classList.remove('open')
+    })
+  })
+
+  init()
+</script>
+</body>
+</html>

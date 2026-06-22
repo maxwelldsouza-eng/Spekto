@@ -167,10 +167,22 @@
   let currentUser = null
   let userData = null
   let scoutProfile = null
+  let rtwRecord = null
   let serviceAreas = []
   let idFileName = null
   let notifEmail = true
   let notifApp = true
+
+  const COUNTRIES = {
+    'AUS':'Australia','NZL':'New Zealand','GBR':'United Kingdom','IND':'India',
+    'CHN':'China','PHL':'Philippines','USA':'United States','NPL':'Nepal',
+    'PAK':'Pakistan','LKA':'Sri Lanka','BGD':'Bangladesh','KOR':'South Korea',
+    'JPN':'Japan','MYS':'Malaysia','IDN':'Indonesia','VNM':'Vietnam',
+    'ZAF':'South Africa','ZWE':'Zimbabwe','IRL':'Ireland','FRA':'France',
+    'DEU':'Germany','ITA':'Italy','BRA':'Brazil','CAN':'Canada',
+    'TWN':'Taiwan','HKG':'Hong Kong','THA':'Thailand','MMR':'Myanmar',
+    'FJI':'Fiji','PNG':'Papua New Guinea','ZZZ':'Other'
+  }
 
   function showToast(msg, type = 'success') {
     const t = document.getElementById('toast')
@@ -186,13 +198,15 @@
     currentUser = user
 
     initNotificationBell(supabase, currentUser.id)
-    const [{ data: uData }, { data: sData }] = await Promise.all([
+    const [{ data: uData }, { data: sData }, { data: rtwData }] = await Promise.all([
       supabase.from('users').select('*').eq('id', user.id).single(),
-      supabase.from('scout_profiles').select('*').eq('user_id', user.id).single()
+      supabase.from('scout_profiles').select('*').eq('user_id', user.id).single(),
+      supabase.from('rights_to_work').select('*').eq('scout_id', user.id).eq('is_current', true).maybeSingle()
     ])
 
     userData = uData
     scoutProfile = sData
+    rtwRecord = rtwData
 
     if (userData) {
       const initials = (userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')
@@ -215,6 +229,49 @@
     const classes = { verified: 'badge-verified', pending: 'badge-pending', unverified: 'badge-unverified' }
     const icons = { verified: 'ti-circle-check', pending: 'ti-clock', unverified: 'ti-alert-circle' }
     return `<span class="badge-status ${classes[status]}"><i class="ti ${icons[status]}" style="font-size:12px"></i> ${labels[status]}</span>`
+  }
+
+  function getRTWCard() {
+    if (!rtwRecord) {
+      return `
+        <div style="background:#FFF7ED;border:1.5px solid #FED7AA;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <i class="ti ti-alert-circle" style="font-size:20px;color:#C2410C;flex-shrink:0"></i>
+          <div style="font-size:13px;color:#9A3412;line-height:1.5">You need to verify your right to work in Australia before accepting inspection jobs.</div>
+        </div>
+        <button class="btn-save" onclick="openRTWForm()">Submit verification</button>`
+    }
+
+    const r = rtwRecord
+    const statusMap = {
+      citizen_pr: { bg:'#F0FDF4', border:'#86EFAC', icon:'ti-circle-check', iconCol:'#166534', title:'Verified — Australian Citizen / PR', sub:'You have unrestricted work rights in Australia.', textCol:'#166534' },
+      verified_unlimited: { bg:'#F0FDF4', border:'#86EFAC', icon:'ti-circle-check', iconCol:'#166534', title:'Verified — Unlimited Work Rights', sub: r.visa_type_name ? `${r.visa_type_name}${r.visa_expiry_date ? ' · Expires ' + new Date(r.visa_expiry_date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}) : ''}` : 'Your work rights have been verified.', textCol:'#166534' },
+      verified_limited: { bg:'#FEF9C3', border:'#FDE047', icon:'ti-clock', iconCol:'#854D0E', title:'Pending Admin Review — Limited Rights', sub:'Your visa has conditional work rights. An admin will review and confirm your eligibility.', textCol:'#854D0E' },
+      no_rights: { bg:'#FEF2F2', border:'#FECACA', icon:'ti-x-circle', iconCol:'#991B1B', title:'Work Rights Not Confirmed', sub:"Your submitted details indicate you may not have current work rights in Australia. Contact support if you believe this is incorrect.", textCol:'#991B1B' },
+      mismatch: { bg:'#FFF7ED', border:'#FED7AA', icon:'ti-alert-triangle', iconCol:'#C2410C', title:'Pending Review — Data Mismatch', sub:'We couldn't match your passport details in VEVO. An admin will review your record.', textCol:'#9A3412' },
+      failed_technical: { bg:'#FFF7ED', border:'#FED7AA', icon:'ti-alert-triangle', iconCol:'#C2410C', title:'Under Review', sub:'We couldn't verify your work rights right now. Your account has been flagged for manual review — you'll be notified once resolved.', textCol:'#9A3412' },
+      pending: { bg:'#F3F4F6', border:'#E5E7EB', icon:'ti-loader', iconCol:'#374151', title:'Verification In Progress', sub:'Your check is being processed.', textCol:'#374151' }
+    }
+
+    const adminAllowed = r.admin_decision === 'allowed'
+    const key = adminAllowed && (r.vsure_status === 'verified_limited' || r.vsure_status === 'mismatch' || r.vsure_status === 'failed_technical')
+      ? 'verified_unlimited' : r.vsure_status
+    const s = statusMap[key] || statusMap.failed_technical
+
+    const expiringSoon = r.visa_expiry_date && (() => {
+      const days = Math.ceil((new Date(r.visa_expiry_date) - new Date()) / 86400000)
+      return days > 0 && days < 60 ? days : null
+    })()
+
+    return `
+      ${expiringSoon ? `<div style="background:#FEF9C3;border:1.5px solid #FDE047;border-radius:8px;padding:10px 14px;font-size:12px;color:#854D0E;font-weight:600;margin-bottom:12px"><i class="ti ti-alarm" style="font-size:13px;vertical-align:-2px"></i> Your work rights verification expires in ${expiringSoon} days. Update your details before it expires to avoid disruption.</div>` : ''}
+      <div style="background:${s.bg};border:1.5px solid ${s.border};border-radius:10px;padding:14px 16px;display:flex;align-items:flex-start;gap:10px;margin-bottom:14px">
+        <i class="ti ${s.icon}" style="font-size:20px;color:${s.iconCol};flex-shrink:0;margin-top:1px"></i>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:${s.textCol}">${s.title}</div>
+          <div style="font-size:12px;color:${s.textCol};margin-top:3px;line-height:1.5">${s.sub}</div>
+        </div>
+      </div>
+      <button class="btn-secondary" onclick="openRTWForm()" style="margin-right:8px">Update details</button>`
   }
 
   function getStripeStatus() {
@@ -335,6 +392,14 @@
 
       <div class="card">
         <div class="card-header">
+          <div class="card-title"><i class="ti ti-passport"></i> Rights to Work</div>
+        </div>
+        <div style="font-size:13px;color:#555;margin-bottom:14px;line-height:1.6">Australian law requires us to confirm your right to work before you can accept inspection jobs.</div>
+        ${getRTWCard()}
+      </div>
+
+      <div class="card">
+        <div class="card-header">
           <div class="card-title"><i class="ti ti-wallet"></i> Payouts</div>
         </div>
         ${getStripeStatus()}
@@ -445,6 +510,107 @@
     } else {
       notifApp = !notifApp
       document.getElementById('toggleApp').className = `toggle ${notifApp ? 'on' : ''}`
+    }
+  }
+
+  window.openRTWForm = function() {
+    document.getElementById('rtwModal')?.remove()
+    const countryOptions = Object.entries(COUNTRIES).map(([code, name]) =>
+      `<option value="${code}"${rtwRecord?.passport_country === code ? ' selected' : ''}>${name}</option>`
+    ).join('')
+
+    const modal = document.createElement('div')
+    modal.id = 'rtwModal'
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto'
+    modal.innerHTML = `
+      <div style="background:#fff;border-radius:16px;width:100%;max-width:460px;padding:28px">
+        <div style="font-size:16px;font-weight:700;color:#0D0D0D;margin-bottom:4px">Rights to Work verification</div>
+        <div style="font-size:13px;color:#999;margin-bottom:20px">Enter your passport details. Your information is submitted securely to the Australian government VEVO system.</div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div>
+            <label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:5px">Passport country <span style="color:var(--red)">*</span></label>
+            <select id="rtwCountry" style="width:100%;height:40px;border:1.5px solid #E0E0E0;border-radius:8px;padding:0 12px;font-size:13px;font-family:Inter,sans-serif">
+              <option value="">Select country...</option>
+              ${countryOptions}
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:5px">Passport number <span style="color:var(--red)">*</span></label>
+            <input id="rtwPassport" type="text" value="${rtwRecord?.passport_number || ''}" placeholder="e.g. PA1234567" style="width:100%;height:40px;border:1.5px solid #E0E0E0;border-radius:8px;padding:0 12px;font-size:13px;font-family:Inter,sans-serif">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:5px">Given name <span style="color:var(--red)">*</span></label>
+              <input id="rtwGiven" type="text" value="${userData?.first_name || ''}" style="width:100%;height:40px;border:1.5px solid #E0E0E0;border-radius:8px;padding:0 12px;font-size:13px;font-family:Inter,sans-serif">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:5px">Family name <span style="color:var(--red)">*</span></label>
+              <input id="rtwFamily" type="text" value="${userData?.last_name || ''}" style="width:100%;height:40px;border:1.5px solid #E0E0E0;border-radius:8px;padding:0 12px;font-size:13px;font-family:Inter,sans-serif">
+            </div>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:5px">Date of birth <span style="color:var(--red)">*</span></label>
+            <input id="rtwDob" type="date" value="${rtwRecord?.date_of_birth || ''}" style="width:100%;height:40px;border:1.5px solid #E0E0E0;border-radius:8px;padding:0 12px;font-size:13px;font-family:Inter,sans-serif">
+          </div>
+          <div id="rtwError" style="color:#DC2626;font-size:12px;display:none"></div>
+          <div style="display:flex;gap:10px;margin-top:4px">
+            <button onclick="document.getElementById('rtwModal').remove()" style="flex:1;height:42px;background:#fff;color:#666;border:1.5px solid #E0E0E0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Cancel</button>
+            <button id="rtwSubmitBtn" onclick="submitRTW()" style="flex:2;height:42px;background:var(--purple);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif">Submit verification</button>
+          </div>
+        </div>
+      </div>`
+    document.body.appendChild(modal)
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove() })
+  }
+
+  window.submitRTW = async function() {
+    const country = document.getElementById('rtwCountry').value
+    const passport = document.getElementById('rtwPassport').value.trim()
+    const given = document.getElementById('rtwGiven').value.trim()
+    const family = document.getElementById('rtwFamily').value.trim()
+    const dob = document.getElementById('rtwDob').value
+    const errorEl = document.getElementById('rtwError')
+
+    if (!country || !passport || !given || !family || !dob) {
+      errorEl.textContent = 'All fields are required.'
+      errorEl.style.display = 'block'
+      return
+    }
+
+    const btn = document.getElementById('rtwSubmitBtn')
+    btn.disabled = true
+    btn.textContent = 'Checking...'
+    errorEl.style.display = 'none'
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/check-work-rights', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passport_country: country, passport_number: passport, given_name: given, family_name: family, date_of_birth: dob })
+      })
+      const result = await res.json()
+      if (result.error) throw new Error(result.error)
+
+      rtwRecord = result.row
+      document.getElementById('rtwModal').remove()
+
+      const statusMessages = {
+        citizen_pr: 'Verified — Australian citizen/PR confirmed.',
+        verified_unlimited: 'Verified — unlimited work rights confirmed.',
+        verified_limited: 'Submitted — your details are under review (limited rights visa).',
+        no_rights: 'Work rights could not be confirmed. Please contact support.',
+        mismatch: 'Submitted — your details couldn\'t be matched automatically. An admin will review.',
+        failed_technical: 'Submitted — we couldn\'t check right now. Your account is flagged for manual review.'
+      }
+      const isOk = result.vsure_status === 'citizen_pr' || result.vsure_status === 'verified_unlimited'
+      showToast(statusMessages[result.vsure_status] || 'Check submitted.', isOk ? 'success' : 'error')
+      renderPage()
+    } catch (err) {
+      errorEl.textContent = err.message
+      errorEl.style.display = 'block'
+      btn.disabled = false
+      btn.textContent = 'Submit verification'
     }
   }
 
