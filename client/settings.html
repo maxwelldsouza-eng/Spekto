@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <script src="https://js.stripe.com/v3/"></script>
   <style>
     :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; --red: #E53935; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -279,6 +280,19 @@
         </div>
       </div>
 
+      <div class="card" id="paymentMethodCard">
+        <div class="card-title"><i class="ti ti-credit-card"></i> Payment method</div>
+        <div id="savedCardInfo" style="font-size:13px;color:#666;margin-bottom:14px">Loading...</div>
+        <div id="stripeCardWrapper" style="display:none">
+          <div id="stripeCardElement" style="border:1.5px solid #E0E0E0;border-radius:8px;padding:12px 14px;background:#fff;margin-bottom:8px"></div>
+          <div id="cardError" style="color:#DC2626;font-size:12px;margin-bottom:8px;display:none"></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button class="btn-save" id="saveCardBtn" style="display:none">Save card</button>
+          <button class="btn-secondary" id="showCardFormBtn">Add card</button>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title"><i class="ti ti-bell"></i> Notifications</div>
         <div class="toggle-row">
@@ -334,6 +348,82 @@
     document.getElementById('switchToScoutBtn').addEventListener('click', switchToScout)
     document.getElementById('logoutBtn').addEventListener('click', handleLogout)
     document.getElementById('sidebarLogoutBtn').addEventListener('click', handleLogout)
+    setupPaymentMethod()
+  }
+
+  const SUPABASE_URL = 'https://nyvnvtxhlnjvfhcmnihh.supabase.co'
+  const STRIPE_PK = 'pk_test_51TjpX1COe0yffLUxk6l80GdxR4O0xOViTSHetQPTyvSaJuNkVzJyN1xGy3Ylz22Z8BYQl5VsQ3zkvs6XfSmVpnKk00qfObOPTi'
+
+  async function setupPaymentMethod() {
+    const { data: userData } = await supabase.from('users').select('stripe_customer_id').eq('id', currentUser.id).single()
+    const hasSavedCard = !!userData?.stripe_customer_id
+    const infoEl = document.getElementById('savedCardInfo')
+    const showFormBtn = document.getElementById('showCardFormBtn')
+
+    if (hasSavedCard) {
+      infoEl.innerHTML = '<span style="color:#166534"><i class="ti ti-circle-check" style="font-size:14px;vertical-align:-2px"></i> Payment method saved</span>'
+      showFormBtn.textContent = 'Update card'
+    } else {
+      infoEl.textContent = 'No payment method saved. Add a card to enable instant inspection booking.'
+    }
+
+    const stripe = Stripe(STRIPE_PK)
+    const elements = stripe.elements()
+    const cardElement = elements.create('card', {
+      style: { base: { fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#0D0D0D', '::placeholder': { color: '#bbb' } } }
+    })
+
+    showFormBtn.addEventListener('click', () => {
+      document.getElementById('stripeCardWrapper').style.display = 'block'
+      document.getElementById('saveCardBtn').style.display = 'inline-flex'
+      showFormBtn.style.display = 'none'
+      cardElement.mount('#stripeCardElement')
+    })
+
+    document.getElementById('saveCardBtn').addEventListener('click', async () => {
+      const saveBtn = document.getElementById('saveCardBtn')
+      const errorEl = document.getElementById('cardError')
+      saveBtn.disabled = true
+      saveBtn.textContent = 'Saving...'
+      errorEl.style.display = 'none'
+
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/stripe-setup-intent`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
+        })
+        const { client_secret, error: fnErr } = await res.json()
+        if (fnErr) throw new Error(fnErr)
+
+        const { setupIntent, error: stripeErr } = await stripe.confirmCardSetup(client_secret, {
+          payment_method: { card: cardElement }
+        })
+        if (stripeErr) throw new Error(stripeErr.message)
+
+        const res2 = await fetch(`${SUPABASE_URL}/functions/v1/stripe-save-payment-method`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ payment_method_id: setupIntent.payment_method })
+        })
+        const result = await res2.json()
+        if (result.error) throw new Error(result.error)
+
+        const brand = (result.brand || 'Card').charAt(0).toUpperCase() + (result.brand || 'card').slice(1)
+        infoEl.innerHTML = `<span style="color:#166534"><i class="ti ti-circle-check" style="font-size:14px;vertical-align:-2px"></i> ${brand} ending ${result.last4} saved</span>`
+        document.getElementById('stripeCardWrapper').style.display = 'none'
+        saveBtn.style.display = 'none'
+        showFormBtn.textContent = 'Update card'
+        showFormBtn.style.display = 'inline-flex'
+        showToast('Payment method saved successfully')
+      } catch (err) {
+        errorEl.textContent = err.message
+        errorEl.style.display = 'block'
+      } finally {
+        saveBtn.disabled = false
+        saveBtn.textContent = 'Save card'
+      }
+    })
   }
 
   window.toggleNotif = (type) => {

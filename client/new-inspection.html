@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <script src="https://js.stripe.com/v3/"></script>
   <style>
     :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --red: #E53935; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -195,6 +196,20 @@
       .actions { grid-template-columns: 1fr; }
       .actions .btn-submit { order: -1; }
     }
+    .payment-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+    .payment-overlay.open { display:flex; }
+    .payment-modal { background:#fff; border-radius:16px; width:100%; max-width:420px; padding:28px; }
+    .payment-modal-title { font-size:16px; font-weight:700; color:#0D0D0D; margin-bottom:4px; }
+    .payment-modal-sub { font-size:13px; color:#999; margin-bottom:20px; }
+    .payment-amount-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #F3F3F3; font-size:13px; }
+    .payment-total-row { display:flex; justify-content:space-between; padding:14px 0 0; }
+    .payment-total-label { font-size:15px; font-weight:700; }
+    .payment-total-val { font-size:22px; font-weight:800; color:var(--purple); font-family:'DM Sans',sans-serif; }
+    #pmCardElement { border:1.5px solid #E0E0E0; border-radius:8px; padding:12px 14px; background:#fff; margin:16px 0 8px; }
+    .payment-modal-btns { display:flex; gap:10px; margin-top:20px; }
+    .btn-pay { flex:2; height:44px; background:var(--purple); color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; }
+    .btn-pay-cancel { flex:1; height:44px; background:#fff; color:#444; border:1.5px solid #E0E0E0; border-radius:10px; font-size:14px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; }
+    #pmError { color:#DC2626; font-size:12px; min-height:16px; }
   </style>
 </head>
 <body>
@@ -333,6 +348,7 @@
     'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
     'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
   )
+  window._supabaseClient = supabase
 
   let pricing = {}
   let currentUser = null
@@ -542,40 +558,62 @@
 
       window.location.href = 'dashboard.html'
     } else {
-      // INSERT new inspection
-      const { data: inspection, error } = await supabase
-        .from('inspections')
-        .insert({
-          client_id: currentUser.id,
-          address: document.getElementById('address').value.trim(),
-          date: document.getElementById('inspDate').value,
-          time: document.getElementById('inspTime').value,
-          inspection_type: inspectionType,
-          property_link: document.getElementById('propertyLink').value.trim() || null,
-          status: 'Posted',
-          pricing_snapshot: pricingPayload
+      // NEW INSPECTION — call Edge Function (handles payment + DB insert atomically)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const res = await fetch(`https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/stripe-create-inspection`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            address: document.getElementById('address').value.trim(),
+            inspection_type: inspectionType,
+            date: document.getElementById('inspDate').value,
+            time: document.getElementById('inspTime').value,
+            property_link: document.getElementById('propertyLink').value.trim() || null,
+            pricing_snapshot: pricingPayload,
+            instructions
+          })
         })
-        .select()
-        .single()
 
-      if (error) {
+        const result = await res.json()
+
+        if (result.error) {
+          submitBtn.disabled = false
+          submitBtn.textContent = 'Submit Inspection'
+          alert('Error creating inspection: ' + result.error)
+          return
+        }
+
+        if (result.requires_payment_method) {
+          // No saved card — show the card collection modal
+          submitBtn.disabled = false
+          submitBtn.textContent = 'Submit Inspection'
+          openPaymentModal(result.client_secret, result.inspection_id, pricingPayload)
+          return
+        }
+
+        if (result.requires_action) {
+          // 3D Secure — let Stripe.js handle the redirect/popup
+          const stripe = getStripe()
+          const { error: actionErr } = await stripe.handleNextAction({ clientSecret: result.client_secret })
+          if (actionErr) {
+            submitBtn.disabled = false
+            submitBtn.textContent = 'Submit Inspection'
+            alert('Payment authentication failed: ' + actionErr.message)
+            return
+          }
+        }
+
+        // Payment succeeded (saved card or 3DS resolved)
+        window.location.href = 'dashboard.html'
+      } catch (err) {
         submitBtn.disabled = false
         submitBtn.textContent = 'Submit Inspection'
-        alert('Error creating inspection: ' + error.message)
-        return
+        alert('Unexpected error: ' + err.message)
       }
-
-      if (instructions.length > 0) {
-        const instructionRows = instructions.map(inst => ({
-          inspection_id: inspection.id,
-          text: inst.text,
-          is_checked: inst.is_checked,
-          display_order: inst.display_order
-        }))
-        await supabase.from('instructions').insert(instructionRows)
-      }
-
-      window.location.href = 'dashboard.html'
     }
   })
 
@@ -599,6 +637,112 @@
       document.querySelector('.sidebar').classList.remove('open')
       document.getElementById('sidebarOverlay').classList.remove('open')
     })
+  })
+</script>
+
+<!-- Payment modal -->
+<div class="payment-overlay" id="paymentOverlay">
+  <div class="payment-modal">
+    <div class="payment-modal-title">Complete your payment</div>
+    <div class="payment-modal-sub">Your card will be charged when the inspection is confirmed.</div>
+    <div class="payment-amount-row"><span>Inspection fee (excl. GST)</span><span id="pmFeeExGst">—</span></div>
+    <div class="payment-amount-row"><span>GST (10%)</span><span id="pmGst">—</span></div>
+    <div class="payment-total-row"><span class="payment-total-label">Total</span><span class="payment-total-val" id="pmTotal">—</span></div>
+    <div id="pmCardElement"></div>
+    <div id="pmError"></div>
+    <div class="payment-modal-btns">
+      <button class="btn-pay-cancel" id="pmCancel">Cancel</button>
+      <button class="btn-pay" id="pmPay">Pay now</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Payment modal Stripe logic — runs after the module script above
+  const SUPABASE_URL = 'https://nyvnvtxhlnjvfhcmnihh.supabase.co'
+  const STRIPE_PK = 'pk_test_51TjpX1COe0yffLUxk6l80GdxR4O0xOViTSHetQPTyvSaJuNkVzJyN1xGy3Ylz22Z8BYQl5VsQ3zkvs6XfSmVpnKk00qfObOPTi'
+  let _stripeInstance = null
+  let _cardElement = null
+  let _pendingInspectionId = null
+  let _pendingClientSecret = null
+
+  function getStripe() {
+    if (!_stripeInstance) _stripeInstance = Stripe(STRIPE_PK)
+    return _stripeInstance
+  }
+
+  window.openPaymentModal = function(clientSecret, inspectionId, pricingSnap) {
+    _pendingClientSecret = clientSecret
+    _pendingInspectionId = inspectionId
+
+    if (pricingSnap) {
+      document.getElementById('pmFeeExGst').textContent = '$' + parseFloat(pricingSnap.fee_excluding_gst || 0).toFixed(2)
+      document.getElementById('pmGst').textContent = '$' + parseFloat(pricingSnap.gst || 0).toFixed(2)
+      document.getElementById('pmTotal').textContent = '$' + parseFloat(pricingSnap.total || 0).toFixed(2)
+    }
+
+    document.getElementById('paymentOverlay').classList.add('open')
+
+    const stripe = getStripe()
+    if (!_cardElement) {
+      const elements = stripe.elements()
+      _cardElement = elements.create('card', {
+        style: { base: { fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#0D0D0D', '::placeholder': { color: '#bbb' } } }
+      })
+    }
+    _cardElement.mount('#pmCardElement')
+  }
+
+  document.getElementById('pmCancel').addEventListener('click', () => {
+    document.getElementById('paymentOverlay').classList.remove('open')
+    if (_cardElement) _cardElement.unmount()
+    _pendingClientSecret = null
+    _pendingInspectionId = null
+  })
+
+  document.getElementById('pmPay').addEventListener('click', async () => {
+    const payBtn = document.getElementById('pmPay')
+    const errorEl = document.getElementById('pmError')
+    payBtn.disabled = true
+    payBtn.textContent = 'Processing...'
+    errorEl.textContent = ''
+
+    const stripe = getStripe()
+    const { paymentIntent, error } = await stripe.confirmCardPayment(_pendingClientSecret, {
+      payment_method: { card: _cardElement },
+      setup_future_usage: 'off_session'
+    })
+
+    if (error) {
+      errorEl.textContent = error.message
+      payBtn.disabled = false
+      payBtn.textContent = 'Pay now'
+      return
+    }
+
+    if (paymentIntent.status === 'succeeded') {
+      // Mark inspection as Posted via a follow-up (webhook will also do this, but do it here immediately)
+      // Also save the payment method as default for future inspections
+      try {
+        // supabase is available from the module script above
+        const { data: { session } } = await window._supabaseClient.auth.getSession()
+        const pmId = typeof paymentIntent.payment_method === 'string'
+          ? paymentIntent.payment_method
+          : paymentIntent.payment_method?.id
+        if (pmId) {
+          await fetch(`${SUPABASE_URL}/functions/v1/stripe-save-payment-method`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ payment_method_id: pmId })
+          })
+        }
+        // Update inspection to Posted
+        await window._supabaseClient.from('inspections').update({ status: 'Posted' }).eq('id', _pendingInspectionId)
+      } catch (_) {}
+
+      document.getElementById('paymentOverlay').classList.remove('open')
+      window.location.href = 'dashboard.html'
+    }
   })
 </script>
 </body>
