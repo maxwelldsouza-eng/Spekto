@@ -70,6 +70,14 @@
     .badge-PendingPayment { background: #FEF9C3; color: #854D0E; }
     .badge-Disputed { background: #FEE2E2; color: #991B1B; }
     .badge-Completed { background: #E0F2FE; color: #0369A1; }
+    .tabs { display: flex; gap: 0; border-bottom: 2px solid #F0F0F0; margin-bottom: 20px; }
+    .tab { padding: 10px 20px; font-size: 13px; font-weight: 600; color: #999; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+    .tab.active { color: #560591; border-bottom-color: #560591; }
+    .tab .count { display: inline-flex; align-items: center; justify-content: center; background: #F5EEFF; color: #560591; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px; margin-left: 6px; }
+    .tab.active .count { background: #560591; color: #fff; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .tab-empty { text-align: center; padding: 32px 20px; color: #999; font-size: 13px; }
     .empty-state { text-align: center; padding: 48px 20px; background: #fff; border-radius: 14px; border: 1px solid var(--border); }
     .empty-state i { font-size: 36px; color: #ddd; margin-bottom: 12px; display: block; }
     .empty-state h3 { font-size: 15px; font-weight: 600; color: #0D0D0D; margin-bottom: 6px; }
@@ -270,11 +278,6 @@
         </div>`
     }
 
-    html += `
-      <div class="section-header">
-        <div class="section-title">Earnings history</div>
-      </div>`
-
     // Build unified list: batch items + unbatched inspections, sorted by date
     const allRows = [
       ...batchItems.map(b => ({
@@ -307,37 +310,38 @@
       })),
     ].sort((a, b) => new Date(b.sortDate) - new Date(a.sortDate))
 
-    if (allRows.length === 0) {
-      html += `
-        <div class="empty-state">
-          <i class="ti ti-wallet"></i>
-          <h3>No earnings yet</h3>
-          <p>Complete your first inspection to start earning</p>
-        </div>`
-    } else {
-      const statusLabelMap = {
-        paid: 'Paid',
-        processing: 'Processing',
-        pending: 'In batch',
-        failed: 'Failed',
-        reversed: 'Reversed',
-        Completed: 'Awaiting release',
-        PendingPayment: 'Awaiting release',
-        Disputed: 'Disputed',
-      }
-      const statusBadgeMap = {
-        paid: 'Paid',
-        processing: 'Completed',
-        pending: 'PendingPayment',
-        failed: 'Disputed',
-        reversed: 'Disputed',
-        Completed: 'PendingPayment',
-        PendingPayment: 'PendingPayment',
-        Disputed: 'Disputed',
-      }
+    // Split rows into the two tabs
+    const awaitingRows = allRows.filter(r => {
+      if (r.type === 'batch') return r.status === 'pending' || r.status === 'processing' || r.status === 'failed'
+      return r.status === 'PendingPayment' || r.status === 'Completed'
+    })
+    const paidRows = allRows.filter(r => r.type === 'batch' && r.status === 'paid')
 
-      html += '<div class="earnings-list">'
-      allRows.forEach(row => {
+    const statusLabelMap = {
+      paid: 'Paid',
+      processing: 'Processing',
+      pending: 'In batch',
+      failed: 'Failed',
+      reversed: 'Reversed',
+      Completed: 'Awaiting release',
+      PendingPayment: 'Awaiting release',
+      Disputed: 'Disputed',
+    }
+    const statusBadgeMap = {
+      paid: 'Paid',
+      processing: 'Completed',
+      pending: 'PendingPayment',
+      failed: 'Disputed',
+      reversed: 'Disputed',
+      Completed: 'PendingPayment',
+      PendingPayment: 'PendingPayment',
+      Disputed: 'Disputed',
+    }
+
+    function buildRowHtml(rows) {
+      if (rows.length === 0) return null
+      let out = '<div class="earnings-list">'
+      rows.forEach(row => {
         const date = row.date ? new Date(row.date) : new Date(row.sortDate)
         const day = date.getDate().toString().padStart(2, '0')
         const month = date.toLocaleString('default', { month: 'short' })
@@ -353,8 +357,7 @@
         const transferLabel = row.transfer_id
           ? `<div class="earning-type" style="margin-top:2px;font-size:10px;color:#bbb;font-family:monospace">${row.transfer_id.substring(0,20)}…</div>`
           : ''
-
-        html += `
+        out += `
           <div class="earning-item" ${row.inspection_id ? `onclick="window.location.href='inspection-detail.html?id=${row.inspection_id}'"` : ''} style="cursor:${row.inspection_id?'pointer':'default'}">
             <div class="earning-date-box">
               <div class="earning-day">${day}</div>
@@ -372,10 +375,33 @@
             </div>
           </div>`
       })
-      html += '</div>'
+      out += '</div>'
+      return out
     }
 
+    html += `
+      <div class="tabs">
+        <div class="tab active" data-tab="awaiting">Awaiting Payment <span class="count">${awaitingRows.length}</span></div>
+        <div class="tab" data-tab="paid">Paid <span class="count">${paidRows.length}</span></div>
+      </div>
+      <div class="tab-panel active" id="panel-awaiting">
+        ${buildRowHtml(awaitingRows) || '<div class="tab-empty">No inspections awaiting payment.</div>'}
+      </div>
+      <div class="tab-panel" id="panel-paid">
+        ${buildRowHtml(paidRows) || '<div class="tab-empty">No paid inspections yet.</div>'}
+      </div>`
+
     document.getElementById('mainContent').innerHTML = html
+
+    // Wire up tab switching
+    document.querySelectorAll('#mainContent .tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('#mainContent .tab').forEach(t => t.classList.remove('active'))
+        document.querySelectorAll('#mainContent .tab-panel').forEach(p => p.classList.remove('active'))
+        tab.classList.add('active')
+        document.getElementById('panel-' + tab.dataset.tab).classList.add('active')
+      })
+    })
   }
 
   function getNextTuesday() {
