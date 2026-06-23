@@ -60,15 +60,24 @@ Deno.serve(async (req: Request) => {
   }
 
   // Create payout batch
-  const batchRef = `BATCH-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`
+  const now = new Date()
+  const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+  const periodEnd = now.toISOString()
+  const scheduledPayoutDate = now.toISOString().slice(0, 10)
+  const batchRef = `BATCH-${now.toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`
+  const totalScoutPayouts = pendingInspections.reduce((s, i) => s + (parseFloat(i.pricing_snapshot?.pay_to_scout ?? '0')), 0)
   const { data: batch, error: batchErr } = await supabase
     .from('payout_batches')
     .insert({
       batch_reference: batchRef,
       status: 'Processing',
-      total_amount: pendingInspections.reduce((s, i) => s + (parseFloat(i.pricing_snapshot?.pay_to_scout ?? '0')), 0),
+      period_start: periodStart,
+      period_end: periodEnd,
+      scheduled_payout_date: scheduledPayoutDate,
+      total_amount: totalScoutPayouts,
+      total_scout_payouts: totalScoutPayouts,
       created_by: user.id,
-      created_at: new Date().toISOString(),
+      created_at: now.toISOString(),
     })
     .select()
     .single()
