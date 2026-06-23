@@ -941,6 +941,7 @@
       if (!_dpmCard) {
         const elements = stripe.elements()
         _dpmCard = elements.create('card', {
+          hidePostalCode: true,
           style: { base: { fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#0D0D0D', '::placeholder': { color: '#bbb' } } }
         })
       }
