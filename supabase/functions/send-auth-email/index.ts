@@ -1,7 +1,4 @@
-import { Webhook } from 'https://esm.sh/standardwebhooks@1.0.0'
-
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? ''
-const HOOK_SECRET = Deno.env.get('SEND_EMAIL_HOOK_SECRET') ?? ''
 const FROM = 'Spekto <onboarding@resend.dev>'
 const SUPABASE_URL = 'https://nyvnvtxhlnjvfhcmnihh.supabase.co'
 
@@ -14,19 +11,14 @@ function err(msg: string, status = 400) {
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type, webhook-id, webhook-timestamp, webhook-signature' } })
+    return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type' } })
   }
-
-  const payload = await req.text()
-  const headers = Object.fromEntries(req.headers)
 
   let data: { user: { email: string }; email_data: { token_hash: string; redirect_to: string; email_action_type: string } }
   try {
-    const wh = new Webhook(HOOK_SECRET)
-    data = wh.verify(payload, headers) as typeof data
-  } catch (e) {
-    console.error('Webhook verification failed:', e)
-    return err('Unauthorized', 401)
+    data = await req.json()
+  } catch {
+    return err('Invalid JSON', 400)
   }
 
   const { user, email_data } = data
