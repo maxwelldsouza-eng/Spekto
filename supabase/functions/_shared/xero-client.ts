@@ -73,8 +73,7 @@ async function refreshXeroToken(current: XeroTokenRow): Promise<XeroTokenRow> {
 
 export async function xeroPost(path: string, body: unknown): Promise<Response> {
   const token = await getXeroToken()
-
-  const res = await fetch(`${XERO_API_BASE}${path}`, {
+  return fetch(`${XERO_API_BASE}${path}`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token.access_token}`,
@@ -84,6 +83,15 @@ export async function xeroPost(path: string, body: unknown): Promise<Response> {
     },
     body: JSON.stringify(body),
   })
+}
 
-  return res
+export async function xeroGet(path: string): Promise<Response> {
+  const token = await getXeroToken()
+  return fetch(`${XERO_API_BASE}${path}`, {
+    headers: {
+      'Authorization': `Bearer ${token.access_token}`,
+      'Xero-Tenant-Id': token.tenant_id,
+      'Accept': 'application/json',
+    },
+  })
 }

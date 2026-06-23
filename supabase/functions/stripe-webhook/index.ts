@@ -1,5 +1,6 @@
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { xeroPost, xeroGet } from '../_shared/xero-client.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2024-06-20',
@@ -11,12 +12,178 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
 )
 
-async function logEvent(
-  eventId: string,
-  eventType: string,
-  payload: unknown,
-  error?: string,
-) {
+// ─── Xero helpers ────────────────────────────────────────────────────────────
+
+async function getOrCreateXeroContact(email: string, name: string): Promise<string> {
+  const searchRes = await xeroGet(`/Contacts?where=EmailAddress="${encodeURIComponent(email)}"`)
+  if (searchRes.ok) {
+    const data = await searchRes.json()
+    if (data.Contacts?.length > 0) return data.Contacts[0].ContactID
+  }
+
+  const createRes = await xeroPost('/Contacts', {
+    Contacts: [{ Name: name || email, EmailAddress: email }],
+  })
+  const createData = await createRes.json()
+  if (!createRes.ok || !createData.Contacts?.[0]) {
+    throw new Error(`Xero contact creation failed: ${JSON.stringify(createData)}`)
+  }
+  return createData.Contacts[0].ContactID
+}
+
+async function syncInvoiceToXero(paymentId: string): Promise<void> {
+  // Fetch payment
+  const { data: payment } = await supabase
+    .from('payments')
+    .select('id, amount, spekto_fee_ex_gst, gst, inspection_id, client_id')
+    .eq('id', paymentId)
+    .single()
+  if (!payment) throw new Error(`Payment ${paymentId} not found`)
+
+  // Fetch inspection address
+  const { data: inspection } = await supabase
+    .from('inspections')
+    .select('address')
+    .eq('id', payment.inspection_id)
+    .single()
+
+  // Fetch client details
+  const { data: client } = await supabase
+    .from('users')
+    .select('email, first_name, last_name')
+    .eq('id', payment.client_id)
+    .single()
+  if (!client) throw new Error('Client not found')
+
+  const clientName = `${client.first_name ?? ''} ${client.last_name ?? ''}`.trim() || client.email
+  const contactId = await getOrCreateXeroContact(client.email, clientName)
+  const today = new Date().toISOString().split('T')[0]
+
+  // Create ACCREC invoice (money Spekto earns from client)
+  const invoiceRes = await xeroPost('/Invoices', {
+    Invoices: [{
+      Type: 'ACCREC',
+      Contact: { ContactID: contactId },
+      Status: 'AUTHORISED',
+      DueDateString: today,
+      LineAmountTypes: 'EXCLUSIVE',
+      CurrencyCode: 'AUD',
+      Reference: `INS-${payment.inspection_id.substring(0, 8).toUpperCase()}`,
+      LineItems: [{
+        Description: `Property Inspection — ${inspection?.address ?? payment.inspection_id}`,
+        Quantity: 1,
+        UnitAmount: payment.spekto_fee_ex_gst,
+        TaxType: 'OUTPUT2',
+        AccountCode: '200',
+      }],
+    }],
+  })
+
+  const invoiceJson = await invoiceRes.json()
+  if (!invoiceRes.ok || invoiceJson.Invoices?.[0]?.HasErrors) {
+    throw new Error(`Xero invoice failed: ${JSON.stringify(invoiceJson)}`)
+  }
+  const invoiceId = invoiceJson.Invoices[0].InvoiceID
+
+  // Record payment to mark invoice as paid
+  const pmtRes = await xeroPost('/Payments', {
+    Payments: [{
+      Invoice: { InvoiceID: invoiceId },
+      Account: { Code: '090' },
+      Date: today,
+      Amount: payment.amount,
+    }],
+  })
+
+  if (!pmtRes.ok) {
+    const pmtJson = await pmtRes.json()
+    throw new Error(`Xero payment recording failed: ${JSON.stringify(pmtJson)}`)
+  }
+
+  await supabase
+    .from('payments')
+    .update({ xero_invoice_id: invoiceId, xero_sync_status: 'Synced', updated_at: new Date().toISOString() })
+    .eq('id', paymentId)
+}
+
+async function syncBillToXero(batchItemId: string): Promise<void> {
+  // Fetch payout batch item
+  const { data: item } = await supabase
+    .from('payout_batch_items')
+    .select('id, amount, scout_id, inspection_id')
+    .eq('id', batchItemId)
+    .single()
+  if (!item) throw new Error(`Batch item ${batchItemId} not found`)
+
+  // Fetch inspection address
+  const { data: inspection } = await supabase
+    .from('inspections')
+    .select('address')
+    .eq('id', item.inspection_id)
+    .single()
+
+  // Fetch scout details
+  const { data: scout } = await supabase
+    .from('users')
+    .select('email, first_name, last_name')
+    .eq('id', item.scout_id)
+    .single()
+  if (!scout) throw new Error('Scout not found')
+
+  const scoutName = `${scout.first_name ?? ''} ${scout.last_name ?? ''}`.trim() || scout.email
+  const contactId = await getOrCreateXeroContact(scout.email, scoutName)
+  const today = new Date().toISOString().split('T')[0]
+
+  // Create ACCPAY bill (money Spekto pays to scout)
+  const billRes = await xeroPost('/Invoices', {
+    Invoices: [{
+      Type: 'ACCPAY',
+      Contact: { ContactID: contactId },
+      Status: 'AUTHORISED',
+      DueDateString: today,
+      LineAmountTypes: 'EXCLUSIVE',
+      CurrencyCode: 'AUD',
+      Reference: `PAYOUT-${item.inspection_id.substring(0, 8).toUpperCase()}`,
+      LineItems: [{
+        Description: `Scout payout — ${inspection?.address ?? item.inspection_id}`,
+        Quantity: 1,
+        UnitAmount: item.amount,
+        TaxType: 'NONE',
+        AccountCode: '477',
+      }],
+    }],
+  })
+
+  const billJson = await billRes.json()
+  if (!billRes.ok || billJson.Invoices?.[0]?.HasErrors) {
+    throw new Error(`Xero bill failed: ${JSON.stringify(billJson)}`)
+  }
+  const billId = billJson.Invoices[0].InvoiceID
+
+  // Record payment to mark bill as paid
+  const pmtRes = await xeroPost('/Payments', {
+    Payments: [{
+      Invoice: { InvoiceID: billId },
+      Account: { Code: '090' },
+      Date: today,
+      Amount: item.amount,
+    }],
+  })
+
+  if (!pmtRes.ok) {
+    const pmtJson = await pmtRes.json()
+    throw new Error(`Xero bill payment failed: ${JSON.stringify(pmtJson)}`)
+  }
+
+  await supabase
+    .from('payout_batch_items')
+    .update({ xero_bill_id: billId, xero_sync_status: 'Synced', updated_at: new Date().toISOString() })
+    .eq('id', batchItemId)
+}
+
+// ─── Stripe event handlers ────────────────────────────────────────────────────
+
+async function logEvent(eventId: string, eventType: string, payload: unknown, error?: string) {
   await supabase.from('webhook_events').upsert(
     {
       source: 'stripe',
@@ -47,10 +214,21 @@ async function handlePaymentIntentSucceeded(pi: Stripe.PaymentIntent) {
       .eq('id', payment.id),
     supabase
       .from('inspections')
-      .update({ status: 'Paid', updated_at: new Date().toISOString() })
+      .update({ status: 'Posted', updated_at: new Date().toISOString() })
       .eq('id', payment.inspection_id)
-      .in('status', ['PendingPayment', 'Disputed']),
+      .eq('status', 'Draft'),
   ])
+
+  // Sync to Xero — failure is non-fatal (status tracked in DB)
+  try {
+    await syncInvoiceToXero(payment.id)
+  } catch (xeroErr) {
+    console.error('Xero invoice sync failed:', xeroErr)
+    await supabase
+      .from('payments')
+      .update({ xero_sync_status: 'Failed', updated_at: new Date().toISOString() })
+      .eq('id', payment.id)
+  }
 }
 
 async function handlePaymentIntentFailed(pi: Stripe.PaymentIntent) {
@@ -58,7 +236,7 @@ async function handlePaymentIntentFailed(pi: Stripe.PaymentIntent) {
 
   const { data: payment } = await supabase
     .from('payments')
-    .select('id')
+    .select('id, inspection_id, client_id')
     .eq('stripe_payment_intent_id', pi.id)
     .maybeSingle()
 
@@ -69,18 +247,11 @@ async function handlePaymentIntentFailed(pi: Stripe.PaymentIntent) {
     .update({ status: 'failed', updated_at: new Date().toISOString() })
     .eq('id', payment.id)
 
-  // Notify the client
-  const { data: paymentFull } = await supabase
-    .from('payments')
-    .select('inspection_id, client_id')
-    .eq('id', payment.id)
-    .single()
-
-  if (paymentFull?.client_id) {
+  if (payment.client_id) {
     await supabase.from('notifications').insert({
-      user_id: paymentFull.client_id,
+      user_id: payment.client_id,
       type: 'payment_failed',
-      inspection_id: paymentFull.inspection_id,
+      inspection_id: payment.inspection_id,
       message: `Payment failed for your inspection. Reason: ${lastError}. Please update your payment method in Settings.`,
     })
   }
@@ -94,18 +265,32 @@ async function handleTransferCreated(transfer: Stripe.Transfer) {
 }
 
 async function handleTransferUpdated(transfer: Stripe.Transfer) {
-  // A transfer moving to 'paid' means funds have reached the connected account
-  if (transfer.reversed) return // handled by transfer.reversed event
+  if (transfer.reversed) return
+
+  const { data: item } = await supabase
+    .from('payout_batch_items')
+    .select('id')
+    .eq('stripe_transfer_id', transfer.id)
+    .eq('status', 'processing')
+    .maybeSingle()
+
+  if (!item) return
 
   await supabase
     .from('payout_batch_items')
-    .update({
-      status: 'paid',
-      paid_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('stripe_transfer_id', transfer.id)
-    .eq('status', 'processing')
+    .update({ status: 'paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq('id', item.id)
+
+  // Sync to Xero — failure is non-fatal
+  try {
+    await syncBillToXero(item.id)
+  } catch (xeroErr) {
+    console.error('Xero bill sync failed:', xeroErr)
+    await supabase
+      .from('payout_batch_items')
+      .update({ xero_sync_status: 'Failed', updated_at: new Date().toISOString() })
+      .eq('id', item.id)
+  }
 }
 
 async function handleTransferReversed(transfer: Stripe.Transfer) {
@@ -122,14 +307,9 @@ async function handleTransferReversed(transfer: Stripe.Transfer) {
 
   await supabase
     .from('payout_batch_items')
-    .update({
-      status: 'reversed',
-      failure_reason: reason,
-      updated_at: new Date().toISOString(),
-    })
+    .update({ status: 'reversed', failure_reason: reason, updated_at: new Date().toISOString() })
     .eq('id', item.id)
 
-  // Notify the scout that their payout was reversed
   if (item.scout_id) {
     await supabase.from('notifications').insert({
       user_id: item.scout_id,
@@ -139,6 +319,8 @@ async function handleTransferReversed(transfer: Stripe.Transfer) {
     })
   }
 }
+
+// ─── Entry point ──────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') {
@@ -182,7 +364,6 @@ Deno.serve(async (req: Request) => {
         await handleTransferReversed(event.data.object as Stripe.Transfer)
         break
       default:
-        // Ignore unhandled event types — still return 200 so Stripe stops retrying
         break
     }
   } catch (err) {
@@ -192,7 +373,6 @@ Deno.serve(async (req: Request) => {
 
   await logEvent(event.id, event.type, event.data.object, handlerError)
 
-  // Always return 200 — a non-2xx response causes Stripe to retry for 72 hours
   return new Response(JSON.stringify({ received: true }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
