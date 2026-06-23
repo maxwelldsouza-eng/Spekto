@@ -424,7 +424,10 @@
                 }
 
             } catch (error) {
-                showError(emailInput, error.message || 'Sign up failed. Please try again.');
+                const msg = error?.message && error.message !== '{}'
+                    ? error.message
+                    : 'Sign up failed. Please try again or contact support.';
+                showError(emailInput, msg);
             }
         });
 
