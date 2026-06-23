@@ -78,19 +78,37 @@
     .capture-header-label { font-size: 14px; font-weight: 700; color: var(--purple); }
     .capture-header i { font-size: 17px; color: var(--purple); }
     .capture-count { font-size: 11px; color: #aaa; font-weight: 600; margin-left: auto; }
-    .video-list { padding: 16px 20px; display: flex; flex-direction: column; gap: 20px; }
-    .video-item { border: 1px solid #F0F0F0; border-radius: 10px; overflow: hidden; }
-    .video-item-num { font-size: 11px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 14px 0; }
-    .video-player { margin: 10px 14px 0; border-radius: 8px; height: 175px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; background: #111; }
-    .play-overlay { position: absolute; width: 46px; height: 46px; background: rgba(255,255,255,0.15); border-radius: 50%; border: 2px solid rgba(255,255,255,0.5); display: flex; align-items: center; justify-content: center; }
-    .play-overlay i { font-size: 20px; color: #fff; margin-left: 3px; }
-    .video-filename { position: absolute; bottom: 8px; left: 0; right: 0; text-align: center; font-size: 11px; color: rgba(255,255,255,0.4); }
-    .btn-download { margin: 10px 14px 12px; display: inline-flex; align-items: center; gap: 5px; background: #374151; color: #fff; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; text-decoration: none; }
-    .video-meta-grid { padding: 12px 14px 14px; background: #FAFAFA; border-top: 1px solid #F0F0F0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .meta-item { display: flex; align-items: flex-start; gap: 7px; }
-    .meta-icon { font-size: 14px; color: var(--purple); margin-top: 1px; flex-shrink: 0; }
-    .meta-label { font-size: 10px; color: #aaa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
-    .meta-val { font-size: 12px; color: #0D0D0D; font-weight: 500; margin-top: 1px; }
+    /* ── Capture card grid ── */
+    .capture-grid { padding: 16px 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+    .vid-card { background: #fff; border-radius: 14px; border: 1px solid var(--border); overflow: hidden; transition: box-shadow 0.15s; }
+    .vid-card:hover { box-shadow: 0 4px 16px rgba(86,5,145,0.08); border-color: #D4B8F5; }
+    .vid-thumb { aspect-ratio: 16/9; background: #1a1a2e; position: relative; display: flex; align-items: center; justify-content: center; border-radius: 14px 14px 0 0; overflow: hidden; }
+    .vid-play-btn { width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.45); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .vid-play-btn i { font-size: 20px; color: #fff; margin-left: 3px; }
+    .vid-badge-left { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); color: #fff; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .vid-badge-right { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+    .vid-info { padding: 12px 14px 8px; }
+    .vid-addr { font-size: 13px; font-weight: 600; color: #0D0D0D; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .vid-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+    .vid-meta-chip { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #999; }
+    .vid-meta-chip i { font-size: 12px; color: #bbb; }
+    .vid-actions { padding: 8px 14px 12px; border-top: 1px solid #F3F3F3; display: flex; gap: 8px; }
+    .vid-btn-play { flex: 1; height: 34px; background: var(--tint); color: var(--purple); border: none; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .vid-btn-download { flex: 1; height: 34px; background: #fff; color: #444; border: 1.5px solid #E0E0E0; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; gap: 5px; text-decoration: none; }
+    .vid-btn-download:hover { border-color: var(--purple); color: var(--purple); }
+    /* ── Video player modal ── */
+    .vid-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 300; display: none; align-items: center; justify-content: center; padding: 20px; }
+    .vid-modal-overlay.open { display: flex; }
+    .vid-modal { background: #111; border-radius: 16px; overflow: hidden; width: 100%; max-width: 820px; position: relative; }
+    .vid-modal-close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; background: rgba(255,255,255,0.1); border: none; border-radius: 50%; color: #fff; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
+    .vid-modal video { width: 100%; max-height: 60vh; display: block; }
+    .vid-modal-info { padding: 14px 18px; }
+    .vid-modal-addr { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .vid-modal-meta { display: flex; gap: 14px; flex-wrap: wrap; }
+    .vid-modal-meta-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: rgba(255,255,255,0.5); }
+    .vid-modal-meta-item i { font-size: 13px; }
+    .vid-modal-actions { padding: 10px 18px 14px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px; }
+    .vid-modal-dl { flex: 1; height: 40px; background: rgba(255,255,255,0.1); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }
     .scout-row { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
     .scout-avatar { width: 28px; height: 28px; border-radius: 50%; background: #EDE4F7; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--purple); flex-shrink: 0; }
     .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
@@ -143,6 +161,7 @@
     .rating-chip-tag { background: var(--tint); color: var(--purple); border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 600; }
     .rating-comment-quote { font-size: 13px; color: #555; font-style: italic; line-height: 1.5; margin-top: 12px; padding-top: 12px; border-top: 1px solid #F0F0F0; }
     .btn-rate-job { display: inline-flex; align-items: center; gap: 8px; background: var(--purple); color: #fff; border: none; border-radius: 8px; padding: 10px 18px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
+    #paySuccessOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center; padding:20px; }
     @media (max-width: 768px) {
       .sidebar { transform: translateX(-220px); transition: transform 0.25s ease; }
       .sidebar.open { transform: translateX(0); }
@@ -479,7 +498,11 @@
       </div>`
   }
 
+  // captureModalItems holds the ordered list of captures for the modal player
+  let captureModalItems = []
+
   function renderCaptureGroups() {
+    captureModalItems = []
     const types = inspection.inspection_type === 'external' ? ['external']
       : inspection.inspection_type === 'internal' ? ['internal']
       : ['external', 'internal']
@@ -500,51 +523,35 @@
           <div style="padding:24px;text-align:center;font-size:13px;color:#999">No recordings submitted yet</div>
         </div>`
 
-      const videoItems = typeCaptures.map((cap, idx) => {
-        const scoutInitials = cap.scout_name ? cap.scout_name.split(' ').map(n => n[0]).join('').toUpperCase() : 'SC'
-        const recordedAt = cap.recorded_at ? new Date(cap.recorded_at).toLocaleString('en-AU', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'
+      const cards = typeCaptures.map(cap => {
+        const modalIdx = captureModalItems.length
+        captureModalItems.push(cap)
+
+        const typeLabel = cap.capture_type === 'external' ? 'External' : 'Internal'
+        const recordedDate = cap.recorded_at
+          ? new Date(cap.recorded_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+          : '—'
+        const recordedAt = cap.recorded_at
+          ? new Date(cap.recorded_at).toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+          : '—'
+
         return `
-          <div class="video-item">
-            <div class="video-item-num">Video ${idx + 1} of ${count}</div>
-            <div class="video-player" onclick="window.open('${cap.video_url}', '_blank')">
-              <div class="play-overlay"><i class="ti ti-player-play"></i></div>
-              <div class="video-filename">${cap.file_name || ''}</div>
+          <div class="vid-card">
+            <div class="vid-thumb" onclick="window._openCaptureModal(${modalIdx})" style="cursor:pointer">
+              <div class="vid-play-btn"><i class="ti ti-player-play"></i></div>
+              <div class="vid-badge-left">${typeLabel}</div>
+              <div class="vid-badge-right">${recordedDate}</div>
             </div>
-            <a class="btn-download" href="${cap.video_url}" download="${cap.file_name || 'capture'}">
-              <i class="ti ti-download" style="font-size:13px"></i> Download
-            </a>
-            <div class="video-meta-grid">
-              <div class="meta-item">
-                <i class="ti ti-map-pin meta-icon"></i>
-                <div>
-                  <div class="meta-label">GPS Location</div>
-                  <div class="meta-val">${cap.gps_latitude ? cap.gps_latitude.toFixed(4) + '° S, ' + cap.gps_longitude.toFixed(4) + '° E' : 'Not available'}</div>
-                </div>
+            <div class="vid-info">
+              <div class="vid-addr">${inspection.address}</div>
+              <div class="vid-meta">
+                <div class="vid-meta-chip"><i class="ti ti-clock"></i> ${recordedAt}</div>
+                ${cap.gps_latitude ? `<div class="vid-meta-chip"><i class="ti ti-map-pin"></i> GPS verified</div>` : ''}
               </div>
-              <div class="meta-item">
-                <i class="ti ti-building meta-icon"></i>
-                <div>
-                  <div class="meta-label">Recorded at</div>
-                  <div class="meta-val">${cap.gps_address || inspection.address}</div>
-                </div>
-              </div>
-              <div class="meta-item">
-                <i class="ti ti-calendar meta-icon"></i>
-                <div>
-                  <div class="meta-label">Date & Time</div>
-                  <div class="meta-val">${recordedAt}</div>
-                </div>
-              </div>
-              <div class="meta-item">
-                <i class="ti ti-user meta-icon"></i>
-                <div>
-                  <div class="meta-label">Captured by</div>
-                  <div class="scout-row">
-                    <div class="scout-avatar">${scoutInitials}</div>
-                    <div class="meta-val">${cap.scout_name || 'Scout'}</div>
-                  </div>
-                </div>
-              </div>
+            </div>
+            <div class="vid-actions">
+              <button class="vid-btn-play" onclick="window._openCaptureModal(${modalIdx})"><i class="ti ti-player-play" style="font-size:13px"></i> Play</button>
+              <a class="vid-btn-download" href="${cap.video_url}" download="${cap.file_name || 'capture'}" onclick="event.stopPropagation()"><i class="ti ti-download" style="font-size:13px"></i> Download</a>
             </div>
           </div>`
       }).join('')
@@ -556,9 +563,38 @@
             <span class="capture-header-label">${label}</span>
             <span class="capture-count">${count} video${count !== 1 ? 's' : ''}</span>
           </div>
-          <div class="video-list">${videoItems}</div>
+          <div class="capture-grid">${cards}</div>
         </div>`
     }).join('')
+  }
+
+  window._openCaptureModal = (idx) => {
+    const cap = captureModalItems[idx]
+    if (!cap) return
+    const recordedAt = cap.recorded_at
+      ? new Date(cap.recorded_at).toLocaleString('en-AU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+      : '—'
+    const typeLabel = cap.capture_type === 'external' ? 'External capture' : 'Internal capture'
+    const gpsText = cap.gps_latitude
+      ? `${parseFloat(cap.gps_latitude).toFixed(4)}°S, ${parseFloat(cap.gps_longitude).toFixed(4)}°E`
+      : 'GPS not available'
+
+    document.getElementById('capModalVideo').src = cap.video_url
+    document.getElementById('capModalAddr').textContent = inspection.address
+    document.getElementById('capModalDate').textContent = recordedAt
+    document.getElementById('capModalType').textContent = typeLabel
+    document.getElementById('capModalGps').textContent = gpsText
+    document.getElementById('capModalDl').href = cap.video_url
+    document.getElementById('capModalDl').download = cap.file_name || 'capture'
+    document.getElementById('captureVideoModal').classList.add('open')
+    document.getElementById('capModalVideo').play()
+  }
+
+  function _closeCaptureModal() {
+    document.getElementById('captureVideoModal').classList.remove('open')
+    const v = document.getElementById('capModalVideo')
+    v.pause()
+    v.src = ''
   }
 
   async function handleReleasePayment() {
@@ -851,6 +887,13 @@
     })
   })
 
+  // Capture video modal listeners
+  document.getElementById('capModalClose').addEventListener('click', _closeCaptureModal)
+  document.getElementById('captureVideoModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('captureVideoModal')) _closeCaptureModal()
+  })
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') _closeCaptureModal() })
+
   // ── Payment modal for Draft inspections ──
   const DETAIL_SUPABASE_URL = 'https://nyvnvtxhlnjvfhcmnihh.supabase.co'
   const DETAIL_STRIPE_PK = 'pk_test_51TjpX1COe0yffLUxk6l80GdxR4O0xOViTSHetQPTyvSaJuNkVzJyN1xGy3Ylz22Z8BYQl5VsQ3zkvs6XfSmVpnKk00qfObOPTi'
@@ -947,9 +990,29 @@
       document.getElementById('statusBadge').textContent = 'Posted'
       renderActions()
       renderContent()
+      document.getElementById('paySuccessOverlay').style.display = 'flex'
     }
   })
 </script>
+
+<!-- Capture video player modal -->
+<div class="vid-modal-overlay" id="captureVideoModal">
+  <div class="vid-modal">
+    <button class="vid-modal-close" id="capModalClose">&#215;</button>
+    <video id="capModalVideo" controls></video>
+    <div class="vid-modal-info">
+      <div class="vid-modal-addr" id="capModalAddr"></div>
+      <div class="vid-modal-meta">
+        <div class="vid-modal-meta-item"><i class="ti ti-clock"></i> <span id="capModalDate"></span></div>
+        <div class="vid-modal-meta-item"><i class="ti ti-camera"></i> <span id="capModalType"></span></div>
+        <div class="vid-modal-meta-item"><i class="ti ti-map-pin"></i> <span id="capModalGps"></span></div>
+      </div>
+    </div>
+    <div class="vid-modal-actions">
+      <a class="vid-modal-dl" id="capModalDl" download><i class="ti ti-download"></i> Download</a>
+    </div>
+  </div>
+</div>
 
 <!-- Payment modal for completing Draft inspections -->
 <div id="detailPaymentOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;padding:20px;">
