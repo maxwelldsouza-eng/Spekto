@@ -96,6 +96,11 @@
     .toast { position: fixed; bottom: 24px; right: 24px; background: #1F2937; color: #fff; font-size: 13px; font-weight: 500; padding: 12px 20px; border-radius: 10px; z-index: 999; display: none; }
     .toast.success { background: #166534; }
     .toast.error { background: #991B1B; }
+    .ref-tag { display: inline-block; font-size: 10px; font-weight: 600; color: #999; background: #F3F4F6; border-radius: 5px; padding: 1px 6px; margin-left: 6px; white-space: nowrap; vertical-align: middle; }
+    .search-wrap { position: relative; margin-bottom: 16px; }
+    .search-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #B0B0B0; pointer-events: none; }
+    .search-input { width: 100%; height: 40px; border: 1.5px solid #E0E0E0; border-radius: 8px; padding: 0 14px 0 38px; font-size: 13px; font-family: 'Inter', sans-serif; outline: none; background: #fff; color: #0D0D0D; }
+    .search-input:focus { border-color: var(--purple); }
     .menu-toggle { display: none; width: 36px; height: 36px; border: none; background: transparent; cursor: pointer; align-items: center; justify-content: center; border-radius: 8px; padding: 0; flex-shrink: 0; }
     .menu-toggle i { font-size: 22px; color: #555; }
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 99; }
@@ -289,41 +294,47 @@
   }
 
   function renderTab1(inspections) {
-    if (inspections.length === 0) {
-      return `<div class="empty-state"><i class="ti ti-wallet-off"></i><p>No inspections pending payout. When clients release payment the inspections will appear here.</p></div>`
-    }
-    return inspections.map(insp => {
+    const emptyHtml = `<div class="empty-state" id="tab1Empty"><i class="ti ti-wallet-off"></i><p>No inspections pending payout. When clients release payment the inspections will appear here.</p></div>`
+    const searchBox = `<div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" id="search1" type="text" placeholder="Search by inspection ID, address or scout name..."></div>`
+    if (inspections.length === 0) return searchBox + emptyHtml
+    const rows = inspections.map(insp => {
       const u = insp.scout
       const date = fmtDate(insp.date)
+      const ref = insp.ref_number ? `<span class="ref-tag">#${insp.ref_number}</span>` : ''
       return `
-        <div class="payout-row">
+        <div class="payout-row" data-ref="${insp.ref_number || ''}" data-address="${(insp.address || '').toLowerCase()}" data-scout="${scoutName(u).toLowerCase()}">
           <div class="scout-av">${scoutInitials(u)}</div>
           <div class="row-info">
             <div class="row-name">${scoutName(u)}</div>
-            <div class="row-sub">${insp.address || '—'} · ${date}</div>
+            <div class="row-sub">${insp.address || '—'}${ref} · ${date}</div>
           </div>
           <div class="row-amount">${payout(insp)}</div>
         </div>`
     }).join('')
+    return searchBox + `<div id="tab1List">${rows}</div>` + emptyHtml.replace('id="tab1Empty"', 'id="tab1Empty" style="display:none"')
   }
 
   function renderTab2(items) {
-    if (items.length === 0) {
-      return `<div class="empty-state"><i class="ti ti-clock"></i><p>No payouts currently processing.</p></div>`
-    }
-    return items.map(item => {
+    const emptyHtml = `<div class="empty-state" id="tab2Empty"><i class="ti ti-clock"></i><p>No payouts currently processing.</p></div>`
+    const searchBox = `<div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" id="search2" type="text" placeholder="Search by inspection ID, address or scout name..."></div>`
+    if (items.length === 0) return searchBox + emptyHtml
+    const rows = items.map(item => {
       const u = item.scout
       const batch = item.payout_batches
+      const insp = item.inspections
       const ref = batch?.batch_reference || item.batch_id || '—'
       const date = fmtDate(batch?.created_at)
       const amount = item.amount != null ? '$' + parseFloat(item.amount).toFixed(2) : '—'
       const transfer = item.stripe_transfer_id || '—'
+      const refNum = insp?.ref_number
+      const refTag = refNum ? `<span class="ref-tag">#${refNum}</span>` : ''
+      const addr = insp?.address || ''
       return `
-        <div class="payout-row">
+        <div class="payout-row" data-ref="${refNum || ''}" data-address="${addr.toLowerCase()}" data-scout="${scoutName(u).toLowerCase()}">
           <div class="scout-av">${scoutInitials(u)}</div>
           <div class="row-info">
             <div class="row-name">${scoutName(u)}</div>
-            <div class="row-sub">Batch ${ref} · ${date} · Transfer: ${transfer}</div>
+            <div class="row-sub">Batch ${ref}${refTag} · ${date} · Transfer: ${transfer}</div>
           </div>
           <div class="row-right">
             <span class="badge badge-Processing">Processing</span>
@@ -331,25 +342,30 @@
           </div>
         </div>`
     }).join('')
+    return searchBox + `<div id="tab2List">${rows}</div>` + emptyHtml.replace('id="tab2Empty"', 'id="tab2Empty" style="display:none"')
   }
 
   function renderTab3(items) {
-    if (items.length === 0) {
-      return `<div class="empty-state"><i class="ti ti-circle-check"></i><p>No completed payouts yet.</p></div>`
-    }
-    return items.map(item => {
+    const emptyHtml = `<div class="empty-state" id="tab3Empty"><i class="ti ti-circle-check"></i><p>No completed payouts yet.</p></div>`
+    const searchBox = `<div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" id="search3" type="text" placeholder="Search by inspection ID, address or scout name..."></div>`
+    if (items.length === 0) return searchBox + emptyHtml
+    const rows = items.map(item => {
       const u = item.scout
       const batch = item.payout_batches
+      const insp = item.inspections
       const ref = batch?.batch_reference || item.batch_id || '—'
       const date = fmtDate(item.updated_at)
       const amount = item.amount != null ? '$' + parseFloat(item.amount).toFixed(2) : '—'
       const transfer = item.stripe_transfer_id || '—'
+      const refNum = insp?.ref_number
+      const refTag = refNum ? `<span class="ref-tag">#${refNum}</span>` : ''
+      const addr = insp?.address || ''
       return `
-        <div class="payout-row">
+        <div class="payout-row" data-ref="${refNum || ''}" data-address="${addr.toLowerCase()}" data-scout="${scoutName(u).toLowerCase()}">
           <div class="scout-av">${scoutInitials(u)}</div>
           <div class="row-info">
             <div class="row-name">${scoutName(u)}</div>
-            <div class="row-sub">Batch ${ref} · ${date} · Transfer: ${transfer}</div>
+            <div class="row-sub">Batch ${ref}${refTag} · ${date} · Transfer: ${transfer}</div>
           </div>
           <div class="row-right">
             <span class="badge badge-Paid">Paid</span>
@@ -357,20 +373,22 @@
           </div>
         </div>`
     }).join('')
+    return searchBox + `<div id="tab3List">${rows}</div>` + emptyHtml.replace('id="tab3Empty"', 'id="tab3Empty" style="display:none"')
   }
 
   function renderTab4(inspections) {
-    if (inspections.length === 0) {
-      return `<div class="empty-state"><i class="ti ti-lock-open"></i><p>No payouts currently on hold.</p></div>`
-    }
-    return inspections.map(insp => {
+    const emptyHtml = `<div class="empty-state" id="tab4Empty"><i class="ti ti-lock-open"></i><p>No payouts currently on hold.</p></div>`
+    const searchBox = `<div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" id="search4" type="text" placeholder="Search by inspection ID, address or scout name..."></div>`
+    if (inspections.length === 0) return searchBox + emptyHtml
+    const rows = inspections.map(insp => {
       const u = insp.scout
+      const refTag = insp.ref_number ? `<span class="ref-tag">#${insp.ref_number}</span>` : ''
       return `
-        <div class="payout-row on-hold">
+        <div class="payout-row on-hold" data-ref="${insp.ref_number || ''}" data-address="${(insp.address || '').toLowerCase()}" data-scout="${scoutName(u).toLowerCase()}">
           <div class="scout-av">${scoutInitials(u)}</div>
           <div class="row-info">
             <div class="row-name">${scoutName(u)}</div>
-            <div class="row-sub">${insp.address || '—'}</div>
+            <div class="row-sub">${insp.address || '—'}${refTag}</div>
           </div>
           <div class="row-right">
             <span class="badge badge-OnHold">On hold</span>
@@ -379,25 +397,30 @@
           </div>
         </div>`
     }).join('')
+    return searchBox + `<div id="tab4List">${rows}</div>` + emptyHtml.replace('id="tab4Empty"', 'id="tab4Empty" style="display:none"')
   }
 
   function renderTab5(items) {
-    if (items.length === 0) {
-      return `<div class="empty-state"><i class="ti ti-circle-x"></i><p>No failed payouts.</p></div>`
-    }
-    return items.map(item => {
+    const emptyHtml = `<div class="empty-state" id="tab5Empty"><i class="ti ti-circle-x"></i><p>No failed payouts.</p></div>`
+    const searchBox = `<div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" id="search5" type="text" placeholder="Search by inspection ID, address or scout name..."></div>`
+    if (items.length === 0) return searchBox + emptyHtml
+    const rows = items.map(item => {
       const u = item.scout
       const batch = item.payout_batches
+      const insp = item.inspections
       const ref = batch?.batch_reference || item.batch_id || '—'
       const date = fmtDate(item.updated_at)
       const amount = item.amount != null ? '$' + parseFloat(item.amount).toFixed(2) : '—'
       const reason = item.failure_reason || 'Unknown reason'
+      const refNum = insp?.ref_number
+      const refTag = refNum ? `<span class="ref-tag">#${refNum}</span>` : ''
+      const addr = insp?.address || ''
       return `
-        <div class="payout-row">
+        <div class="payout-row" data-ref="${refNum || ''}" data-address="${addr.toLowerCase()}" data-scout="${scoutName(u).toLowerCase()}">
           <div class="scout-av">${scoutInitials(u)}</div>
           <div class="row-info">
             <div class="row-name">${scoutName(u)}</div>
-            <div class="row-sub">Batch ${ref} · ${date} · ${reason}</div>
+            <div class="row-sub">Batch ${ref}${refTag} · ${date} · ${reason}</div>
           </div>
           <div class="row-right">
             <span class="badge badge-Failed">Failed</span>
@@ -405,12 +428,13 @@
           </div>
         </div>`
     }).join('')
+    return searchBox + `<div id="tab5List">${rows}</div>` + emptyHtml.replace('id="tab5Empty"', 'id="tab5Empty" style="display:none"')
   }
 
   function renderTab6(batches) {
-    if (batches.length === 0) {
-      return `<div class="empty-state"><i class="ti ti-list"></i><p>No payout batches have been run yet.</p></div>`
-    }
+    const emptyHtml = `<div class="empty-state" id="tab6Empty"><i class="ti ti-list"></i><p>No payout batches have been run yet.</p></div>`
+    const searchBox = `<div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" id="search6" type="text" placeholder="Search by batch reference..."></div>`
+    if (batches.length === 0) return searchBox + emptyHtml
     const rows = batches.map(b => {
       const statusBadge = b.status === 'Processed'
         ? '<span class="badge badge-Processed">Processed</span>'
@@ -420,8 +444,9 @@
       const total = b.total_amount != null ? '$' + parseFloat(b.total_amount).toFixed(2) : '—'
       const scoutsPaid = b.scouts_paid ?? '—'
       const period = b.period_label || '—'
-      return `<tr>
-        <td style="font-weight:600">${b.batch_reference || b.id}</td>
+      const batchRef = b.batch_reference || b.id || ''
+      return `<tr data-batchref="${String(batchRef).toLowerCase()}">
+        <td style="font-weight:600">${batchRef}</td>
         <td>${period}</td>
         <td style="font-weight:700">${total}</td>
         <td>${scoutsPaid}</td>
@@ -429,8 +454,8 @@
         <td>${fmtDate(b.created_at)}</td>
       </tr>`
     }).join('')
-    return `
-      <table class="batch-table">
+    return searchBox + `
+      <table class="batch-table" id="tab6Table">
         <thead>
           <tr>
             <th>Batch Reference</th>
@@ -441,8 +466,8 @@
             <th>Date Run</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
-      </table>`
+        <tbody id="tab6Tbody">${rows}</tbody>
+      </table>` + emptyHtml.replace('id="tab6Empty"', 'id="tab6Empty" style="display:none"')
   }
 
   // ── main load ──────────────────────────────────────────────────────────────
@@ -472,16 +497,16 @@
         .eq('status', 'Paid'),
 
       supabase.from('payout_batch_items')
-        .select('*, scout:scout_id(first_name, last_name), payout_batches(batch_reference, created_at)')
+        .select('*, scout:scout_id(first_name, last_name), payout_batches(batch_reference, created_at), inspections(ref_number, address)')
         .eq('status', 'processing'),
 
       supabase.from('payout_batch_items')
-        .select('*, scout:scout_id(first_name, last_name), payout_batches(batch_reference, created_at)')
+        .select('*, scout:scout_id(first_name, last_name), payout_batches(batch_reference, created_at), inspections(ref_number, address)')
         .eq('status', 'paid')
         .order('updated_at', { ascending: false }),
 
       supabase.from('payout_batch_items')
-        .select('*, scout:scout_id(first_name, last_name), payout_batches(batch_reference, created_at)')
+        .select('*, scout:scout_id(first_name, last_name), payout_batches(batch_reference, created_at), inspections(ref_number, address)')
         .eq('status', 'failed')
         .order('updated_at', { ascending: false }),
 
@@ -561,6 +586,54 @@
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.tab))
     })
+
+    // wire search boxes (tabs 1-5: filter .payout-row cards; tab 6: filter table rows)
+    function wireRowSearch(inputId, listId, emptyId) {
+      const input = document.getElementById(inputId)
+      if (!input) return
+      input.addEventListener('input', () => {
+        const q = input.value.toLowerCase().trim()
+        const list = document.getElementById(listId)
+        if (!list) return
+        let visibleCount = 0
+        list.querySelectorAll('.payout-row').forEach(row => {
+          const ref = '#' + row.dataset.ref
+          const addr = row.dataset.address || ''
+          const scout = row.dataset.scout || ''
+          const match = !q || ref.includes(q) || addr.includes(q) || scout.includes(q)
+          row.style.display = match ? '' : 'none'
+          if (match) visibleCount++
+        })
+        const empty = document.getElementById(emptyId)
+        if (empty) empty.style.display = visibleCount === 0 ? '' : 'none'
+      })
+    }
+    wireRowSearch('search1', 'tab1List', 'tab1Empty')
+    wireRowSearch('search2', 'tab2List', 'tab2Empty')
+    wireRowSearch('search3', 'tab3List', 'tab3Empty')
+    wireRowSearch('search4', 'tab4List', 'tab4Empty')
+    wireRowSearch('search5', 'tab5List', 'tab5Empty')
+
+    // wire tab 6 batch reference search
+    const search6 = document.getElementById('search6')
+    if (search6) {
+      search6.addEventListener('input', () => {
+        const q = search6.value.toLowerCase().trim()
+        const tbody = document.getElementById('tab6Tbody')
+        const empty = document.getElementById('tab6Empty')
+        if (!tbody) return
+        let visibleCount = 0
+        tbody.querySelectorAll('tr').forEach(tr => {
+          const ref = tr.dataset.batchref || ''
+          const match = !q || ref.includes(q)
+          tr.style.display = match ? '' : 'none'
+          if (match) visibleCount++
+        })
+        const table = document.getElementById('tab6Table')
+        if (table) table.style.display = visibleCount === 0 ? 'none' : ''
+        if (empty) empty.style.display = visibleCount === 0 ? '' : 'none'
+      })
+    }
 
     // wire process button
     const processBtn = document.getElementById('processBtn')
