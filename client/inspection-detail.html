@@ -123,11 +123,9 @@
     .star-btn.active { color: #F59E0B; }
     .star-btn:hover { transform: scale(1.15); }
     .attr-section-label { font-size: 12px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
-    .attr-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
-    .attr-chip { display: flex; align-items: center; gap: 6px; border: 1.5px solid #E0E0E0; border-radius: 8px; padding: 8px 10px; font-size: 13px; cursor: pointer; background: #fff; transition: border-color 0.15s, background 0.15s; font-family: 'Inter', sans-serif; color: #333; font-weight: 500; }
-    .attr-chip.selected { border-color: var(--purple); background: var(--tint); color: var(--purple); }
-    .attr-check { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #CCC; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; }
-    .attr-chip.selected .attr-check { background: var(--purple); border-color: var(--purple); color: #fff; }
+    .tag-options { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+    .tag-option { background: #EDE4F7; color: #560591; border: none; border-radius: 20px; padding: 10px 18px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; transition: background 0.15s, color 0.15s; }
+    .tag-option.selected { background: #560591; color: #fff; }
     .rating-comment { width: 100%; border: 1.5px solid #E0E0E0; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: 'Inter', sans-serif; resize: none; height: 70px; margin-bottom: 18px; box-sizing: border-box; }
     .rating-comment:focus { outline: none; border-color: var(--purple); }
     .modal-actions { display: flex; gap: 10px; }
@@ -762,9 +760,9 @@
     document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('active'))
     document.getElementById('submitRatingBtn').disabled = true
     document.getElementById('ratingComment').value = ''
-    document.getElementById('attrChips').innerHTML = RATING_ATTRIBUTES.map(attr =>
-      `<div class="attr-chip" data-key="${attr.key}"><div class="attr-check"></div>${attr.label}</div>`
-    ).join('')
+    document.getElementById('attrChips').innerHTML = `<div class="tag-options">${RATING_ATTRIBUTES.map(attr =>
+      `<button type="button" class="tag-option" data-key="${attr.key}">${attr.label}</button>`
+    ).join('')}</div>`
     document.querySelectorAll('.star-btn').forEach(btn => {
       btn.onclick = () => {
         selectedStar = parseInt(btn.dataset.star)
@@ -772,8 +770,8 @@
         document.getElementById('submitRatingBtn').disabled = false
       }
     })
-    document.querySelectorAll('.attr-chip').forEach(chip => {
-      chip.onclick = () => chip.classList.toggle('selected')
+    document.querySelectorAll('.tag-option').forEach(btn => {
+      btn.addEventListener('click', () => btn.classList.toggle('selected'))
     })
   }
   window.openRatingModal = openRatingModal
@@ -786,7 +784,7 @@
     const btn = document.getElementById('submitRatingBtn')
     btn.disabled = true
     btn.textContent = 'Submitting...'
-    const selectedAttrs = Array.from(document.querySelectorAll('.attr-chip.selected')).map(c => c.dataset.key)
+    const selectedAttrs = Array.from(document.querySelectorAll('.tag-option.selected')).map(b => b.dataset.key)
     const comment = document.getElementById('ratingComment').value.trim()
     const { data, error } = await supabase
       .from('inspection_ratings')
