@@ -141,7 +141,7 @@
     'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
   )
 
-  let allInspections = []
+  let allItems = []
   let currentFilter = 'all'
 
   async function init() {
@@ -161,59 +161,94 @@
     }
 
     initNotificationBell(supabase, user.id)
-    const { data: inspections } = await supabase
-      .from('inspections')
-      .select('*')
+
+    // Fetch payments joined with inspections (the real charge records)
+    const { data: payments } = await supabase
+      .from('payments')
+      .select('id, amount, status, payment_type, paid_at, created_at, stripe_receipt_url, stripe_payment_intent_id, inspections(id, address, date, inspection_type, status, ref_number)')
       .eq('client_id', user.id)
-      .not('status', 'eq', 'Posted')
-      .not('status', 'eq', 'Accepted')
-      .not('status', 'eq', 'InProgress')
-      .not('status', 'eq', 'Cancelled')
       .order('created_at', { ascending: false })
 
-    allInspections = inspections || []
+    // Fetch marketplace purchases
+    const { data: purchases } = await supabase
+      .from('marketplace_purchases')
+      .select('id, purchase_price, status, purchased_at, created_at, marketplace_listings(address)')
+      .eq('buyer_id', user.id)
+      .order('created_at', { ascending: false })
+
+    // Normalise into unified items array
+    const paymentItems = (payments || []).map(p => ({
+      id: p.id,
+      kind: 'inspection',
+      amount: p.amount,
+      status: p.status,
+      payment_type: p.payment_type,
+      date: p.paid_at || p.created_at,
+      address: p.inspections?.address || '—',
+      inspection_id: p.inspections?.id,
+      inspection_status: p.inspections?.status,
+      ref_number: p.inspections?.ref_number,
+      inspection_type: p.inspections?.inspection_type,
+      inspection_date: p.inspections?.date,
+      stripe_receipt_url: p.stripe_receipt_url,
+    }))
+
+    const purchaseItems = (purchases || []).map(p => ({
+      id: p.id,
+      kind: 'marketplace',
+      amount: p.purchase_price,
+      status: p.status,
+      payment_type: 'marketplace',
+      date: p.purchased_at || p.created_at,
+      address: p.marketplace_listings?.address || 'Marketplace video',
+      stripe_receipt_url: null,
+    }))
+
+    allItems = [...paymentItems, ...purchaseItems]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+
     renderPage()
   }
 
   function renderPage() {
-    const total = allInspections.reduce((sum, i) =>
-      sum + (parseFloat(i.pricing_snapshot?.total) || 0), 0)
-    const paid = allInspections.filter(i => i.status === 'Paid')
-    const pending = allInspections.filter(i => i.status === 'PendingPayment')
-    const disputed = allInspections.filter(i => i.status === 'Disputed')
+    const chargedItems = allItems.filter(i => i.amount > 0 && i.status === 'paid')
+    const totalSpent = chargedItems.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0)
+    const refundItems = allItems.filter(i => i.amount < 0)
+    const totalRefunded = refundItems.reduce((s, i) => s + Math.abs(parseFloat(i.amount) || 0), 0)
+    const pendingItems = allItems.filter(i => i.status === 'pending')
+    const disputedInspections = allItems.filter(i => i.inspection_status === 'Disputed')
 
     let html = `
       <div class="stats">
         <div class="stat-card">
-          <div class="stat-label">Total spent</div>
-          <div class="stat-val purple">$${total.toFixed(2)}</div>
+          <div class="stat-label">Total paid</div>
+          <div class="stat-val purple">$${totalSpent.toFixed(2)}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Completed</div>
-          <div class="stat-val">${paid.length}</div>
+          <div class="stat-label">Transactions</div>
+          <div class="stat-val">${chargedItems.length}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Pending payment</div>
-          <div class="stat-val">${pending.length}</div>
+          <div class="stat-label">Refunded</div>
+          <div class="stat-val">${totalRefunded > 0 ? '$' + totalRefunded.toFixed(2) : '—'}</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Disputed</div>
-          <div class="stat-val">${disputed.length}</div>
+          <div class="stat-val">${disputedInspections.length}</div>
         </div>
       </div>
 
       <div class="filters" id="filters">
         <button class="filter-btn active" data-filter="all">All</button>
-        <button class="filter-btn" data-filter="Completed">Completed</button>
-        <button class="filter-btn" data-filter="PendingPayment">Pending Payment</button>
-        <button class="filter-btn" data-filter="Disputed">Disputed</button>
-        <button class="filter-btn" data-filter="Paid">Paid</button>
+        <button class="filter-btn" data-filter="inspection">Inspections</button>
+        <button class="filter-btn" data-filter="marketplace">Marketplace</button>
+        <button class="filter-btn" data-filter="refund">Refunds</button>
       </div>
 
       <div class="billing-list" id="billingList"></div>`
 
     document.getElementById('mainContent').innerHTML = html
-    renderList(allInspections)
+    renderList(allItems)
 
     document.getElementById('filters').addEventListener('click', e => {
       const btn = e.target.closest('.filter-btn')
@@ -222,55 +257,81 @@
       btn.classList.add('active')
       currentFilter = btn.dataset.filter
       const filtered = currentFilter === 'all'
-        ? allInspections
-        : allInspections.filter(i => i.status === currentFilter)
+        ? allItems
+        : currentFilter === 'refund'
+          ? allItems.filter(i => i.amount < 0)
+          : allItems.filter(i => i.kind === currentFilter)
       renderList(filtered)
     })
   }
 
-  function renderList(inspections) {
+  function renderList(items) {
     const container = document.getElementById('billingList')
 
-    if (inspections.length === 0) {
+    if (items.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
           <i class="ti ti-receipt-off"></i>
           <h3>No billing records</h3>
-          <p>Your payment history will appear here once you submit an inspection</p>
+          <p>Your payment history will appear here once you complete your first transaction</p>
         </div>`
       return
     }
 
-    container.innerHTML = inspections.map(insp => {
-      const date = new Date(insp.date)
+    container.innerHTML = items.map(item => {
+      const date = new Date(item.date)
       const day = date.getDate().toString().padStart(2, '0')
       const month = date.toLocaleString('default', { month: 'short' })
-      const amount = insp.pricing_snapshot?.total
-        ? '$' + parseFloat(insp.pricing_snapshot.total).toFixed(2)
-        : '—'
-      const typeLabel = insp.inspection_type === 'external' ? 'External only'
-        : insp.inspection_type === 'internal' ? 'Internal only'
-        : 'Internal & External'
-      const statusLabel = insp.status === 'PendingPayment' ? 'Pending Payment' : insp.status
+      const isRefund = item.amount < 0
+      const amountDisplay = (isRefund ? '−$' : '$') + Math.abs(parseFloat(item.amount) || 0).toFixed(2)
+      const amountColor = isRefund ? 'color:#166534' : ''
+
+      let typeLabel = ''
+      if (item.kind === 'marketplace') {
+        typeLabel = 'Marketplace video'
+      } else if (item.payment_type === 'inspection') {
+        const inspType = item.inspection_type === 'external' ? 'External only'
+          : item.inspection_type === 'internal' ? 'Internal only' : 'Internal & External'
+        typeLabel = inspType
+        if (item.inspection_date) typeLabel += ' · ' + new Date(item.inspection_date).toLocaleDateString('en-AU', { day:'numeric', month:'long', year:'numeric' })
+      } else if (item.payment_type === 'Refund') {
+        typeLabel = 'Full refund issued'
+      } else if (item.payment_type === 'PartialRefund') {
+        typeLabel = 'Partial refund issued'
+      } else {
+        typeLabel = item.payment_type || '—'
+      }
+
+      const statusKey = isRefund ? 'Refunded'
+        : item.status === 'paid' ? 'Paid'
+        : item.status === 'pending' ? 'Pending'
+        : item.status === 'failed' ? 'Disputed'
+        : 'Pending'
+
+      const receiptLink = item.stripe_receipt_url
+        ? `<a class="receipt-row" href="${item.stripe_receipt_url}" target="_blank" onclick="event.stopPropagation()"><i class="ti ti-receipt"></i> View receipt</a>`
+        : item.inspection_id
+          ? `<div class="receipt-row" onclick="event.stopPropagation();window.location.href='inspection-detail.html?id=${item.inspection_id}'"><i class="ti ti-external-link"></i> View inspection</div>`
+          : ''
 
       return `
-        <div class="billing-item" onclick="window.location.href='inspection-detail.html?id=${insp.id}'">
+        <div class="billing-item" ${item.inspection_id ? `onclick="window.location.href='inspection-detail.html?id=${item.inspection_id}'"` : ''}>
           <div class="billing-date">
             <div class="billing-day">${day}</div>
             <div class="billing-month">${month}</div>
           </div>
           <div class="billing-info">
-            <div class="billing-addr">${insp.address}</div>
+            <div class="billing-addr">${item.address}</div>
             <div class="billing-type">
+              <span>${item.kind === 'marketplace' ? '<i class="ti ti-shopping-bag" style="font-size:11px"></i>' : '<i class="ti ti-clipboard-list" style="font-size:11px"></i>'}</span>
               <span>${typeLabel}</span>
-              <span>·</span>
-              <span>${new Date(insp.date).toLocaleDateString('en-AU', { day:'numeric', month:'long', year:'numeric' })}</span>
+              ${item.ref_number ? `<span>·</span><span>#${item.ref_number}</span>` : ''}
             </div>
           </div>
           <div class="billing-right">
-            <div class="billing-amount">${amount}</div>
-            <span class="badge badge-${insp.status}">${statusLabel}</span>
-            <div class="receipt-row"><i class="ti ti-external-link"></i> View inspection</div>
+            <div class="billing-amount" style="${amountColor}">${amountDisplay}</div>
+            <span class="badge badge-${statusKey}">${statusKey}</span>
+            ${receiptLink}
           </div>
         </div>`
     }).join('')

@@ -163,46 +163,67 @@
     }
 
     initNotificationBell(supabase, user.id)
-    const { data: inspections } = await supabase
-      .from('inspections')
-      .select('*')
-      .eq('scout_id', user.id)
-      .in('status', ['Completed', 'PendingPayment', 'Disputed', 'Paid'])
-      .order('created_at', { ascending: false })
 
-    const allInspections = inspections || []
-    renderPage(allInspections)
+    // Fetch actual payout records from payout_batch_items
+    const [{ data: batchItems }, { data: pendingInspections }] = await Promise.all([
+      supabase
+        .from('payout_batch_items')
+        .select('id, amount, status, stripe_transfer_id, paid_at, created_at, failure_reason, inspections(id, address, date, inspection_type, ref_number)')
+        .eq('scout_id', user.id)
+        .order('created_at', { ascending: false }),
+      // Inspections that are Completed or Disputed but not yet in any batch item
+      supabase
+        .from('inspections')
+        .select('id, address, date, inspection_type, status, pricing_snapshot, ref_number')
+        .eq('scout_id', user.id)
+        .in('status', ['Completed', 'Disputed', 'PendingPayment'])
+        .order('created_at', { ascending: false }),
+    ])
+
+    // Find inspection IDs that already have a non-failed batch item
+    const batchedInspectionIds = new Set(
+      (batchItems || [])
+        .filter(b => b.status !== 'failed')
+        .map(b => b.inspections?.id)
+        .filter(Boolean)
+    )
+
+    // Inspections not yet in a batch
+    const unbatchedInspections = (pendingInspections || [])
+      .filter(i => !batchedInspectionIds.has(i.id))
+
+    renderPage(batchItems || [], unbatchedInspections)
   }
 
-  function renderPage(inspections) {
-    const paid = inspections.filter(i => i.status === 'Paid')
-    const pending = inspections.filter(i => i.status === 'PendingPayment')
-    const completed = inspections.filter(i => i.status === 'Completed')
-    const disputed = inspections.filter(i => i.status === 'Disputed')
+  function renderPage(batchItems, unbatchedInspections) {
+    const paidItems = batchItems.filter(b => b.status === 'paid')
+    const processingItems = batchItems.filter(b => b.status === 'processing')
+    const pendingBatchItems = batchItems.filter(b => b.status === 'pending')
 
-    const totalEarned = paid.reduce((sum, i) =>
-      sum + (parseFloat(i.pricing_snapshot?.pay_to_scout) || 0), 0)
-    const pendingAmount = pending.reduce((sum, i) =>
-      sum + (parseFloat(i.pricing_snapshot?.pay_to_scout) || 0), 0)
-    const awaitingAmount = completed.reduce((sum, i) =>
-      sum + (parseFloat(i.pricing_snapshot?.pay_to_scout) || 0), 0)
+    const totalEarned = paidItems.reduce((s, b) => s + (parseFloat(b.amount) || 0), 0)
+    const inBatchAmount = [...processingItems, ...pendingBatchItems]
+      .reduce((s, b) => s + (parseFloat(b.amount) || 0), 0)
+    const awaitingAmount = unbatchedInspections
+      .filter(i => i.status === 'Completed' || i.status === 'PendingPayment')
+      .reduce((s, i) => s + (parseFloat(i.pricing_snapshot?.pay_to_scout) || 0), 0)
+    const disputedCount = unbatchedInspections.filter(i => i.status === 'Disputed').length
 
     const nextTuesday = getNextTuesday()
 
     let html = `
       <div class="hero-card">
         <div class="hero-left">
-          <div class="hero-label">Total earned</div>
+          <div class="hero-label">Total paid out</div>
           <div class="hero-amount">$${totalEarned.toFixed(2)}</div>
-          <div class="hero-sub">${paid.length} completed payout${paid.length !== 1 ? 's' : ''}</div>
+          <div class="hero-sub">${paidItems.length} completed transfer${paidItems.length !== 1 ? 's' : ''}</div>
         </div>
         <div class="hero-right">
           <div class="hero-stat">
-            <div class="hero-stat-val">${inspections.length}</div>
+            <div class="hero-stat-val">${batchItems.length + unbatchedInspections.length}</div>
             <div class="hero-stat-label">Total jobs</div>
           </div>
           <div class="hero-stat">
-            <div class="hero-stat-val">${disputed.length}</div>
+            <div class="hero-stat-val">${disputedCount}</div>
             <div class="hero-stat-label">Disputed</div>
           </div>
         </div>
@@ -215,23 +236,33 @@
         </div>
         <div class="stat-card">
           <div class="stat-label">In batch</div>
-          <div class="stat-val">$${pendingAmount.toFixed(2)}</div>
+          <div class="stat-val">${inBatchAmount > 0 ? '$' + inBatchAmount.toFixed(2) : '—'}</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Awaiting release</div>
-          <div class="stat-val">$${awaitingAmount.toFixed(2)}</div>
+          <div class="stat-val">${awaitingAmount > 0 ? '$' + awaitingAmount.toFixed(2) : '—'}</div>
         </div>
       </div>`
 
-    if (pendingAmount > 0) {
+    if (inBatchAmount > 0) {
+      html += `
+        <div class="next-payout-card">
+          <div class="payout-icon"><i class="ti ti-calendar"></i></div>
+          <div class="payout-info">
+            <div class="payout-title">Transfer in progress</div>
+            <div class="payout-sub">Your payout is being processed — funds should arrive by ${nextTuesday}</div>
+          </div>
+          <div class="payout-amount">$${inBatchAmount.toFixed(2)}</div>
+        </div>`
+    } else if (awaitingAmount > 0) {
       html += `
         <div class="next-payout-card">
           <div class="payout-icon"><i class="ti ti-calendar"></i></div>
           <div class="payout-info">
             <div class="payout-title">Next payout</div>
-            <div class="payout-sub">Scheduled for ${nextTuesday} — payments collected Tuesday to Monday are paid the following Tuesday</div>
+            <div class="payout-sub">Payments are batched weekly — estimated ${nextTuesday}</div>
           </div>
-          <div class="payout-amount">$${pendingAmount.toFixed(2)}</div>
+          <div class="payout-amount">$${awaitingAmount.toFixed(2)}</div>
         </div>`
     }
 
@@ -240,7 +271,39 @@
         <div class="section-title">Earnings history</div>
       </div>`
 
-    if (inspections.length === 0) {
+    // Build unified list: batch items + unbatched inspections, sorted by date
+    const allRows = [
+      ...batchItems.map(b => ({
+        type: 'batch',
+        sortDate: b.paid_at || b.created_at,
+        amount: parseFloat(b.amount) || 0,
+        status: b.status,
+        address: b.inspections?.address || '—',
+        inspection_id: b.inspections?.id,
+        inspection_type: b.inspections?.inspection_type,
+        ref_number: b.inspections?.ref_number,
+        date: b.inspections?.date,
+        transfer_id: b.stripe_transfer_id,
+        failure_reason: b.failure_reason,
+        paid_at: b.paid_at,
+      })),
+      ...unbatchedInspections.map(i => ({
+        type: 'inspection',
+        sortDate: i.date || i.created_at,
+        amount: parseFloat(i.pricing_snapshot?.pay_to_scout) || 0,
+        status: i.status,
+        address: i.address,
+        inspection_id: i.id,
+        inspection_type: i.inspection_type,
+        ref_number: i.ref_number,
+        date: i.date,
+        transfer_id: null,
+        failure_reason: null,
+        paid_at: null,
+      })),
+    ].sort((a, b) => new Date(b.sortDate) - new Date(a.sortDate))
+
+    if (allRows.length === 0) {
       html += `
         <div class="empty-state">
           <i class="ti ti-wallet"></i>
@@ -248,34 +311,60 @@
           <p>Complete your first inspection to start earning</p>
         </div>`
     } else {
+      const statusLabelMap = {
+        paid: 'Paid',
+        processing: 'Processing',
+        pending: 'In batch',
+        failed: 'Failed',
+        reversed: 'Reversed',
+        Completed: 'Awaiting release',
+        PendingPayment: 'Awaiting release',
+        Disputed: 'Disputed',
+      }
+      const statusBadgeMap = {
+        paid: 'Paid',
+        processing: 'Completed',
+        pending: 'PendingPayment',
+        failed: 'Disputed',
+        reversed: 'Disputed',
+        Completed: 'PendingPayment',
+        PendingPayment: 'PendingPayment',
+        Disputed: 'Disputed',
+      }
+
       html += '<div class="earnings-list">'
-      inspections.forEach(insp => {
-        const date = new Date(insp.date)
+      allRows.forEach(row => {
+        const date = row.date ? new Date(row.date) : new Date(row.sortDate)
         const day = date.getDate().toString().padStart(2, '0')
         const month = date.toLocaleString('default', { month: 'short' })
-        const payout = insp.pricing_snapshot?.pay_to_scout
-          ? '$' + parseFloat(insp.pricing_snapshot.pay_to_scout).toFixed(2)
-          : '—'
-        const typeLabel = insp.inspection_type === 'external' ? 'External only'
-          : insp.inspection_type === 'internal' ? 'Internal only'
+        const amountDisplay = row.amount > 0 ? '$' + row.amount.toFixed(2) : '—'
+        const typeLabel = row.inspection_type === 'external' ? 'External only'
+          : row.inspection_type === 'internal' ? 'Internal only'
           : 'Internal & External'
-        const statusLabel = insp.status === 'PendingPayment' ? 'In batch'
-          : insp.status === 'Completed' ? 'Awaiting release'
-          : insp.status
+        const statusLabel = statusLabelMap[row.status] || row.status
+        const badgeKey = statusBadgeMap[row.status] || 'PendingPayment'
+        const paidOnLabel = row.paid_at
+          ? `<div class="earning-type" style="margin-top:2px;font-size:11px">Paid ${new Date(row.paid_at).toLocaleDateString('en-AU', {day:'numeric',month:'short',year:'numeric'})}</div>`
+          : ''
+        const transferLabel = row.transfer_id
+          ? `<div class="earning-type" style="margin-top:2px;font-size:10px;color:#bbb;font-family:monospace">${row.transfer_id.substring(0,20)}…</div>`
+          : ''
 
         html += `
-          <div class="earning-item" onclick="window.location.href='inspection-detail.html?id=${insp.id}'" style="cursor:pointer">
+          <div class="earning-item" ${row.inspection_id ? `onclick="window.location.href='inspection-detail.html?id=${row.inspection_id}'"` : ''} style="cursor:${row.inspection_id?'pointer':'default'}">
             <div class="earning-date-box">
               <div class="earning-day">${day}</div>
               <div class="earning-month">${month}</div>
             </div>
             <div class="earning-info">
-              <div class="earning-addr">${insp.address}</div>
-              <div class="earning-type">${typeLabel}</div>
+              <div class="earning-addr">${row.address}</div>
+              <div class="earning-type">${typeLabel}${row.ref_number ? ' · #' + row.ref_number : ''}</div>
+              ${paidOnLabel}
+              ${transferLabel}
             </div>
             <div class="earning-right">
-              <div class="earning-amount">${payout}</div>
-              <span class="earning-badge badge-${insp.status}">${statusLabel}</span>
+              <div class="earning-amount">${amountDisplay}</div>
+              <span class="earning-badge badge-${badgeKey}">${statusLabel}</span>
             </div>
           </div>`
       })

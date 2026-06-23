@@ -550,9 +550,9 @@
                 </div>
                 <div class="resolution-body">
                   ${[
-                    { val: 'FullRefundToClient', label: 'Full refund to Client', sub: `Full ${amount} refunded — Scout not paid` },
-                    { val: 'PartialRefundToClient', label: 'Partial refund to Client', sub: 'Enter amount in notes — remaining to Scout' },
-                    { val: 'PaymentReleasedToScout', label: 'Release payment to Scout', sub: `${scoutPayout} paid to Scout — no refund to Client` },
+                    { val: 'FullRefundToClient', label: 'Full refund to Client', sub: `Full ${amount} refunded to client via Stripe — Scout not paid` },
+                    { val: 'PartialRefundToClient', label: 'Partial refund to Client', sub: 'Specify amount below — Stripe refund issued immediately' },
+                    { val: 'PaymentReleasedToScout', label: 'Release payment to Scout', sub: `${scoutPayout} queued for next payout batch — no refund to Client` },
                     { val: 'Dismissed', label: 'Dismiss dispute', sub: 'Dismiss without action — no refund, no payout change' }
                   ].map(opt => `
                     <div class="resolution-option ${selectedResolution===opt.val?'selected':''}" onclick="selectResolution('${opt.val}')">
@@ -562,6 +562,10 @@
                         <div class="resolution-option-sub">${opt.sub}</div>
                       </div>
                     </div>`).join('')}
+                  <div id="partialRefundRow" style="display:${selectedResolution==='PartialRefundToClient'?'block':'none'};margin-bottom:10px">
+                    <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px">Refund amount (AUD incl. GST)</label>
+                    <input type="number" id="partialRefundAmount" min="0.01" step="0.01" style="width:100%;border:1.5px solid #E0E0E0;border-radius:8px;padding:10px 12px;font-size:13px;font-family:Inter,sans-serif;outline:none;color:#0D0D0D;height:42px" placeholder="e.g. 49.50">
+                  </div>
                   <textarea class="resolution-notes" id="resolutionNotes" placeholder="Add resolution notes (shown to both parties)..."></textarea>
                   <div class="resolution-actions">
                     <button class="btn-save-draft" onclick="saveDraft()">Save draft</button>
@@ -660,6 +664,8 @@
     })
     const confirmBtn = document.getElementById('confirmResBtn')
     if (confirmBtn) confirmBtn.disabled = false
+    const partialRow = document.getElementById('partialRefundRow')
+    if (partialRow) partialRow.style.display = val === 'PartialRefundToClient' ? 'block' : 'none'
   }
 
   window.saveDraft = async () => {
@@ -670,42 +676,49 @@
   window.confirmResolution = async () => {
     if (!selectedResolution) return
     const notes = document.getElementById('resolutionNotes')?.value?.trim()
+    const partialAmount = document.getElementById('partialRefundAmount')?.value?.trim()
     const confirmBtn = document.getElementById('confirmResBtn')
+
+    if (selectedResolution === 'PartialRefundToClient') {
+      if (!partialAmount || parseFloat(partialAmount) <= 0) {
+        showToast('Please enter a valid refund amount', 'error')
+        return
+      }
+    }
+
     if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Processing...'; }
 
-    const { error } = await supabase
-      .from('disputes')
-      .update({
-        status: selectedResolution === 'Dismissed' ? 'Dismissed' : 'Resolved',
-        resolution: selectedResolution,
-        resolution_notes: notes || null,
-        resolved_by: adminData.id,
-        resolved_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', disputeId)
+    const { data: { session } } = await supabase.auth.getSession()
 
-    if (!error) {
-      if (selectedResolution === 'FullRefundToClient' || selectedResolution === 'PartialRefundToClient') {
-        await supabase.from('inspections').update({ status: 'Cancelled', updated_at: new Date().toISOString() }).eq('id', inspection.id)
-      } else if (selectedResolution === 'PaymentReleasedToScout') {
-        await supabase.from('inspections').update({ status: 'PendingPayment', updated_at: new Date().toISOString() }).eq('id', inspection.id)
+    try {
+      const res = await fetch('https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/dispute-resolve', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          dispute_id: disputeId,
+          resolution: selectedResolution,
+          notes: notes || null,
+          partial_refund_amount: partialAmount ? parseFloat(partialAmount) : undefined
+        })
+      })
+
+      const result = await res.json()
+
+      if (result.success) {
+        const msg = result.refunded
+          ? `Dispute resolved — $${parseFloat(result.amount).toFixed(2)} refunded via Stripe`
+          : 'Dispute resolved successfully'
+        showToast(msg)
+        setTimeout(() => loadDispute(), 1200)
+      } else {
+        showToast('Error: ' + (result.error || 'Unknown error'), 'error')
+        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm resolution'; }
       }
-
-      await supabase.from('admin_actions').insert({
-        admin_id: adminData.id,
-        action_type: 'DisputeResolution',
-        target_table: 'disputes',
-        target_id: disputeId,
-        new_value: selectedResolution,
-        notes: notes || null
-      })
-
-      showToast('Dispute resolved successfully')
-      setTimeout(() => loadDispute(), 1000)
-    } else {
-      console.error('Dispute resolve error:', error)
-      showToast('Error: ' + (error.message || error.code || JSON.stringify(error)), 'error')
+    } catch (e) {
+      showToast('Network error: ' + e.message, 'error')
       if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm resolution'; }
     }
   }

@@ -227,6 +227,20 @@ async function handleInspectionPaymentSucceeded(pi: Stripe.PaymentIntent) {
       .eq('status', 'Draft'),
   ])
 
+  // Store Stripe receipt URL from the charge object
+  try {
+    const piExpanded = await stripe.paymentIntents.retrieve(pi.id, { expand: ['latest_charge'] })
+    const charge = piExpanded.latest_charge as Stripe.Charge
+    if (charge?.receipt_url) {
+      await supabase
+        .from('payments')
+        .update({ stripe_receipt_url: charge.receipt_url })
+        .eq('id', payment.id)
+    }
+  } catch (e) {
+    console.error('Could not store receipt URL:', e)
+  }
+
   try {
     await syncInvoiceToXero(payment.id)
   } catch (xeroErr) {
