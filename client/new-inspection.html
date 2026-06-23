@@ -638,8 +638,6 @@
       <i class="ti ti-circle-check" style="font-size:15px;flex-shrink:0"></i>
       Your inspection has been saved as a draft. Add your card below to confirm the booking.
     </div>
-    <div class="payment-amount-row"><span>Inspection fee (excl. GST)</span><span id="pmFeeExGst">—</span></div>
-    <div class="payment-amount-row"><span>GST (10%)</span><span id="pmGst">—</span></div>
     <div class="payment-total-row"><span class="payment-total-label">Total charged today</span><span class="payment-total-val" id="pmTotal">—</span></div>
     <div style="font-size:12px;color:#999;margin-bottom:14px">Your card will be saved for future inspections.</div>
     <div id="pmCardElement"></div>
@@ -674,8 +672,6 @@
     _pendingInspectionId = inspectionId
 
     if (pricingSnap) {
-      document.getElementById('pmFeeExGst').textContent = '$' + parseFloat(pricingSnap.fee_excluding_gst || 0).toFixed(2)
-      document.getElementById('pmGst').textContent = '$' + parseFloat(pricingSnap.gst || 0).toFixed(2)
       document.getElementById('pmTotal').textContent = '$' + parseFloat(pricingSnap.total || 0).toFixed(2)
     }
 

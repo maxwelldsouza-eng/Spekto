@@ -860,8 +860,6 @@
       </div>
       <div style="font-size:16px;font-weight:700;color:#0D0D0D">Complete Payment</div>
     </div>
-    <div id="dpmFeeRow" style="display:flex;justify-content:space-between;font-size:13px;color:#444;margin-bottom:8px"><span>Inspection fee (excl. GST)</span><span id="dpmFeeExGst">—</span></div>
-    <div id="dpmGstRow" style="display:flex;justify-content:space-between;font-size:13px;color:#444;margin-bottom:12px"><span>GST (10%)</span><span id="dpmGst">—</span></div>
     <div style="display:flex;justify-content:space-between;align-items:center;border-top:1.5px solid #EEE;padding-top:12px;margin-bottom:20px">
       <span style="font-size:14px;font-weight:700;color:#0D0D0D">Total charged today</span>
       <span style="font-size:20px;font-weight:800;color:#560591;font-family:'DM Sans',sans-serif" id="dpmTotal">—</span>
@@ -915,8 +913,6 @@
 
       const snap = result.pricing_snapshot
       if (snap) {
-        document.getElementById('dpmFeeExGst').textContent = '$' + parseFloat(snap.fee_excluding_gst || 0).toFixed(2)
-        document.getElementById('dpmGst').textContent = '$' + parseFloat(snap.gst || 0).toFixed(2)
         document.getElementById('dpmTotal').textContent = '$' + parseFloat(snap.total || 0).toFixed(2)
       }
 
