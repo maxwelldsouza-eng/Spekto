@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <script>window._googleMapsReady = function(){}</script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBDTc3xKB4nlhqjMPRQQTDYFjPiUc8wa1o&libraries=places&callback=_googleMapsReady"></script>
   <style>
     :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; --red: #E53935; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -185,6 +187,31 @@
   let idFileName = null
   let notifEmail = true
   let notifApp = true
+  let _homeLat = null, _homeLng = null
+  const _mapsLoaded = new Promise(resolve => {
+    if (typeof google !== 'undefined' && google.maps) resolve()
+    else window._googleMapsReady = resolve
+  })
+
+  async function setupHomeAddressAutocomplete() {
+    await _mapsLoaded
+    const input = document.getElementById('homeAddress')
+    if (!input) return
+    const ac = new google.maps.places.Autocomplete(input, {
+      types: ['address'],
+      componentRestrictions: { country: 'au' }
+    })
+    ac.addListener('place_changed', () => {
+      const place = ac.getPlace()
+      if (place.geometry?.location) {
+        _homeLat = place.geometry.location.lat()
+        _homeLng = place.geometry.location.lng()
+      } else {
+        _homeLat = null
+        _homeLng = null
+      }
+    })
+  }
 
   const COUNTRIES = {
     'AUS':'Australia','NZL':'New Zealand','GBR':'United Kingdom','IND':'India',
@@ -234,6 +261,8 @@
     serviceAreas = scoutProfile?.service_areas || []
     notifEmail = scoutProfile?.notification_email ?? true
     notifApp = scoutProfile?.notification_in_app ?? true
+    _homeLat = scoutProfile?.home_lat || null
+    _homeLng = scoutProfile?.home_lng || null
 
     renderPage()
   }
@@ -380,6 +409,14 @@
             <div class="hint">Required if you are operating as a sole trader or business.</div>
           </div>
         </div>
+        <div class="field" style="margin-top:4px">
+          <label>Home address</label>
+          <div style="position:relative">
+            <i class="ti ti-map-pin" style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#aaa;font-size:17px;pointer-events:none;z-index:1"></i>
+            <input type="text" id="homeAddress" value="${(scoutProfile?.home_address || '').replace(/"/g, '&quot;')}" placeholder="Start typing your home address..." style="padding-left:40px">
+          </div>
+          <div class="hint">Used to filter available jobs by distance and show jobs on the map.</div>
+        </div>
         <div style="display:flex;justify-content:flex-end;margin-top:6px">
           <button class="btn-save" id="savePersonalBtn">Save changes</button>
         </div>
@@ -515,6 +552,7 @@
     }
 
     document.getElementById('idFileInput').addEventListener('change', handleIdUpload)
+    setupHomeAddressAutocomplete()
   }
 
   async function handleAvatarUpload(e) {
@@ -732,6 +770,7 @@
     const dob = document.getElementById('dob').value
     const abn = document.getElementById('abn').value.trim()
     const idType = document.querySelector('input[name="idType"]:checked')?.value
+    const homeAddress = document.getElementById('homeAddress')?.value.trim() || null
 
     const { error: userError } = await supabase
       .from('users')
@@ -740,7 +779,15 @@
 
     const { error: profileError } = await supabase
       .from('scout_profiles')
-      .update({ date_of_birth: dob || null, abn: abn || null, id_type: idType || null, updated_at: new Date().toISOString() })
+      .update({
+        date_of_birth: dob || null,
+        abn: abn || null,
+        id_type: idType || null,
+        home_address: homeAddress,
+        home_lat: _homeLat,
+        home_lng: _homeLng,
+        updated_at: new Date().toISOString()
+      })
       .eq('user_id', currentUser.id)
 
     btn.disabled = false

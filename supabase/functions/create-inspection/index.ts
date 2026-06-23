@@ -34,7 +34,7 @@ Deno.serve(async (req: Request) => {
   if (authErr || !user) return err('Unauthorized', 401)
 
   const body = await req.json()
-  const { address, inspection_type, date, time, property_link, pricing_snapshot, instructions } = body
+  const { address, inspection_type, date, time, property_link, pricing_snapshot, instructions, latitude, longitude } = body
 
   if (!address || !inspection_type || !date || !time) return err('Missing required fields')
   if (!pricing_snapshot?.total) return err('Missing pricing')
@@ -53,6 +53,8 @@ Deno.serve(async (req: Request) => {
       time,
       property_link: property_link || null,
       pricing_snapshot,
+      latitude: latitude ?? null,
+      longitude: longitude ?? null,
       status: 'Draft',
       created_at: now,
       updated_at: now,

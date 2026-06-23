@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <script>window._googleMapsReady = function(){}</script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBDTc3xKB4nlhqjMPRQQTDYFjPiUc8wa1o&libraries=places&callback=_googleMapsReady"></script>
   <style>
     :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; --red: #DC2626; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -45,6 +47,23 @@
     .tab.active { color: var(--purple); border-bottom-color: var(--purple); }
     .tab .count { display: inline-flex; align-items: center; justify-content: center; background: var(--tint); color: var(--purple); font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px; margin-left: 6px; }
     .tab.active .count { background: var(--purple); color: #fff; }
+    /* Radius filter bar */
+    .filter-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 14px 18px; margin-bottom: 16px; flex-wrap: wrap; }
+    .radius-wrap { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 200px; }
+    .radius-label { font-size: 13px; font-weight: 600; color: #0D0D0D; white-space: nowrap; min-width: 190px; }
+    input[type=range].radius-slider { -webkit-appearance: none; appearance: none; height: 5px; border-radius: 3px; outline: none; cursor: pointer; flex: 1; min-width: 80px; background: linear-gradient(to right, var(--purple) var(--fill, 18%), #E0E0E0 var(--fill, 18%)); }
+    input[type=range].radius-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--purple); border: 3px solid #fff; box-shadow: 0 1px 5px rgba(86,5,145,0.35); cursor: pointer; }
+    input[type=range].radius-slider::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: var(--purple); border: 3px solid #fff; box-shadow: 0 1px 5px rgba(86,5,145,0.35); cursor: pointer; }
+    .view-toggle { display: flex; background: #F7F5FA; border: 1.5px solid #E0E0E0; border-radius: 8px; padding: 3px; gap: 2px; flex-shrink: 0; }
+    .view-btn { height: 34px; padding: 0 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; background: transparent; color: #666; display: flex; align-items: center; gap: 5px; transition: all 0.15s; }
+    .view-btn.active { background: var(--purple); color: #fff; }
+    .view-btn i { font-size: 14px; }
+    /* Nudge banner */
+    .nudge-banner { background: var(--tint); border: 1.5px solid #D4B8F5; border-radius: 12px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 16px; font-size: 13px; color: #560591; line-height: 1.5; }
+    .nudge-banner i { font-size: 20px; flex-shrink: 0; }
+    /* Map container */
+    #mapView { height: 520px; border-radius: 14px; overflow: hidden; margin-bottom: 16px; border: 1px solid var(--border); display: none; }
+    /* Job tiles */
     .tile-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
     .tile { background: #fff; border-radius: 14px; border: 1px solid var(--border); padding: 18px; display: flex; flex-direction: column; gap: 12px; transition: box-shadow 0.15s; }
     .tile:hover { box-shadow: 0 4px 16px rgba(86,5,145,0.08); border-color: #D4B8F5; }
@@ -78,6 +97,7 @@
     .empty-state i { font-size: 40px; color: #ddd; margin-bottom: 16px; display: block; }
     .empty-state h3 { font-size: 16px; font-weight: 600; color: #0D0D0D; margin-bottom: 8px; }
     .empty-state p { font-size: 14px; color: #999; }
+    .empty-state .hint-link { display: inline-block; margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--purple); text-decoration: none; }
     .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
     .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -94,6 +114,9 @@
       .content { padding: 16px; }
       .topbar { padding: 14px 16px; }
       .tile-grid { grid-template-columns: 1fr 1fr; }
+      .filter-bar { flex-direction: column; align-items: stretch; gap: 12px; }
+      .radius-label { min-width: unset; }
+      #mapView { height: 380px; }
     }
     @media (max-width: 420px) { .tile-grid { grid-template-columns: 1fr; } }
   </style>
@@ -167,6 +190,28 @@
         <div class="tab" data-tab="completed">Completed <span class="count" id="countCompleted">0</span></div>
       </div>
 
+      <!-- No home address nudge (available tab only) -->
+      <div class="nudge-banner" id="noHomeNudge" style="display:none">
+        <i class="ti ti-map-pin-exclamation"></i>
+        <div>Set your <a href="settings.html" style="color:var(--purple);font-weight:700;text-decoration:none">home address in Settings</a> to filter jobs by distance and view them on a map.</div>
+      </div>
+
+      <!-- Radius filter bar + view toggle (available tab, home address set) -->
+      <div class="filter-bar" id="filterBar" style="display:none">
+        <div class="radius-wrap">
+          <i class="ti ti-target" style="font-size:18px;color:var(--purple);flex-shrink:0"></i>
+          <span class="radius-label" id="radiusLabel">Showing jobs within 10 km</span>
+          <input type="range" class="radius-slider" id="radiusSlider" min="1" max="50" step="1" value="10">
+        </div>
+        <div class="view-toggle">
+          <button class="view-btn active" id="viewListBtn"><i class="ti ti-layout-grid"></i> List</button>
+          <button class="view-btn" id="viewMapBtn"><i class="ti ti-map"></i> Map</button>
+        </div>
+      </div>
+
+      <!-- Google Map (hidden until map view selected) -->
+      <div id="mapView"></div>
+
       <div id="inspectionContainer">
         <div class="loading"><div class="spinner"></div> Loading jobs...</div>
       </div>
@@ -190,6 +235,18 @@
   let myActiveInspections = []
   let myCompletedInspections = []
   let currentTab = 'available'
+
+  // Radius / map state
+  let scoutHomeLat = null, scoutHomeLng = null
+  let currentRadius = 10
+  let currentViewMode = 'list'
+  let mapInstance = null, homeMarker = null, inspectionMarkers = [], radiusCircle = null
+  let debounceTimer = null
+
+  const _mapsLoaded = new Promise(resolve => {
+    if (typeof google !== 'undefined' && google.maps) resolve()
+    else window._googleMapsReady = resolve
+  })
 
   async function init() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -216,16 +273,26 @@
     }
 
     const [{ data: scoutProfile }, { data: ratingData }] = await Promise.all([
-      supabase.from('scout_profiles').select('id_verified').eq('user_id', currentUser.id).single(),
+      supabase.from('scout_profiles')
+        .select('id_verified, home_lat, home_lng, preferred_radius_km, home_address')
+        .eq('user_id', currentUser.id).single(),
       supabase.from('scout_rating_summary').select('*').eq('scout_id', currentUser.id).maybeSingle()
     ])
+
     scoutVerified = scoutProfile?.id_verified === true
     ratingSummary = ratingData
+
+    if (scoutProfile?.home_lat && scoutProfile?.home_lng) {
+      scoutHomeLat = scoutProfile.home_lat
+      scoutHomeLng = scoutProfile.home_lng
+    }
+    currentRadius = scoutProfile?.preferred_radius_km || 10
 
     initNotificationBell(supabase, currentUser.id)
     renderRatingWidget()
     await loadAll()
     setupRoleToggle()
+    initRadiusUI()
   }
 
   async function loadAll() {
@@ -235,13 +302,23 @@
   }
 
   async function loadAvailable() {
-    const { data } = await supabase
-      .from('inspections')
-      .select('*')
-      .eq('status', 'Posted')
-      .neq('client_id', currentUser.id)
-      .order('date', { ascending: true })
-    availableInspections = data || []
+    if (scoutHomeLat && scoutHomeLng) {
+      const { data } = await supabase
+        .rpc('get_inspections_within_radius', {
+          scout_lat: scoutHomeLat,
+          scout_lng: scoutHomeLng,
+          radius_km: currentRadius
+        })
+      availableInspections = (data || []).filter(i => i.client_id !== currentUser.id)
+    } else {
+      const { data } = await supabase
+        .from('inspections')
+        .select('*')
+        .eq('status', 'Posted')
+        .neq('client_id', currentUser.id)
+        .order('date', { ascending: true })
+      availableInspections = data || []
+    }
   }
 
   async function loadMyJobs() {
@@ -290,17 +367,44 @@
   }
 
   function renderTab(tab) {
+    const filterBar = document.getElementById('filterBar')
+    const noHomeNudge = document.getElementById('noHomeNudge')
+    const mapView = document.getElementById('mapView')
+    const container = document.getElementById('inspectionContainer')
+
+    if (tab === 'available') {
+      if (scoutHomeLat && scoutHomeLng) {
+        filterBar.style.display = 'flex'
+        noHomeNudge.style.display = 'none'
+      } else {
+        filterBar.style.display = 'none'
+        noHomeNudge.style.display = 'flex'
+      }
+    } else {
+      filterBar.style.display = 'none'
+      noHomeNudge.style.display = 'none'
+      // Reset to list view when leaving available tab
+      if (currentViewMode === 'map') {
+        currentViewMode = 'list'
+        mapView.style.display = 'none'
+        container.style.display = ''
+        document.getElementById('viewListBtn')?.classList.add('active')
+        document.getElementById('viewMapBtn')?.classList.remove('active')
+      }
+    }
+
     const inspections = tab === 'available' ? availableInspections
       : tab === 'active' ? myActiveInspections
       : myCompletedInspections
 
+    const hasRadius = scoutHomeLat && tab === 'available'
     const emptyMessages = {
-      available: { icon: 'ti-map-search', heading: 'No available jobs', sub: 'New inspection jobs in your area will appear here.' },
-      active: { icon: 'ti-camera', heading: 'No active jobs', sub: 'Accept an available inspection to get started.' },
-      completed: { icon: 'ti-circle-check', heading: 'No completed jobs yet', sub: 'Completed inspections will appear here.' }
+      available: hasRadius
+        ? { icon: 'ti-map-search', heading: `No jobs within ${currentRadius} km`, sub: 'No available jobs found in your radius.', hint: 'Try increasing your radius with the slider above.' }
+        : { icon: 'ti-map-search', heading: 'No available jobs', sub: 'New inspection jobs in your area will appear here.', hint: null },
+      active: { icon: 'ti-camera', heading: 'No active jobs', sub: 'Accept an available inspection to get started.', hint: null },
+      completed: { icon: 'ti-circle-check', heading: 'No completed jobs yet', sub: 'Completed inspections will appear here.', hint: null }
     }
-
-    const container = document.getElementById('inspectionContainer')
 
     if (inspections.length === 0) {
       const msg = emptyMessages[tab]
@@ -309,6 +413,7 @@
           <i class="ti ${msg.icon}"></i>
           <h3>${msg.heading}</h3>
           <p>${msg.sub}</p>
+          ${msg.hint ? `<span class="hint-link">${msg.hint}</span>` : ''}
         </div>`
       return
     }
@@ -366,6 +471,149 @@
     container.appendChild(grid)
   }
 
+  // ── Radius filter & view toggle ──────────────────────────────────────────
+
+  function initRadiusUI() {
+    if (!scoutHomeLat || !scoutHomeLng) return
+
+    const slider = document.getElementById('radiusSlider')
+    slider.value = currentRadius
+    updateSliderFill(slider, currentRadius)
+    document.getElementById('radiusLabel').textContent = `Showing jobs within ${currentRadius} km`
+
+    slider.addEventListener('input', function() {
+      const val = parseInt(this.value)
+      document.getElementById('radiusLabel').textContent = `Showing jobs within ${val} km`
+      updateSliderFill(this, val)
+      if (radiusCircle) radiusCircle.setRadius(val * 1000)
+      clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(async () => {
+        currentRadius = val
+        await loadAvailable()
+        if (currentViewMode === 'list') {
+          renderTab('available')
+        } else {
+          updateMapMarkers()
+        }
+        updateStats()
+        supabase.from('scout_profiles').update({ preferred_radius_km: val }).eq('user_id', currentUser.id)
+      }, 300)
+    })
+
+    document.getElementById('viewListBtn').addEventListener('click', () => setView('list'))
+    document.getElementById('viewMapBtn').addEventListener('click', () => setView('map'))
+  }
+
+  function updateSliderFill(slider, val) {
+    const pct = Math.round(((val - 1) / 49) * 100)
+    slider.style.setProperty('--fill', pct + '%')
+  }
+
+  window.setView = function(mode) {
+    currentViewMode = mode
+    document.getElementById('viewListBtn').classList.toggle('active', mode === 'list')
+    document.getElementById('viewMapBtn').classList.toggle('active', mode === 'map')
+    document.getElementById('inspectionContainer').style.display = mode === 'list' ? '' : 'none'
+    const mapDiv = document.getElementById('mapView')
+    mapDiv.style.display = mode === 'map' ? 'block' : 'none'
+    if (mode === 'map') {
+      if (!mapInstance) _mapsLoaded.then(initMap)
+      else updateMapMarkers()
+    }
+  }
+
+  // ── Google Maps ──────────────────────────────────────────────────────────
+
+  function initMap() {
+    const homePos = { lat: scoutHomeLat, lng: scoutHomeLng }
+    mapInstance = new google.maps.Map(document.getElementById('mapView'), {
+      center: homePos,
+      zoom: radiusToZoom(currentRadius),
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: true,
+      zoomControl: true,
+      styles: [{ featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }]
+    })
+
+    const homePin = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30"><circle cx="15" cy="15" r="13" fill="#22C55E" stroke="white" stroke-width="3"/><circle cx="15" cy="15" r="6" fill="white"/></svg>`
+    homeMarker = new google.maps.Marker({
+      position: homePos,
+      map: mapInstance,
+      title: 'Your home',
+      zIndex: 999,
+      icon: {
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(homePin),
+        scaledSize: new google.maps.Size(30, 30),
+        anchor: new google.maps.Point(15, 15)
+      }
+    })
+
+    const homeInfoWindow = new google.maps.InfoWindow({ content: '<div style="font-size:12px;font-weight:600;padding:4px 6px">Your home location</div>' })
+    homeMarker.addListener('click', () => homeInfoWindow.open(mapInstance, homeMarker))
+
+    radiusCircle = new google.maps.Circle({
+      map: mapInstance,
+      center: homePos,
+      radius: currentRadius * 1000,
+      fillColor: '#560591',
+      fillOpacity: 0.07,
+      strokeColor: '#560591',
+      strokeWeight: 2,
+      strokeOpacity: 0.35
+    })
+
+    updateMapMarkers()
+  }
+
+  function updateMapMarkers() {
+    inspectionMarkers.forEach(m => m.setMap(null))
+    inspectionMarkers = []
+
+    const pin = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 24 32"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20S24 21 24 12C24 5.4 18.6 0 12 0z" fill="#560591"/><circle cx="12" cy="12" r="4.5" fill="white"/></svg>`
+    const iconUrl = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(pin)
+
+    availableInspections.forEach(insp => {
+      if (!insp.latitude || !insp.longitude) return
+      const marker = new google.maps.Marker({
+        position: { lat: insp.latitude, lng: insp.longitude },
+        map: mapInstance,
+        title: insp.address,
+        icon: {
+          url: iconUrl,
+          scaledSize: new google.maps.Size(24, 32),
+          anchor: new google.maps.Point(12, 32)
+        }
+      })
+      const payout = insp.pricing_snapshot?.pay_to_scout
+        ? '$' + parseFloat(insp.pricing_snapshot.pay_to_scout).toFixed(2) + ' payout'
+        : ''
+      const iw = new google.maps.InfoWindow({
+        content: `<div style="font-size:12px;min-width:160px;padding:4px 2px">
+          <div style="font-weight:700;color:#0D0D0D;margin-bottom:3px">${insp.address}</div>
+          <div style="color:#999;margin-bottom:6px">${insp.date} · ${insp.time?.slice(0,5) || ''}</div>
+          ${payout ? `<div style="color:#166534;font-weight:600">${payout}</div>` : ''}
+          <button onclick="window.viewJob('${insp.id}')" style="margin-top:8px;width:100%;height:28px;background:#560591;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif">View Details</button>
+        </div>`
+      })
+      marker.addListener('click', () => {
+        iw.open(mapInstance, marker)
+      })
+      inspectionMarkers.push(marker)
+    })
+  }
+
+  function radiusToZoom(km) {
+    if (km <= 2) return 14
+    if (km <= 5) return 13
+    if (km <= 10) return 12
+    if (km <= 20) return 11
+    if (km <= 35) return 10
+    return 9
+  }
+
+  // ── Tabs ─────────────────────────────────────────────────────────────────
+
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
@@ -374,6 +622,8 @@
       renderTab(currentTab)
     })
   })
+
+  // ── Accept / decline / view ──────────────────────────────────────────────
 
   function showVerificationModal() {
     document.getElementById('verifyGateModal')?.remove()

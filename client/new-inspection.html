@@ -9,6 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
   <script src="https://js.stripe.com/v3/"></script>
+  <script>window._googleMapsReady = function(){}</script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBDTc3xKB4nlhqjMPRQQTDYFjPiUc8wa1o&libraries=places&callback=_googleMapsReady"></script>
   <style>
     :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --red: #E53935; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -354,6 +356,30 @@
   let pricing = {}
   let currentUser = null
   let editId = null
+  let _lat = null, _lng = null
+  const _mapsLoaded = new Promise(resolve => {
+    if (typeof google !== 'undefined' && google.maps) resolve()
+    else window._googleMapsReady = resolve
+  })
+
+  async function setupAddressAutocomplete() {
+    await _mapsLoaded
+    const input = document.getElementById('address')
+    const ac = new google.maps.places.Autocomplete(input, {
+      types: ['address'],
+      componentRestrictions: { country: 'au' }
+    })
+    ac.addListener('place_changed', () => {
+      const place = ac.getPlace()
+      if (place.geometry?.location) {
+        _lat = place.geometry.location.lat()
+        _lng = place.geometry.location.lng()
+      } else {
+        _lat = null
+        _lng = null
+      }
+    })
+  }
 
   async function init() {
     const params = new URLSearchParams(window.location.search)
@@ -385,6 +411,8 @@
     if (editId) {
       await loadInspectionForEdit(editId)
     }
+
+    setupAddressAutocomplete()
   }
 
   async function loadInspectionForEdit(id) {
@@ -406,6 +434,8 @@
     // Pre-populate property
     document.getElementById('address').value = insp.address || ''
     document.getElementById('propertyLink').value = insp.property_link || ''
+    _lat = insp.latitude || null
+    _lng = insp.longitude || null
 
     // Pre-populate inspection type
     if (insp.inspection_type) {
@@ -537,7 +567,9 @@
           time: document.getElementById('inspTime').value,
           inspection_type: inspectionType,
           property_link: document.getElementById('propertyLink').value.trim() || null,
-          pricing_snapshot: pricingPayload
+          pricing_snapshot: pricingPayload,
+          latitude: _lat,
+          longitude: _lng
         })
         .eq('id', editId)
 
@@ -578,7 +610,9 @@
             time: document.getElementById('inspTime').value,
             property_link: document.getElementById('propertyLink').value.trim() || null,
             pricing_snapshot: pricingPayload,
-            instructions
+            instructions,
+            latitude: _lat,
+            longitude: _lng
           })
         })
 
@@ -717,8 +751,7 @@
 
     const stripe = getStripe()
     const { paymentIntent, error } = await stripe.confirmCardPayment(_pendingClientSecret, {
-      payment_method: { card: _cardElement },
-      setup_future_usage: 'off_session'
+      payment_method: { card: _cardElement }
     })
 
     if (error) {
