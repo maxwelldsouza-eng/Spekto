@@ -166,11 +166,12 @@
 
     initNotificationBell(supabase, user.id)
 
-    // Fetch payments joined with inspections (the real charge records)
-    const { data: payments } = await supabase
-      .from('payments')
-      .select('id, amount, status, payment_type, paid_at, created_at, stripe_receipt_url, stripe_payment_intent_id, inspections(id, address, date, inspection_type, status, ref_number)')
+    // Payments table is empty (Stripe not yet live) — derive billing history from inspections directly
+    const { data: inspections } = await supabase
+      .from('inspections')
+      .select('id, ref_number, address, date, inspection_type, status, pricing_snapshot, created_at, updated_at')
       .eq('client_id', user.id)
+      .not('status', 'in', '("Draft","Posted","Cancelled")')
       .order('created_at', { ascending: false })
 
     // Fetch marketplace purchases
@@ -180,21 +181,29 @@
       .eq('buyer_id', user.id)
       .order('created_at', { ascending: false })
 
-    // Normalise into unified items array
-    const paymentItems = (payments || []).map(p => ({
+    // Map inspection status → billing status label
+    function inspStatusToBilling(status) {
+      if (status === 'Paid') return 'paid'
+      if (status === 'Disputed') return 'disputed'
+      if (status === 'Cancelled') return 'refunded'
+      return 'pending' // Accepted, InProgress, Completed, PendingPayment
+    }
+
+    // Normalise inspections into unified items array
+    const paymentItems = (inspections || []).map(p => ({
       id: p.id,
       kind: 'inspection',
-      amount: p.amount,
-      status: p.status,
-      payment_type: p.payment_type,
-      date: p.paid_at || p.created_at,
-      address: p.inspections?.address || '—',
-      inspection_id: p.inspections?.id,
-      inspection_status: p.inspections?.status,
-      ref_number: p.inspections?.ref_number,
-      inspection_type: p.inspections?.inspection_type,
-      inspection_date: p.inspections?.date,
-      stripe_receipt_url: p.stripe_receipt_url,
+      amount: p.pricing_snapshot?.total || 0,
+      status: inspStatusToBilling(p.status),
+      payment_type: 'inspection',
+      date: p.updated_at || p.created_at,
+      address: p.address || '—',
+      inspection_id: p.id,
+      inspection_status: p.status,
+      ref_number: p.ref_number,
+      inspection_type: p.inspection_type,
+      inspection_date: p.date,
+      stripe_receipt_url: null,
     }))
 
     const purchaseItems = (purchases || []).map(p => ({
@@ -215,11 +224,13 @@
   }
 
   function renderPage() {
-    const chargedItems = allItems.filter(i => i.amount > 0 && i.status === 'paid')
-    const totalSpent = chargedItems.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0)
-    const refundItems = allItems.filter(i => i.amount < 0)
+    const inspectionItems = allItems.filter(i => i.kind === 'inspection' && i.amount > 0)
+    const paidItems = inspectionItems.filter(i => i.status === 'paid')
+    const totalSpent = paidItems.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0)
+    const refundItems = allItems.filter(i => i.amount < 0 || i.status === 'refunded')
     const totalRefunded = refundItems.reduce((s, i) => s + Math.abs(parseFloat(i.amount) || 0), 0)
-    const pendingItems = allItems.filter(i => i.status === 'pending')
+    // For transaction count: all inspections plus marketplace purchases that have a real amount
+    const chargedItems = allItems.filter(i => i.amount > 0)
     const disputedInspections = allItems.filter(i => i.inspection_status === 'Disputed')
 
     let html = `
@@ -306,7 +317,10 @@
         typeLabel = item.payment_type || '—'
       }
 
+      // For inspection-derived items, use the actual inspection status for the badge
+      // For marketplace/payments items, map the billing status
       const statusKey = isRefund ? 'Refunded'
+        : item.inspection_status ? item.inspection_status
         : item.status === 'paid' ? 'Paid'
         : item.status === 'pending' ? 'Pending'
         : item.status === 'failed' ? 'Disputed'
