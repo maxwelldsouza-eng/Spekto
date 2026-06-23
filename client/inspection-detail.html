@@ -850,6 +850,105 @@
       document.getElementById('sidebarOverlay').classList.remove('open')
     })
   })
+
+  // ── Payment modal for Draft inspections ──
+  const DETAIL_SUPABASE_URL = 'https://nyvnvtxhlnjvfhcmnihh.supabase.co'
+  const DETAIL_STRIPE_PK = 'pk_test_51TjpX1COe0yffLUxk6l80GdxR4O0xOViTSHetQPTyvSaJuNkVzJyN1xGy3Ylz22Z8BYQl5VsQ3zkvs6XfSmVpnKk00qfObOPTi'
+  let _dpmStripe = null
+  let _dpmCard = null
+  let _dpmClientSecret = null
+  let _dpmInspectionId = null
+
+  function getDpmStripe() {
+    if (!_dpmStripe) _dpmStripe = Stripe(DETAIL_STRIPE_PK)
+    return _dpmStripe
+  }
+
+  async function handleCompletePayment() {
+    const overlay = document.getElementById('detailPaymentOverlay')
+    const payBtn = document.getElementById('dpmPay')
+    payBtn.disabled = true
+    payBtn.textContent = 'Loading...'
+    document.getElementById('dpmError').textContent = ''
+    overlay.style.display = 'flex'
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`${DETAIL_SUPABASE_URL}/functions/v1/resume-inspection-payment`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inspection_id: inspectionId })
+      })
+      const result = await res.json()
+      if (!res.ok) {
+        overlay.style.display = 'none'
+        alert('Could not set up payment: ' + (result.error ?? 'Unknown error'))
+        return
+      }
+
+      _dpmClientSecret = result.client_secret
+      _dpmInspectionId = result.inspection_id
+
+      const snap = result.pricing_snapshot
+      if (snap) {
+        document.getElementById('dpmTotal').textContent = '$' + parseFloat(snap.total || 0).toFixed(2)
+      }
+
+      const stripe = getDpmStripe()
+      if (!_dpmCard) {
+        const elements = stripe.elements()
+        _dpmCard = elements.create('card', {
+          style: { base: { fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#0D0D0D', '::placeholder': { color: '#bbb' } } }
+        })
+      }
+      _dpmCard.mount('#dpmCardElement')
+      payBtn.disabled = false
+      payBtn.textContent = 'Confirm & Pay'
+    } catch (e) {
+      overlay.style.display = 'none'
+      alert('Unexpected error: ' + e.message)
+    }
+  }
+
+  document.getElementById('dpmCancel').addEventListener('click', () => {
+    document.getElementById('detailPaymentOverlay').style.display = 'none'
+    if (_dpmCard) _dpmCard.unmount()
+    _dpmClientSecret = null
+  })
+
+  document.getElementById('dpmPay').addEventListener('click', async () => {
+    const payBtn = document.getElementById('dpmPay')
+    const errorEl = document.getElementById('dpmError')
+    payBtn.disabled = true
+    payBtn.textContent = 'Processing...'
+    errorEl.textContent = ''
+
+    const stripe = getDpmStripe()
+    const { paymentIntent, error } = await stripe.confirmCardPayment(_dpmClientSecret, {
+      payment_method: { card: _dpmCard }
+    })
+
+    if (error) {
+      errorEl.textContent = error.message
+      payBtn.disabled = false
+      payBtn.textContent = 'Confirm & Pay'
+      return
+    }
+
+    if (paymentIntent.status === 'succeeded') {
+      await supabase
+        .from('inspections')
+        .update({ status: 'Posted', updated_at: new Date().toISOString() })
+        .eq('id', _dpmInspectionId)
+
+      document.getElementById('detailPaymentOverlay').style.display = 'none'
+      inspection.status = 'Posted'
+      document.getElementById('statusBadge').className = 'badge badge-Posted'
+      document.getElementById('statusBadge').textContent = 'Posted'
+      renderActions()
+      renderContent()
+    }
+  })
 </script>
 
 <!-- Payment modal for completing Draft inspections -->
@@ -874,106 +973,5 @@
   </div>
 </div>
 
-<script>
-  const DETAIL_SUPABASE_URL = 'https://nyvnvtxhlnjvfhcmnihh.supabase.co'
-  const DETAIL_STRIPE_PK = 'pk_test_51TjpX1COe0yffLUxk6l80GdxR4O0xOViTSHetQPTyvSaJuNkVzJyN1xGy3Ylz22Z8BYQl5VsQ3zkvs6XfSmVpnKk00qfObOPTi'
-  let _dpmStripe = null
-  let _dpmCard = null
-  let _dpmClientSecret = null
-  let _dpmInspectionId = null
-
-  function getStripe() {
-    if (!_dpmStripe) _dpmStripe = Stripe(DETAIL_STRIPE_PK)
-    return _dpmStripe
-  }
-
-  async function handleCompletePayment() {
-    const overlay = document.getElementById('detailPaymentOverlay')
-    const payBtn = document.getElementById('dpmPay')
-    payBtn.disabled = true
-    payBtn.textContent = 'Loading...'
-    document.getElementById('dpmError').textContent = ''
-    overlay.style.display = 'flex'
-
-    try {
-      const { data: { session } } = await window._supabaseClient.auth.getSession()
-      const res = await fetch(`${DETAIL_SUPABASE_URL}/functions/v1/resume-inspection-payment`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ inspection_id: inspectionId })
-      })
-      const result = await res.json()
-      if (!res.ok) {
-        overlay.style.display = 'none'
-        alert('Could not set up payment: ' + (result.error ?? 'Unknown error'))
-        return
-      }
-
-      _dpmClientSecret = result.client_secret
-      _dpmInspectionId = result.inspection_id
-
-      const snap = result.pricing_snapshot
-      if (snap) {
-        document.getElementById('dpmTotal').textContent = '$' + parseFloat(snap.total || 0).toFixed(2)
-      }
-
-      const stripe = getStripe()
-      if (!_dpmCard) {
-        const elements = stripe.elements()
-        _dpmCard = elements.create('card', {
-          style: { base: { fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#0D0D0D', '::placeholder': { color: '#bbb' } } }
-        })
-      }
-      _dpmCard.mount('#dpmCardElement')
-      payBtn.disabled = false
-      payBtn.textContent = 'Confirm & Pay'
-    } catch (e) {
-      overlay.style.display = 'none'
-      alert('Unexpected error: ' + e.message)
-    }
-  }
-
-  window.handleCompletePayment = handleCompletePayment
-
-  document.getElementById('dpmCancel').addEventListener('click', () => {
-    document.getElementById('detailPaymentOverlay').style.display = 'none'
-    if (_dpmCard) _dpmCard.unmount()
-    _dpmClientSecret = null
-  })
-
-  document.getElementById('dpmPay').addEventListener('click', async () => {
-    const payBtn = document.getElementById('dpmPay')
-    const errorEl = document.getElementById('dpmError')
-    payBtn.disabled = true
-    payBtn.textContent = 'Processing...'
-    errorEl.textContent = ''
-
-    const stripe = getStripe()
-    const { paymentIntent, error } = await stripe.confirmCardPayment(_dpmClientSecret, {
-      payment_method: { card: _dpmCard }
-    })
-
-    if (error) {
-      errorEl.textContent = error.message
-      payBtn.disabled = false
-      payBtn.textContent = 'Confirm & Pay'
-      return
-    }
-
-    if (paymentIntent.status === 'succeeded') {
-      await window._supabaseClient
-        .from('inspections')
-        .update({ status: 'Posted', updated_at: new Date().toISOString() })
-        .eq('id', _dpmInspectionId)
-
-      document.getElementById('detailPaymentOverlay').style.display = 'none'
-      inspection.status = 'Posted'
-      document.getElementById('statusBadge').className = 'badge badge-Posted'
-      document.getElementById('statusBadge').textContent = 'Posted'
-      renderActions()
-      renderContent()
-    }
-  })
-</script>
 </body>
 </html>
