@@ -24,7 +24,8 @@
     .nav-item i { font-size: 17px; }
     .sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
     .user-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
-    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; overflow: hidden; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
     .user-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500; }
     .btn-logout-sm { width: 28px; height: 28px; background: rgba(255,255,255,0.08); border: none; border-radius: 6px; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
     .btn-logout-sm:hover { background: rgba(255,255,255,0.15); color: #fff; }
@@ -94,6 +95,17 @@
     .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
     .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .profile-hero { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #F3F3F3; }
+    .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: var(--tint); border: 3px solid #D4B8F5; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: var(--purple); font-family: 'DM Sans', sans-serif; flex-shrink: 0; position: relative; cursor: pointer; overflow: hidden; }
+    .profile-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .avatar-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.18s; }
+    .profile-avatar:hover .avatar-overlay { opacity: 1; }
+    .avatar-overlay i { font-size: 20px; color: #fff; }
+    .avatar-uploading { position: absolute; inset: 0; background: rgba(0,0,0,0.55); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .avatar-uploading-spinner { width: 22px; height: 22px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; animation: spin 0.8s linear infinite; }
+    .profile-name { font-size: 18px; font-weight: 700; color: #0D0D0D; }
+    .profile-email { font-size: 13px; color: #999; margin-top: 3px; }
+    .profile-member { font-size: 11px; color: #bbb; margin-top: 4px; }
     .menu-toggle { display: none; width: 36px; height: 36px; border: none; background: transparent; cursor: pointer; align-items: center; justify-content: center; border-radius: 8px; padding: 0; flex-shrink: 0; }
     .menu-toggle i { font-size: 22px; color: #555; }
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 99; }
@@ -211,7 +223,11 @@
 
     if (userData) {
       const initials = (userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')
-      document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      if (userData.avatar_url) {
+        document.getElementById('userAvatar').innerHTML = `<img src="${userData.avatar_url}" alt="Avatar">`
+      } else {
+        document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      }
       document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
     }
 
@@ -308,8 +324,27 @@
   function renderPage() {
     const idUploaded = !!scoutProfile?.id_document_url
 
+    const initials2 = (userData?.first_name?.[0] || '') + (userData?.last_name?.[0] || '')
+    const memberSince = userData?.created_at
+      ? new Date(userData.created_at).toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })
+      : ''
+
     document.getElementById('mainContent').innerHTML = `
       <div class="card">
+        <div class="profile-hero">
+          <label for="avatarInput" style="display:contents">
+            <div class="profile-avatar" id="profileAvatarEl">
+              ${userData?.avatar_url ? `<img src="${userData.avatar_url}" alt="Profile picture">` : `<span id="profileInitials">${initials2.toUpperCase()}</span>`}
+              <div class="avatar-overlay"><i class="ti ti-camera"></i></div>
+            </div>
+          </label>
+          <input type="file" id="avatarInput" accept="image/*" style="display:none">
+          <div>
+            <div class="profile-name">${userData?.first_name || ''} ${userData?.last_name || ''}</div>
+            <div class="profile-email">${userData?.email || ''}</div>
+            <div class="profile-member">Member since ${memberSince}</div>
+          </div>
+        </div>
         <div class="card-header">
           <div class="card-title"><i class="ti ti-user"></i> Personal details</div>
         </div>
@@ -462,6 +497,7 @@
     document.getElementById('resetPasswordBtn').addEventListener('click', sendPasswordReset)
     document.getElementById('logoutBtn').addEventListener('click', handleLogout)
     document.getElementById('sidebarLogoutBtn').addEventListener('click', handleLogout)
+    document.getElementById('avatarInput').addEventListener('change', handleAvatarUpload)
 
     const areaInput = document.getElementById('areaInput')
     if (areaInput) {
@@ -479,6 +515,53 @@
     }
 
     document.getElementById('idFileInput').addEventListener('change', handleIdUpload)
+  }
+
+  async function handleAvatarUpload(e) {
+    const file = e.target.files[0]
+    if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image must be under 5MB.', 'error')
+      e.target.value = ''
+      return
+    }
+
+    const avatarEl = document.getElementById('profileAvatarEl')
+    const uploadingDiv = document.createElement('div')
+    uploadingDiv.className = 'avatar-uploading'
+    uploadingDiv.innerHTML = '<div class="avatar-uploading-spinner"></div>'
+    avatarEl.appendChild(uploadingDiv)
+
+    try {
+      const ext = file.name.split('.').pop().toLowerCase()
+      const path = `${currentUser.id}/avatar.${ext}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(path, file, { upsert: true, contentType: file.type })
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+      const publicUrlWithBust = publicUrl + '?t=' + Date.now()
+
+      const { error: dbError } = await supabase
+        .from('users')
+        .update({ avatar_url: publicUrl })
+        .eq('id', currentUser.id)
+
+      if (dbError) throw dbError
+
+      userData.avatar_url = publicUrl
+      avatarEl.innerHTML = `<img src="${publicUrlWithBust}" alt="Profile picture"><div class="avatar-overlay"><i class="ti ti-camera"></i></div>`
+      document.getElementById('userAvatar').innerHTML = `<img src="${publicUrlWithBust}" alt="Avatar">`
+      showToast('Profile picture updated')
+    } catch (err) {
+      showToast('Failed to upload image', 'error')
+      uploadingDiv.remove()
+    }
+    e.target.value = ''
   }
 
   function setupAreaInput() {
@@ -667,7 +750,9 @@
       showToast('Error saving changes. Please try again.', 'error')
     } else {
       const initials = (firstName?.[0] || '') + (lastName?.[0] || '')
-      document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      if (!userData?.avatar_url) {
+        document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      }
       document.getElementById('userName').textContent = firstName + ' ' + lastName
       showToast('Personal details saved successfully')
     }
