@@ -534,6 +534,7 @@
       if (!cardElement) {
         const elements = getStripe().elements()
         cardElement = elements.create('card', {
+          hidePostalCode: true,
           style: {
             base: { fontFamily: 'Inter, sans-serif', fontSize: '15px', color: '#0D0D0D', '::placeholder': { color: '#bbb' } },
           },
