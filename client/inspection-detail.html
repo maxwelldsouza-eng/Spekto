@@ -135,7 +135,7 @@
     /* ---- Rating ---- */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; }
     .modal-overlay.hidden { display: none; }
-    .modal-box { background: #fff; border-radius: 16px; width: 100%; max-width: 480px; padding: 28px; }
+    .modal-box { background: #fff; border-radius: 16px; width: 100%; max-width: 560px; padding: 28px; }
     .modal-title { font-size: 18px; font-weight: 700; color: #0D0D0D; margin-bottom: 4px; }
     .modal-sub { font-size: 13px; color: #888; margin-bottom: 20px; }
     .stars-row { display: flex; gap: 8px; margin-bottom: 20px; justify-content: center; }
@@ -816,7 +816,7 @@
     document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('active'))
     document.getElementById('submitRatingBtn').disabled = true
     document.getElementById('ratingComment').value = ''
-    document.getElementById('attrChips').innerHTML = `<div class="tag-options">${RATING_ATTRIBUTES.map(attr =>
+    document.getElementById('attrChips').innerHTML = `<div class="tag-options">${RATING_ATTRIBUTES.slice(0, 5).map(attr =>
       `<button type="button" class="tag-option" data-key="${attr.key}">${attr.label}</button>`
     ).join('')}</div>`
     document.querySelectorAll('.star-btn').forEach(btn => {
