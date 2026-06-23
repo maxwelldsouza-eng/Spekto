@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Ratings - Spekto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
+    .shell { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: var(--purple); display: flex; flex-direction: column; padding: 28px 0; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; padding: 0 20px 28px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .s-mark { width: 36px; height: 36px; background: rgba(255,255,255,0.15); border-radius: 9px; border: 1px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .s-name { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -1.5px; }
+    .nav { display: flex; flex-direction: column; gap: 2px; padding: 20px 12px; flex: 1; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.6); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.15); color: #fff; }
+    .nav-item i { font-size: 17px; }
+    .sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .user-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .user-name { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 500; }
+    .btn-logout-sm { width: 28px; height: 28px; background: rgba(255,255,255,0.08); border: none; border-radius: 6px; color: rgba(255,255,255,0.4); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+    .btn-logout-sm:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    .main { flex: 1; margin-left: 220px; display: flex; flex-direction: column; min-width: 0; }
+    .topbar { background: #fff; border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .topbar-title { font-size: 18px; font-weight: 700; color: #0D0D0D; letter-spacing: -0.3px; }
+    .content { padding: 24px 28px; max-width: 800px; }
+    /* Hero summary card */
+    .hero-card { background: var(--purple); border-radius: 16px; padding: 28px; margin-bottom: 20px; display: flex; align-items: center; gap: 28px; flex-wrap: wrap; }
+    .hero-score { font-size: 56px; font-weight: 800; color: #fff; font-family: 'DM Sans', sans-serif; line-height: 1; letter-spacing: -2px; }
+    .hero-stars { display: flex; gap: 4px; margin-top: 4px; }
+    .hero-star { font-size: 20px; }
+    .hero-sub { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 8px; }
+    .hero-divider { width: 1px; background: rgba(255,255,255,0.15); align-self: stretch; }
+    .attr-breakdown { flex: 1; min-width: 220px; }
+    .attr-breakdown-title { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+    .attr-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .attr-bar-label { font-size: 12px; color: rgba(255,255,255,0.8); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .attr-bar-track { flex: 1; height: 5px; background: rgba(255,255,255,0.15); border-radius: 3px; overflow: hidden; }
+    .attr-bar-fill { height: 100%; background: rgba(255,255,255,0.75); border-radius: 3px; }
+    .attr-bar-count { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 600; width: 24px; text-align: right; flex-shrink: 0; }
+    /* Empty state */
+    .empty-state { text-align: center; padding: 64px 20px; background: #fff; border-radius: 16px; border: 1px solid var(--border); }
+    .empty-state i { font-size: 40px; color: #ddd; margin-bottom: 14px; display: block; }
+    .empty-state h3 { font-size: 16px; font-weight: 700; color: #0D0D0D; margin-bottom: 6px; }
+    .empty-state p { font-size: 13px; color: #999; line-height: 1.6; }
+    /* Rating list */
+    .section-title { font-size: 14px; font-weight: 700; color: #0D0D0D; margin-bottom: 14px; }
+    .rating-list { display: flex; flex-direction: column; gap: 12px; }
+    .rating-item { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 18px 20px; }
+    .rating-item-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+    .rating-addr { font-size: 14px; font-weight: 600; color: #0D0D0D; }
+    .rating-date { font-size: 12px; color: #aaa; white-space: nowrap; }
+    .rating-stars { display: flex; gap: 3px; margin-bottom: 8px; }
+    .rating-star { font-size: 16px; }
+    .rating-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+    .rating-chip { background: var(--tint); color: var(--purple); border-radius: 20px; padding: 3px 9px; font-size: 11px; font-weight: 600; }
+    .rating-comment { font-size: 13px; color: #555; font-style: italic; line-height: 1.5; margin-top: 8px; padding-top: 10px; border-top: 1px solid #F5F5F5; }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
+    .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .menu-toggle { display: none; width: 36px; height: 36px; border: none; background: transparent; cursor: pointer; align-items: center; justify-content: center; border-radius: 8px; padding: 0; flex-shrink: 0; }
+    .menu-toggle i { font-size: 22px; color: #555; }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 99; }
+    .sidebar-overlay.open { display: block; }
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-220px); transition: transform 0.25s ease; }
+      .sidebar.open { transform: translateX(0); }
+      .menu-toggle { display: flex; }
+      .main { margin-left: 0; }
+      .content { padding: 16px; }
+      .topbar { padding: 14px 16px; }
+      .hero-card { gap: 20px; }
+      .hero-score { font-size: 42px; }
+      .hero-divider { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="s-mark">
+        <svg width="20" height="18" viewBox="0 0 30 26" fill="none">
+          <rect x="1" y="5" width="28" height="20" rx="4" stroke="white" stroke-width="2"/>
+          <path d="M10 5L11.5 2h7L20 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="15" cy="15" r="5" stroke="white" stroke-width="2"/>
+          <circle cx="15" cy="15" r="2" fill="white"/>
+          <circle cx="24" cy="9" r="1.5" fill="white"/>
+        </svg>
+      </div>
+      <div class="s-name">SPEKTO</div>
+    </div>
+    <nav class="nav">
+      <a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> My Jobs</a>
+      <a class="nav-item" href="earnings.html"><i class="ti ti-wallet"></i> Earnings</a>
+      <a class="nav-item active" href="ratings.html"><i class="ti ti-star"></i> My Ratings</a>
+      <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> My Disputes</a>
+      <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="user-row">
+        <div class="avatar" id="userAvatar">?</div>
+        <div class="user-name" id="userName">Loading...</div>
+        <button class="btn-logout-sm" id="logoutBtn" title="Sign out">
+          <i class="ti ti-logout"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle" id="menuToggle"><i class="ti ti-menu-2"></i></button>
+        <div class="topbar-title">My Ratings</div>
+      </div>
+      <div id="notificationBell"></div>
+    </div>
+
+    <div class="content">
+      <div id="pageContent">
+        <div class="loading"><div class="spinner"></div> Loading ratings...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  import { initNotificationBell } from '../config/notifications.js'
+  import { RATING_ATTRIBUTES } from '../config/rating-attributes.js'
+  const supabase = createClient(
+    'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
+    'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
+  )
+
+  let currentUser = null
+
+  async function init() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = '../auth/login.html'; return; }
+    currentUser = user
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .single()
+
+    if (userData) {
+      const initials = (userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')
+      document.getElementById('userAvatar').textContent = initials.toUpperCase()
+      document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
+    }
+
+    initNotificationBell(supabase, currentUser.id)
+
+    const [{ data: summary }, { data: ratings }] = await Promise.all([
+      supabase.from('scout_rating_summary').select('*').eq('scout_id', currentUser.id).maybeSingle(),
+      supabase.from('inspection_ratings')
+        .select('*, inspections(address, ref_number)')
+        .eq('scout_id', currentUser.id)
+        .order('created_at', { ascending: false })
+    ])
+
+    render(summary, ratings || [])
+  }
+
+  function render(summary, ratings) {
+    const container = document.getElementById('pageContent')
+
+    if (!summary || summary.total_ratings === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <i class="ti ti-star-off"></i>
+          <h3>No ratings yet</h3>
+          <p>Ratings from clients appear here once they release payment for a completed job.</p>
+        </div>`
+      return
+    }
+
+    const avg = parseFloat(summary.average_rating)
+    const filled = Math.round(avg)
+    const heroStars = Array.from({ length: 5 }, (_, i) =>
+      `<span class="hero-star" style="color:${i < filled ? '#FCD34D' : 'rgba(255,255,255,0.25)'}">★</span>`
+    ).join('')
+
+    const maxCount = Math.max(1, ...RATING_ATTRIBUTES.map(a => (summary.attribute_counts?.[a.key] || 0)))
+    const attrRows = RATING_ATTRIBUTES
+      .map(a => ({ ...a, count: summary.attribute_counts?.[a.key] || 0 }))
+      .filter(a => a.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .map(a => `
+        <div class="attr-bar-row">
+          <span class="attr-bar-label">${a.label}</span>
+          <div class="attr-bar-track"><div class="attr-bar-fill" style="width:${Math.round((a.count / maxCount) * 100)}%"></div></div>
+          <span class="attr-bar-count">${a.count}</span>
+        </div>`).join('')
+
+    const ratingItems = ratings.map(r => {
+      const stars = Array.from({ length: 5 }, (_, i) =>
+        `<span class="rating-star" style="color:${i < r.star_rating ? '#F59E0B' : '#E5E7EB'}">★</span>`
+      ).join('')
+      const chips = (r.attributes || []).map(key => {
+        const attr = RATING_ATTRIBUTES.find(a => a.key === key)
+        return attr ? `<span class="rating-chip">${attr.label}</span>` : ''
+      }).join('')
+      const addr = r.inspections?.address || '—'
+      const ref = r.inspections?.ref_number ? `#${r.inspections.ref_number}` : ''
+      const date = new Date(r.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+      return `
+        <div class="rating-item">
+          <div class="rating-item-top">
+            <div>
+              ${ref ? `<div style="font-size:11px;color:#aaa;font-weight:600;margin-bottom:3px">${ref}</div>` : ''}
+              <div class="rating-addr">${addr}</div>
+            </div>
+            <div class="rating-date">${date}</div>
+          </div>
+          <div class="rating-stars">${stars}</div>
+          ${chips ? `<div class="rating-chips">${chips}</div>` : ''}
+          ${r.comment ? `<div class="rating-comment">"${r.comment}"</div>` : ''}
+        </div>`
+    }).join('')
+
+    container.innerHTML = `
+      <div class="hero-card">
+        <div>
+          <div class="hero-score">${avg.toFixed(1)}</div>
+          <div class="hero-stars">${heroStars}</div>
+          <div class="hero-sub">${summary.total_ratings} rating${summary.total_ratings !== 1 ? 's' : ''} from clients</div>
+        </div>
+        ${attrRows ? `<div class="hero-divider"></div>
+        <div class="attr-breakdown">
+          <div class="attr-breakdown-title">Most mentioned</div>
+          ${attrRows}
+        </div>` : ''}
+      </div>
+      <div class="section-title">Recent ratings</div>
+      <div class="rating-list">${ratingItems}</div>`
+  }
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await supabase.auth.signOut()
+    window.location.href = '../auth/login.html'
+  })
+
+  document.getElementById('menuToggle').addEventListener('click', () => {
+    document.querySelector('.sidebar').classList.toggle('open')
+    document.getElementById('sidebarOverlay').classList.toggle('open')
+  })
+  document.getElementById('sidebarOverlay').addEventListener('click', () => {
+    document.querySelector('.sidebar').classList.remove('open')
+    document.getElementById('sidebarOverlay').classList.remove('open')
+  })
+  document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelector('.sidebar').classList.remove('open')
+      document.getElementById('sidebarOverlay').classList.remove('open')
+    })
+  })
+
+  init()
+</script>
+</body>
+</html>

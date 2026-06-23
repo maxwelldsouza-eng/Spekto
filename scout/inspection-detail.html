@@ -155,6 +155,7 @@
     <nav class="nav">
       <a class="nav-item active" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> My Jobs</a>
       <a class="nav-item" href="earnings.html"><i class="ti ti-wallet"></i> Earnings</a>
+      <a class="nav-item" href="ratings.html"><i class="ti ti-star"></i> My Ratings</a>
       <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> My Disputes</a>
       <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
     </nav>
@@ -199,6 +200,7 @@
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
   import { initNotificationBell } from '../config/notifications.js'
+  import { RATING_ATTRIBUTES } from '../config/rating-attributes.js'
   const supabase = createClient(
     'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
     'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
@@ -211,6 +213,7 @@
   let scoutVerified = false
   let scoutConnectActive = false
   let scoutRTWApproved = false
+  let ratingRecord = null
 
   const urlParams = new URLSearchParams(window.location.search)
   const inspectionId = urlParams.get('id')
@@ -285,6 +288,15 @@
         .limit(1)
         .single()
       dispute = disputeData
+    }
+
+    if (['PendingPayment', 'Paid', 'Disputed'].includes(inspection.status)) {
+      const { data: ratingData } = await supabase
+        .from('inspection_ratings')
+        .select('*')
+        .eq('inspection_id', inspectionId)
+        .maybeSingle()
+      ratingRecord = ratingData
     }
 
     render()
@@ -634,6 +646,31 @@
               <textarea class="chat-textarea" id="scoutChatInput" placeholder="Type a message to Spekto support..."></textarea>
               <button class="btn-chat-send" id="scoutChatSendBtn">Send</button>
             </div>
+          </div>`
+      }
+
+      if (ratingRecord) {
+        const stars = Array.from({ length: 5 }, (_, i) =>
+          `<span style="font-size:18px;color:${i < ratingRecord.star_rating ? '#F59E0B' : '#E5E7EB'}">★</span>`
+        ).join('')
+        const chips = (ratingRecord.attributes || []).map(key => {
+          const attr = RATING_ATTRIBUTES.find(a => a.key === key)
+          return attr ? `<span style="background:var(--tint);color:var(--purple);border-radius:20px;padding:4px 10px;font-size:12px;font-weight:600">${attr.label}</span>` : ''
+        }).join('')
+        const ratedAt = new Date(ratingRecord.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+        html += `
+          <div class="card" style="border-color:#EDE4F7">
+            <div class="section-label">Client Rating</div>
+            <div style="display:flex;gap:3px;margin-bottom:${chips ? '10px' : '0'}">${stars}</div>
+            ${chips ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${chips}</div>` : ''}
+            ${ratingRecord.comment ? `<div style="font-size:13px;color:#555;font-style:italic;line-height:1.5;padding-top:10px;border-top:1px solid #F0F0F0;margin-top:8px">"${ratingRecord.comment}"</div>` : ''}
+            <div style="font-size:11px;color:#aaa;margin-top:10px">Received ${ratedAt}</div>
+          </div>`
+      } else {
+        html += `
+          <div class="card" style="border-color:#EEE">
+            <div class="section-label">Client Rating</div>
+            <div style="font-size:13px;color:#999">No rating submitted yet for this job.</div>
           </div>`
       }
     }

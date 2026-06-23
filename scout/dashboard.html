@@ -121,6 +121,7 @@
     <nav class="nav">
       <a class="nav-item active" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> My Jobs</a>
       <a class="nav-item" href="earnings.html"><i class="ti ti-wallet"></i> Earnings</a>
+      <a class="nav-item" href="ratings.html"><i class="ti ti-star"></i> My Ratings</a>
       <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> My Disputes</a>
       <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
     </nav>
@@ -149,6 +150,17 @@
         <div class="stat-card"><div class="stat-label">Total Earned</div><div class="stat-val green" id="statEarned">$0</div></div>
       </div>
 
+      <div id="ratingWidget" style="display:none;background:#fff;border-radius:12px;border:1px solid #EDE4F7;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div id="ratingWidgetStars" style="display:flex;gap:3px;font-size:22px"></div>
+          <div>
+            <div id="ratingWidgetScore" style="font-size:20px;font-weight:700;color:#0D0D0D;line-height:1"></div>
+            <div id="ratingWidgetCount" style="font-size:12px;color:#999;margin-top:2px"></div>
+          </div>
+        </div>
+        <a href="ratings.html" style="font-size:13px;font-weight:600;color:var(--purple);text-decoration:none">View all ratings ↗</a>
+      </div>
+
       <div class="tabs">
         <div class="tab active" data-tab="available">Available <span class="count" id="countAvailable">0</span></div>
         <div class="tab" data-tab="active">My Active Jobs <span class="count" id="countActive">0</span></div>
@@ -165,6 +177,7 @@
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
   import { initNotificationBell } from '../config/notifications.js'
+  import { RATING_ATTRIBUTES } from '../config/rating-attributes.js'
   const supabase = createClient(
     'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
     'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
@@ -172,6 +185,7 @@
 
   let currentUser = null
   let scoutVerified = false
+  let ratingSummary = null
   let availableInspections = []
   let myActiveInspections = []
   let myCompletedInspections = []
@@ -197,14 +211,15 @@
       }
     }
 
-    const { data: scoutProfile } = await supabase
-      .from('scout_profiles')
-      .select('id_verified')
-      .eq('user_id', currentUser.id)
-      .single()
+    const [{ data: scoutProfile }, { data: ratingData }] = await Promise.all([
+      supabase.from('scout_profiles').select('id_verified').eq('user_id', currentUser.id).single(),
+      supabase.from('scout_rating_summary').select('*').eq('scout_id', currentUser.id).maybeSingle()
+    ])
     scoutVerified = scoutProfile?.id_verified === true
+    ratingSummary = ratingData
 
     initNotificationBell(supabase, currentUser.id)
+    renderRatingWidget()
     await loadAll()
     setupRoleToggle()
   }
@@ -255,6 +270,19 @@
       .filter(i => i.status === 'Paid')
       .reduce((sum, i) => sum + (parseFloat(i.pricing_snapshot?.pay_to_scout) || 0), 0)
     document.getElementById('statEarned').textContent = '$' + totalEarned.toFixed(2)
+  }
+
+  function renderRatingWidget() {
+    const widget = document.getElementById('ratingWidget')
+    if (!ratingSummary || ratingSummary.total_ratings === 0) { widget.style.display = 'none'; return; }
+    widget.style.display = 'flex'
+    const avg = parseFloat(ratingSummary.average_rating)
+    const filled = Math.round(avg)
+    document.getElementById('ratingWidgetStars').innerHTML = Array.from({ length: 5 }, (_, i) =>
+      `<span style="color:${i < filled ? '#F59E0B' : '#E5E7EB'}">★</span>`
+    ).join('')
+    document.getElementById('ratingWidgetScore').textContent = avg.toFixed(1)
+    document.getElementById('ratingWidgetCount').textContent = `${ratingSummary.total_ratings} rating${ratingSummary.total_ratings !== 1 ? 's' : ''}`
   }
 
   function renderTab(tab) {

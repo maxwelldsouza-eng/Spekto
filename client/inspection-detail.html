@@ -112,6 +112,37 @@
     .menu-toggle i { font-size: 22px; color: #555; }
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 99; }
     .sidebar-overlay.open { display: block; }
+    /* ---- Rating ---- */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .modal-overlay.hidden { display: none; }
+    .modal-box { background: #fff; border-radius: 16px; width: 100%; max-width: 480px; padding: 28px; }
+    .modal-title { font-size: 18px; font-weight: 700; color: #0D0D0D; margin-bottom: 4px; }
+    .modal-sub { font-size: 13px; color: #888; margin-bottom: 20px; }
+    .stars-row { display: flex; gap: 8px; margin-bottom: 20px; justify-content: center; }
+    .star-btn { font-size: 36px; background: none; border: none; cursor: pointer; color: #D1D5DB; transition: color 0.15s, transform 0.1s; padding: 0; line-height: 1; }
+    .star-btn.active { color: #F59E0B; }
+    .star-btn:hover { transform: scale(1.15); }
+    .attr-section-label { font-size: 12px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+    .attr-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
+    .attr-chip { display: flex; align-items: center; gap: 6px; border: 1.5px solid #E0E0E0; border-radius: 8px; padding: 8px 10px; font-size: 13px; cursor: pointer; background: #fff; transition: border-color 0.15s, background 0.15s; font-family: 'Inter', sans-serif; color: #333; font-weight: 500; }
+    .attr-chip.selected { border-color: var(--purple); background: var(--tint); color: var(--purple); }
+    .attr-check { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid #CCC; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+    .attr-chip.selected .attr-check { background: var(--purple); border-color: var(--purple); color: #fff; }
+    .rating-comment { width: 100%; border: 1.5px solid #E0E0E0; border-radius: 8px; padding: 10px 12px; font-size: 13px; font-family: 'Inter', sans-serif; resize: none; height: 70px; margin-bottom: 18px; box-sizing: border-box; }
+    .rating-comment:focus { outline: none; border-color: var(--purple); }
+    .modal-actions { display: flex; gap: 10px; }
+    .btn-skip-rating { flex: 1; height: 42px; background: #fff; color: #666; border: 1.5px solid #E0E0E0; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .btn-submit-rating { flex: 2; height: 42px; background: var(--purple); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
+    .btn-submit-rating:disabled { opacity: 0.4; cursor: not-allowed; }
+    .rating-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 20px 24px; margin-bottom: 20px; }
+    .rating-stars-row { display: flex; gap: 4px; margin-bottom: 12px; }
+    .rating-star { font-size: 20px; }
+    .rating-star.filled { color: #F59E0B; }
+    .rating-star.empty { color: #E5E7EB; }
+    .rating-chips-display { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+    .rating-chip-tag { background: var(--tint); color: var(--purple); border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 600; }
+    .rating-comment-quote { font-size: 13px; color: #555; font-style: italic; line-height: 1.5; margin-top: 12px; padding-top: 12px; border-top: 1px solid #F0F0F0; }
+    .btn-rate-job { display: inline-flex; align-items: center; gap: 8px; background: var(--purple); color: #fff; border: none; border-radius: 8px; padding: 10px 18px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
     @media (max-width: 768px) {
       .sidebar { transform: translateX(-220px); transition: transform 0.25s ease; }
       .sidebar.open { transform: translateX(0); }
@@ -204,9 +235,31 @@
   </div>
 </div>
 
+<div class="modal-overlay hidden" id="ratingModal">
+  <div class="modal-box">
+    <div class="modal-title">Rate Your Scout</div>
+    <div class="modal-sub">How did this inspection go?</div>
+    <div class="stars-row" id="starsRow">
+      <button class="star-btn" data-star="1">★</button>
+      <button class="star-btn" data-star="2">★</button>
+      <button class="star-btn" data-star="3">★</button>
+      <button class="star-btn" data-star="4">★</button>
+      <button class="star-btn" data-star="5">★</button>
+    </div>
+    <div class="attr-section-label">What went well? <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
+    <div class="attr-chips" id="attrChips"></div>
+    <textarea class="rating-comment" id="ratingComment" placeholder="Leave a comment (optional)..."></textarea>
+    <div class="modal-actions">
+      <button class="btn-skip-rating" id="skipRatingBtn">Skip</button>
+      <button class="btn-submit-rating" id="submitRatingBtn" disabled>Submit Rating</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
   import { initNotificationBell } from '../config/notifications.js'
+  import { RATING_ATTRIBUTES } from '../config/rating-attributes.js'
   const supabase = createClient(
     'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
     'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
@@ -216,6 +269,8 @@
   let dispute = null
   let captures = []
   let currentUser = null
+  let ratingRecord = null
+  let selectedStar = 0
 
   const urlParams = new URLSearchParams(window.location.search)
   const inspectionId = urlParams.get('id')
@@ -274,6 +329,15 @@
         .limit(1)
         .single()
       dispute = disputeData
+    }
+
+    if (['PendingPayment', 'Paid', 'Disputed'].includes(inspection.status)) {
+      const { data: ratingData } = await supabase
+        .from('inspection_ratings')
+        .select('*')
+        .eq('inspection_id', inspectionId)
+        .maybeSingle()
+      ratingRecord = ratingData
     }
 
     render()
@@ -349,6 +413,15 @@
       html += renderCaptureGroups()
     } else {
       html += renderStateCard()
+    }
+
+    if (['PendingPayment', 'Paid', 'Disputed'].includes(inspection.status)) {
+      html += ratingRecord ? renderRatingReadOnly() : `
+        <div class="rating-card">
+          <div class="section-label">Your Rating</div>
+          <div style="font-size:14px;color:#666;margin-bottom:14px">How did this inspection go? Leave a quick rating for your scout.</div>
+          <button class="btn-rate-job" onclick="window.openRatingModal()"><i class="ti ti-star"></i> Rate this job</button>
+        </div>`
     }
 
     if (inspection.status === 'Disputed') {
@@ -489,6 +562,7 @@
       badge.textContent = 'Pending Payment'
       renderActions()
       renderContent()
+      if (!ratingRecord) openRatingModal()
     }
   }
 
@@ -662,6 +736,80 @@
       }
     })
   }
+
+  function renderRatingReadOnly() {
+    const stars = Array.from({ length: 5 }, (_, i) =>
+      `<span class="rating-star ${i < ratingRecord.star_rating ? 'filled' : 'empty'}">★</span>`
+    ).join('')
+    const chips = (ratingRecord.attributes || []).map(key => {
+      const attr = RATING_ATTRIBUTES.find(a => a.key === key)
+      return attr ? `<span class="rating-chip-tag">${attr.label}</span>` : ''
+    }).join('')
+    const ratedAt = new Date(ratingRecord.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+    return `
+      <div class="rating-card">
+        <div class="section-label">Your Rating</div>
+        <div class="rating-stars-row">${stars}</div>
+        ${chips ? `<div class="rating-chips-display">${chips}</div>` : ''}
+        ${ratingRecord.comment ? `<div class="rating-comment-quote">"${ratingRecord.comment}"</div>` : ''}
+        <div style="font-size:11px;color:#aaa;margin-top:10px">Submitted ${ratedAt}</div>
+      </div>`
+  }
+
+  function openRatingModal() {
+    selectedStar = 0
+    document.getElementById('ratingModal').classList.remove('hidden')
+    document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('active'))
+    document.getElementById('submitRatingBtn').disabled = true
+    document.getElementById('ratingComment').value = ''
+    document.getElementById('attrChips').innerHTML = RATING_ATTRIBUTES.map(attr =>
+      `<div class="attr-chip" data-key="${attr.key}"><div class="attr-check"></div>${attr.label}</div>`
+    ).join('')
+    document.querySelectorAll('.star-btn').forEach(btn => {
+      btn.onclick = () => {
+        selectedStar = parseInt(btn.dataset.star)
+        document.querySelectorAll('.star-btn').forEach((b, i) => b.classList.toggle('active', i < selectedStar))
+        document.getElementById('submitRatingBtn').disabled = false
+      }
+    })
+    document.querySelectorAll('.attr-chip').forEach(chip => {
+      chip.onclick = () => chip.classList.toggle('selected')
+    })
+  }
+  window.openRatingModal = openRatingModal
+
+  document.getElementById('skipRatingBtn').addEventListener('click', () => {
+    document.getElementById('ratingModal').classList.add('hidden')
+  })
+
+  document.getElementById('submitRatingBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('submitRatingBtn')
+    btn.disabled = true
+    btn.textContent = 'Submitting...'
+    const selectedAttrs = Array.from(document.querySelectorAll('.attr-chip.selected')).map(c => c.dataset.key)
+    const comment = document.getElementById('ratingComment').value.trim()
+    const { data, error } = await supabase
+      .from('inspection_ratings')
+      .insert({
+        inspection_id: inspectionId,
+        scout_id: inspection.scout_id,
+        client_id: currentUser.id,
+        star_rating: selectedStar,
+        attributes: selectedAttrs,
+        comment: comment || null
+      })
+      .select()
+      .single()
+    if (error) {
+      btn.disabled = false
+      btn.textContent = 'Submit Rating'
+      alert('Could not submit rating. Please try again.')
+      return
+    }
+    ratingRecord = data
+    document.getElementById('ratingModal').classList.add('hidden')
+    renderContent()
+  })
 
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await supabase.auth.signOut()
