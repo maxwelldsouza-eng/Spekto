@@ -199,6 +199,14 @@ async function logEvent(eventId: string, eventType: string, payload: unknown, er
 }
 
 async function handlePaymentIntentSucceeded(pi: Stripe.PaymentIntent) {
+  if (pi.metadata?.type === 'marketplace') {
+    await handleMarketplacePurchaseSucceeded(pi)
+  } else {
+    await handleInspectionPaymentSucceeded(pi)
+  }
+}
+
+async function handleInspectionPaymentSucceeded(pi: Stripe.PaymentIntent) {
   const { data: payment } = await supabase
     .from('payments')
     .select('id, inspection_id')
@@ -219,7 +227,6 @@ async function handlePaymentIntentSucceeded(pi: Stripe.PaymentIntent) {
       .eq('status', 'Draft'),
   ])
 
-  // Sync to Xero — failure is non-fatal (status tracked in DB)
   try {
     await syncInvoiceToXero(payment.id)
   } catch (xeroErr) {
@@ -229,6 +236,100 @@ async function handlePaymentIntentSucceeded(pi: Stripe.PaymentIntent) {
       .update({ xero_sync_status: 'Failed', updated_at: new Date().toISOString() })
       .eq('id', payment.id)
   }
+}
+
+async function handleMarketplacePurchaseSucceeded(pi: Stripe.PaymentIntent) {
+  const purchaseId = pi.metadata?.purchase_id
+  if (!purchaseId) return
+
+  await supabase
+    .from('marketplace_purchases')
+    .update({ status: 'paid', purchased_at: new Date().toISOString() })
+    .eq('id', purchaseId)
+    .eq('status', 'pending')
+
+  try {
+    await syncMarketplaceInvoiceToXero(purchaseId)
+  } catch (xeroErr) {
+    console.error('Xero marketplace sync failed:', xeroErr)
+    await supabase
+      .from('marketplace_purchases')
+      .update({ xero_sync_status: 'Failed' })
+      .eq('id', purchaseId)
+  }
+}
+
+async function syncMarketplaceInvoiceToXero(purchaseId: string): Promise<void> {
+  const { data: purchase } = await supabase
+    .from('marketplace_purchases')
+    .select('id, purchase_price, buyer_id, listing_id')
+    .eq('id', purchaseId)
+    .single()
+  if (!purchase) throw new Error('Purchase not found')
+
+  const { data: listing } = await supabase
+    .from('marketplace_listings')
+    .select('address')
+    .eq('id', purchase.listing_id)
+    .single()
+
+  const { data: buyer } = await supabase
+    .from('users')
+    .select('email, first_name, last_name')
+    .eq('id', purchase.buyer_id)
+    .single()
+  if (!buyer) throw new Error('Buyer not found')
+
+  const buyerName = `${buyer.first_name ?? ''} ${buyer.last_name ?? ''}`.trim() || buyer.email
+  const contactId = await getOrCreateXeroContact(buyer.email, buyerName)
+  const today = new Date().toISOString().split('T')[0]
+
+  const priceIncGst = purchase.purchase_price
+  const priceExGst = Math.round((priceIncGst / 1.1) * 100) / 100
+
+  const invoiceRes = await xeroPost('/Invoices', {
+    Invoices: [{
+      Type: 'ACCREC',
+      Contact: { ContactID: contactId },
+      Status: 'AUTHORISED',
+      DueDateString: today,
+      LineAmountTypes: 'EXCLUSIVE',
+      CurrencyCode: 'AUD',
+      Reference: `MKT-${purchaseId.substring(0, 8).toUpperCase()}`,
+      LineItems: [{
+        Description: `Marketplace video — ${listing?.address ?? purchase.listing_id}`,
+        Quantity: 1,
+        UnitAmount: priceExGst,
+        TaxType: 'OUTPUT2',
+        AccountCode: '260',
+      }],
+    }],
+  })
+
+  const invoiceJson = await invoiceRes.json()
+  if (!invoiceRes.ok || invoiceJson.Invoices?.[0]?.HasErrors) {
+    throw new Error(`Xero marketplace invoice failed: ${JSON.stringify(invoiceJson)}`)
+  }
+  const invoiceId = invoiceJson.Invoices[0].InvoiceID
+
+  const pmtRes = await xeroPost('/Payments', {
+    Payments: [{
+      Invoice: { InvoiceID: invoiceId },
+      Account: { Code: '090' },
+      Date: today,
+      Amount: priceIncGst,
+    }],
+  })
+
+  if (!pmtRes.ok) {
+    const pmtJson = await pmtRes.json()
+    throw new Error(`Xero marketplace payment failed: ${JSON.stringify(pmtJson)}`)
+  }
+
+  await supabase
+    .from('marketplace_purchases')
+    .update({ xero_invoice_id: invoiceId, xero_sync_status: 'Synced' })
+    .eq('id', purchaseId)
 }
 
 async function handlePaymentIntentFailed(pi: Stripe.PaymentIntent) {

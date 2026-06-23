@@ -8,8 +8,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <script src="https://js.stripe.com/v3/"></script>
   <style>
-    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; }
+    :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; --red: #DC2626; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100vh; }
     .shell { display: flex; min-height: 100vh; }
@@ -36,7 +37,6 @@
     .search-input-wrap i { font-size: 17px; color: #bbb; }
     .search-input-wrap input { border: none; background: transparent; outline: none; font-size: 14px; color: #0D0D0D; font-family: 'Inter', sans-serif; width: 100%; }
     .search-input-wrap input::placeholder { color: #bbb; }
-    .search-input-wrap input:focus { outline: none; }
     .search-input-wrap:focus-within { border-color: var(--purple); }
     .btn-search { height: 44px; background: var(--purple); color: #fff; border: none; border-radius: 10px; padding: 0 20px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap; }
     .quick-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
@@ -55,6 +55,7 @@
     .preview-play i { font-size: 20px; color: #fff; margin-left: 3px; }
     .listing-type-pill { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.65); color: #fff; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px; }
     .listing-new-pill { position: absolute; top: 10px; right: 10px; background: #22C55E; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
+    .listing-purchased-pill { position: absolute; top: 10px; right: 10px; background: var(--purple); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
     .listing-info { padding: 14px 16px; }
     .listing-addr { font-size: 14px; font-weight: 600; color: #0D0D0D; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .listing-suburb { font-size: 12px; color: #999; margin-bottom: 8px; }
@@ -66,6 +67,8 @@
     .listing-price-sub { font-size: 10px; color: #aaa; margin-top: 1px; }
     .btn-buy { height: 36px; background: var(--purple); color: #fff; border: none; border-radius: 8px; padding: 0 16px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
     .btn-buy:hover { opacity: 0.9; }
+    .btn-watch { height: 36px; background: var(--tint); color: var(--purple); border: 1.5px solid #D4B8F5; border-radius: 8px; padding: 0 16px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-watch:hover { background: #EDD9FF; }
     .empty-state { text-align: center; padding: 60px 20px; background: #fff; border-radius: 14px; border: 1px solid var(--border); }
     .empty-state i { font-size: 40px; color: #ddd; margin-bottom: 16px; display: block; }
     .empty-state h3 { font-size: 16px; font-weight: 600; color: #0D0D0D; margin-bottom: 8px; }
@@ -73,14 +76,16 @@
     .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
     .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Purchase modal */
     .purchase-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
     .purchase-modal-overlay.open { display: flex; }
     .purchase-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 420px; overflow: hidden; }
-    .purchase-modal-header { padding: 20px 22px 0; }
+    .purchase-modal-header { padding: 22px 22px 0; }
     .purchase-modal-title { font-size: 16px; font-weight: 700; color: #0D0D0D; margin-bottom: 4px; }
-    .purchase-modal-sub { font-size: 13px; color: #999; }
-    .purchase-modal-body { padding: 20px 22px; }
-    .purchase-detail-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #F3F3F3; font-size: 13px; }
+    .purchase-modal-sub { font-size: 13px; color: #999; margin-bottom: 0; }
+    .purchase-modal-body { padding: 18px 22px; }
+    .purchase-detail-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid #F3F3F3; font-size: 13px; }
     .purchase-detail-row:last-child { border-bottom: none; }
     .purchase-detail-label { color: #666; }
     .purchase-detail-val { font-weight: 600; color: #0D0D0D; }
@@ -90,9 +95,20 @@
     .purchase-modal-footer { padding: 0 22px 22px; display: flex; gap: 10px; }
     .btn-cancel-purchase { flex: 1; height: 44px; background: #fff; color: #444; border: 1.5px solid #E0E0E0; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
     .btn-confirm-purchase { flex: 2; height: 44px; background: var(--purple); color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; }
-    .coming-soon-banner { background: #FEF9C3; border: 1.5px solid #FDE047; border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-    .coming-soon-banner i { font-size: 18px; color: #854D0E; flex-shrink: 0; }
-    .coming-soon-text { font-size: 13px; color: #854D0E; font-weight: 500; }
+    .btn-confirm-purchase:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* Card entry section */
+    #cardSection { display: none; margin-top: 16px; }
+    .card-element-wrap { border: 1.5px solid #E0E0E0; border-radius: 10px; padding: 12px 14px; background: #fff; }
+    .card-element-wrap.focused { border-color: var(--purple); }
+    #cardError { color: var(--red); font-size: 13px; margin-top: 8px; min-height: 18px; }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1A0533; color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 500; z-index: 9999; display: none; align-items: center; gap: 10px; max-width: 360px; box-shadow: 0 4px 20px rgba(0,0,0,0.25); }
+    .toast.show { display: flex; }
+    .toast.success i { color: var(--green); }
+    .toast.error i { color: #f87171; }
+
     .menu-toggle { display: none; width: 36px; height: 36px; border: none; background: transparent; cursor: pointer; align-items: center; justify-content: center; border-radius: 8px; padding: 0; flex-shrink: 0; }
     .menu-toggle i { font-size: 22px; color: #555; }
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 99; }
@@ -106,9 +122,7 @@
       .listing-grid { grid-template-columns: 1fr 1fr; }
       .search-bar { flex-direction: column; }
     }
-    @media (max-width: 420px) {
-      .listing-grid { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 420px) { .listing-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -140,9 +154,7 @@
       <div class="user-row">
         <div class="avatar" id="userAvatar">?</div>
         <div class="user-name" id="userName">Loading...</div>
-        <button class="btn-logout-sm" id="logoutBtn" title="Sign out">
-          <i class="ti ti-logout"></i>
-        </button>
+        <button class="btn-logout-sm" id="logoutBtn" title="Sign out"><i class="ti ti-logout"></i></button>
       </div>
     </div>
   </aside>
@@ -169,11 +181,6 @@
         <span class="quick-pill" onclick="setSearch('Pyrmont')">Pyrmont</span>
         <span class="quick-pill" onclick="setSearch('Chippendale')">Chippendale</span>
       </div>
-      <div class="coming-soon-banner">
-        <i class="ti ti-info-circle"></i>
-        <div class="coming-soon-text">Marketplace payments via Stripe are coming soon. You can browse listings now — purchasing will be enabled once Stripe integration is complete.</div>
-      </div>
-
       <div id="listingsContainer">
         <div class="loading"><div class="spinner"></div> Loading listings...</div>
       </div>
@@ -181,79 +188,103 @@
   </div>
 </div>
 
+<!-- Purchase modal -->
 <div class="purchase-modal-overlay" id="purchaseModal">
   <div class="purchase-modal">
     <div class="purchase-modal-header">
-      <div class="purchase-modal-title">Purchase video access</div>
+      <div class="purchase-modal-title" id="modalTitle">Purchase video access</div>
       <div class="purchase-modal-sub" id="purchaseAddr"></div>
     </div>
     <div class="purchase-modal-body">
-      <div class="purchase-detail-row">
-        <div class="purchase-detail-label">Video type</div>
-        <div class="purchase-detail-val" id="purchaseType"></div>
-      </div>
-      <div class="purchase-detail-row">
-        <div class="purchase-detail-label">Recorded</div>
-        <div class="purchase-detail-val" id="purchaseDate"></div>
-      </div>
-      <div class="purchase-detail-row">
-        <div class="purchase-detail-label">Access duration</div>
-        <div class="purchase-detail-val">48 hours from purchase</div>
-      </div>
-      <div class="purchase-detail-row">
-        <div class="purchase-detail-label">Downloads</div>
-        <div class="purchase-detail-val">Up to 3 downloads</div>
-      </div>
-      <div class="purchase-detail-row">
-        <div class="purchase-detail-label">Price (ex GST)</div>
-        <div class="purchase-detail-val">$18.18</div>
-      </div>
-      <div class="purchase-detail-row">
-        <div class="purchase-detail-label">GST</div>
-        <div class="purchase-detail-val">$1.82</div>
+      <div id="priceDetails">
+        <div class="purchase-detail-row">
+          <div class="purchase-detail-label">Video type</div>
+          <div class="purchase-detail-val" id="purchaseType"></div>
+        </div>
+        <div class="purchase-detail-row">
+          <div class="purchase-detail-label">Recorded</div>
+          <div class="purchase-detail-val" id="purchaseDate"></div>
+        </div>
+        <div class="purchase-detail-row">
+          <div class="purchase-detail-label">Price (ex GST)</div>
+          <div class="purchase-detail-val" id="purchasePriceEx"></div>
+        </div>
+        <div class="purchase-detail-row">
+          <div class="purchase-detail-label">GST (10%)</div>
+          <div class="purchase-detail-val" id="purchaseGst"></div>
+        </div>
       </div>
       <div class="purchase-total-row">
         <div class="purchase-total-label">Total</div>
-        <div class="purchase-total-val">$20.00</div>
+        <div class="purchase-total-val" id="purchaseTotal"></div>
+      </div>
+
+      <!-- Card entry — shown only when no saved card -->
+      <div id="cardSection">
+        <div style="font-size:12px;color:#999;margin:16px 0 8px">Enter your card details to complete the purchase. Your card will be saved for future use.</div>
+        <div class="card-element-wrap" id="cardElementWrap">
+          <div id="cardElement"></div>
+        </div>
+        <div id="cardError"></div>
       </div>
     </div>
     <div class="purchase-modal-footer">
       <button class="btn-cancel-purchase" id="cancelPurchaseBtn">Cancel</button>
-      <button class="btn-confirm-purchase" id="confirmPurchaseBtn">Coming soon</button>
+      <button class="btn-confirm-purchase" id="confirmPurchaseBtn">Purchase — $20.00</button>
     </div>
   </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <i class="ti ti-circle-check" id="toastIcon"></i>
+  <span id="toastMsg"></span>
 </div>
 
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
   import { initNotificationBell } from '../config/notifications.js'
+
   const supabase = createClient(
     'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
     'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
   )
 
+  const STRIPE_PK = 'pk_test_51TjpX1COe0yffLUxk6l80GdxR4O0xOViTSHetQPTyvSaJuNkVzJyN1xGy3Ylz22Z8BYQl5VsQ3zkvs6XfSmVpnKk00qfObOPTi'
+  const SUPABASE_URL = 'https://nyvnvtxhlnjvfhcmnihh.supabase.co'
+
+  let stripe = null
+  let cardElement = null
   let allListings = []
   let filteredListings = []
   let searchQuery = ''
   let selectedListing = null
   let currentUser = null
+  let purchasedListingIds = new Set()
+  let pendingClientSecret = null
+
+  function getStripe() {
+    if (!stripe) stripe = Stripe(STRIPE_PK)
+    return stripe
+  }
 
   async function init() {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { window.location.href = '../auth/login.html'; return; }
+    if (!user) { window.location.href = '../auth/login.html'; return }
     currentUser = user
 
-    const { data: userData } = await supabase
-      .from('users')
-      .select('first_name, last_name')
-      .eq('id', user.id)
-      .single()
+    const [{ data: userData }, { data: purchases }] = await Promise.all([
+      supabase.from('users').select('first_name, last_name').eq('id', user.id).single(),
+      supabase.from('marketplace_purchases').select('listing_id').eq('buyer_id', user.id).eq('status', 'paid'),
+    ])
 
     if (userData) {
       const initials = (userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')
       document.getElementById('userAvatar').textContent = initials.toUpperCase()
       document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
     }
+
+    purchasedListingIds = new Set((purchases || []).map(p => p.listing_id))
 
     initNotificationBell(supabase, currentUser.id)
     await loadListings()
@@ -264,19 +295,16 @@
     document.getElementById('listingsContainer').innerHTML =
       '<div class="loading"><div class="spinner"></div> Searching...</div>'
 
-    let queryBuilder = supabase
+    let q = supabase
       .from('marketplace_listings')
       .select('*, captures!inner(video_url, recorded_at, gps_latitude, gps_longitude, capture_type)')
       .eq('captures.capture_type', 'external')
       .eq('status', 'Active')
-      .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
 
-    if (query) {
-      queryBuilder = queryBuilder.ilike('address', `%${query}%`)
-    }
+    if (query) q = q.ilike('address', `%${query}%`)
 
-    const { data, error } = await queryBuilder
+    const { data, error } = await q
 
     if (error) {
       document.getElementById('listingsContainer').innerHTML =
@@ -286,20 +314,15 @@
 
     allListings = data || []
     filteredListings = [...allListings]
-    applyFilters()
+    renderListings()
 
     if (query && allListings.length > 0) {
       await supabase.from('marketplace_searches').insert({
         search_query: query,
         results_count: allListings.length,
-        searcher_id: currentUser.id
+        searcher_id: currentUser.id,
       })
     }
-  }
-
-  function applyFilters() {
-    filteredListings = [...allListings]
-    renderListings()
   }
 
   function renderListings() {
@@ -313,14 +336,14 @@
           <h3>${hasSearch ? 'No listings found' : 'No listings available yet'}</h3>
           <p>${hasSearch
             ? `No property videos found for "${searchQuery}". Try a different suburb or postcode.`
-            : 'Marketplace listings will appear here as Scouts complete inspections in the area.'}</p>
+            : 'Marketplace listings appear here as Scouts complete inspections in the area.'}</p>
         </div>`
       return
     }
 
-    const sectionHeader = document.createElement('div')
-    sectionHeader.className = 'section-header'
-    sectionHeader.innerHTML = `
+    const header = document.createElement('div')
+    header.className = 'section-header'
+    header.innerHTML = `
       <div class="section-title">${searchQuery ? `Results for "${searchQuery}"` : 'Available listings'}</div>
       <div class="section-count">${filteredListings.length} listing${filteredListings.length !== 1 ? 's' : ''}</div>`
 
@@ -329,23 +352,26 @@
 
     const now = new Date()
     filteredListings.forEach((listing, idx) => {
-      const isNew = (now - new Date(listing.created_at)) < 7 * 24 * 60 * 60 * 1000
+      const isPurchased = purchasedListingIds.has(listing.id)
+      const isNew = !isPurchased && (now - new Date(listing.created_at)) < 7 * 24 * 60 * 60 * 1000
       const recordedAt = listing.captures?.recorded_at
-        ? new Date(listing.captures.recorded_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' })
-        : listing.recorded_at
-          ? new Date(listing.recorded_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' })
-          : '—'
+        ? new Date(listing.captures.recorded_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+        : '—'
       const typeLabel = listing.captures?.capture_type === 'external' ? 'External' : 'Internal'
+      const priceIncGst = parseFloat(listing.price || '20')
+      const videoUrl = listing.captures?.video_url || ''
 
       const card = document.createElement('div')
       card.className = 'listing-card'
       card.innerHTML = `
         <div class="listing-thumb">
-          <div class="preview-play" onclick="openPurchaseModal(${idx})">
+          <div class="preview-play" onclick="${isPurchased ? `window.open('${videoUrl}','_blank')` : `openPurchaseModal(${idx})`}">
             <i class="ti ti-player-play"></i>
           </div>
           <div class="listing-type-pill">${typeLabel}</div>
-          ${isNew ? '<div class="listing-new-pill">New</div>' : ''}
+          ${isPurchased
+            ? '<div class="listing-purchased-pill">Purchased</div>'
+            : isNew ? '<div class="listing-new-pill">New</div>' : ''}
         </div>
         <div class="listing-info">
           <div class="listing-addr">${listing.address}</div>
@@ -357,29 +383,46 @@
         </div>
         <div class="listing-footer">
           <div>
-            <div class="listing-price">$${parseFloat(listing.price || 20).toFixed(2)}</div>
-            <div class="listing-price-sub">inc. GST · 48hr access</div>
+            <div class="listing-price">$${priceIncGst.toFixed(2)}</div>
+            <div class="listing-price-sub">inc. GST</div>
           </div>
-          <button class="btn-buy" onclick="openPurchaseModal(${idx})">Purchase</button>
+          ${isPurchased
+            ? `<a class="btn-watch" href="${videoUrl}" target="_blank"><i class="ti ti-player-play"></i> Watch</a>`
+            : `<button class="btn-buy" onclick="openPurchaseModal(${idx})">Purchase</button>`}
         </div>`
       grid.appendChild(card)
     })
 
     container.innerHTML = ''
-    container.appendChild(sectionHeader)
+    container.appendChild(header)
     container.appendChild(grid)
   }
 
   window.openPurchaseModal = (idx) => {
     selectedListing = filteredListings[idx]
     if (!selectedListing) return
-    const typeLabel = selectedListing.captures?.capture_type === 'external' ? 'External capture' : 'Internal capture'
-    const recordedAt = selectedListing.recorded_at
-      ? new Date(selectedListing.recorded_at).toLocaleDateString('en-AU', { day:'numeric', month:'long', year:'numeric' })
-      : '—'
+
+    pendingClientSecret = null
+
+    const priceIncGst = parseFloat(selectedListing.price || '20')
+    const priceExGst = Math.round((priceIncGst / 1.1) * 100) / 100
+    const gst = Math.round((priceIncGst - priceExGst) * 100) / 100
+
+    document.getElementById('modalTitle').textContent = 'Purchase video access'
     document.getElementById('purchaseAddr').textContent = selectedListing.address
-    document.getElementById('purchaseType').textContent = typeLabel
-    document.getElementById('purchaseDate').textContent = recordedAt
+    document.getElementById('purchaseType').textContent =
+      selectedListing.captures?.capture_type === 'external' ? 'External capture' : 'Internal capture'
+    document.getElementById('purchaseDate').textContent = selectedListing.captures?.recorded_at
+      ? new Date(selectedListing.captures.recorded_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+      : '—'
+    document.getElementById('purchasePriceEx').textContent = `$${priceExGst.toFixed(2)}`
+    document.getElementById('purchaseGst').textContent = `$${gst.toFixed(2)}`
+    document.getElementById('purchaseTotal').textContent = `$${priceIncGst.toFixed(2)}`
+    document.getElementById('confirmPurchaseBtn').textContent = `Purchase — $${priceIncGst.toFixed(2)}`
+    document.getElementById('confirmPurchaseBtn').disabled = false
+    document.getElementById('cardSection').style.display = 'none'
+    document.getElementById('cardError').textContent = ''
+
     document.getElementById('purchaseModal').classList.add('open')
   }
 
@@ -387,6 +430,115 @@
     document.getElementById('heroSearch').value = query
     searchQuery = query
     loadListings(query)
+  }
+
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast')
+    const icon = document.getElementById('toastIcon')
+    document.getElementById('toastMsg').textContent = msg
+    toast.className = `toast show ${type}`
+    icon.className = type === 'success' ? 'ti ti-circle-check' : 'ti ti-alert-circle'
+    setTimeout(() => { toast.classList.remove('show') }, 4000)
+  }
+
+  function onPurchaseSuccess() {
+    purchasedListingIds.add(selectedListing.id)
+    document.getElementById('purchaseModal').classList.remove('open')
+    renderListings()
+    showToast('Purchase successful — you now have full access to this video.')
+  }
+
+  async function handleConfirmClick() {
+    const btn = document.getElementById('confirmPurchaseBtn')
+
+    // If we already have a client_secret (card entry mode), confirm the card payment
+    if (pendingClientSecret) {
+      btn.disabled = true
+      btn.textContent = 'Processing...'
+      document.getElementById('cardError').textContent = ''
+
+      const { error, paymentIntent } = await getStripe().confirmCardPayment(pendingClientSecret, {
+        payment_method: { card: cardElement },
+        setup_future_usage: 'off_session',
+      })
+
+      if (error) {
+        document.getElementById('cardError').textContent = error.message
+        btn.disabled = false
+        btn.textContent = `Pay $${parseFloat(selectedListing.price || '20').toFixed(2)}`
+        return
+      }
+
+      if (paymentIntent.status === 'succeeded') {
+        onPurchaseSuccess()
+      }
+      return
+    }
+
+    // First click — call Edge Function to initiate purchase
+    btn.disabled = true
+    btn.textContent = 'Processing...'
+
+    const { data: { session } } = await supabase.auth.getSession()
+
+    let result
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/marketplace-purchase`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ listing_id: selectedListing.id }),
+      })
+      result = await res.json()
+    } catch (e) {
+      showToast('Network error — please try again.', 'error')
+      btn.disabled = false
+      btn.textContent = `Purchase — $${parseFloat(selectedListing.price || '20').toFixed(2)}`
+      return
+    }
+
+    if (result.error) {
+      showToast(result.error, 'error')
+      btn.disabled = false
+      btn.textContent = `Purchase — $${parseFloat(selectedListing.price || '20').toFixed(2)}`
+      return
+    }
+
+    if (result.already_purchased) {
+      onPurchaseSuccess()
+      return
+    }
+
+    if (result.success) {
+      onPurchaseSuccess()
+      return
+    }
+
+    // No saved card — show card entry
+    if (result.requires_payment_method || result.requires_action) {
+      pendingClientSecret = result.client_secret
+      document.getElementById('modalTitle').textContent = 'Add payment details'
+      document.getElementById('cardSection').style.display = 'block'
+
+      const priceIncGst = parseFloat(selectedListing.price || '20')
+      btn.disabled = false
+      btn.textContent = `Pay $${priceIncGst.toFixed(2)}`
+
+      // Mount Stripe card element if not already mounted
+      if (!cardElement) {
+        const elements = getStripe().elements()
+        cardElement = elements.create('card', {
+          style: {
+            base: { fontFamily: 'Inter, sans-serif', fontSize: '15px', color: '#0D0D0D', '::placeholder': { color: '#bbb' } },
+          },
+        })
+        cardElement.mount('#cardElement')
+        cardElement.on('focus', () => document.getElementById('cardElementWrap').classList.add('focused'))
+        cardElement.on('blur', () => document.getElementById('cardElementWrap').classList.remove('focused'))
+      }
+    }
   }
 
   function setupListeners() {
@@ -406,38 +558,36 @@
       document.getElementById('purchaseModal').classList.remove('open')
     })
 
-    document.getElementById('confirmPurchaseBtn').addEventListener('click', () => {
-      alert('Stripe payment integration coming soon. Purchasing will be enabled once Stripe is connected.')
-    })
+    document.getElementById('confirmPurchaseBtn').addEventListener('click', handleConfirmClick)
 
     document.getElementById('purchaseModal').addEventListener('click', e => {
       if (e.target === document.getElementById('purchaseModal')) {
         document.getElementById('purchaseModal').classList.remove('open')
       }
     })
-  }
 
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await supabase.auth.signOut()
-    window.location.href = '../auth/login.html'
-  })
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut()
+      window.location.href = '../auth/login.html'
+    })
 
-  init()
-
-  document.getElementById('menuToggle').addEventListener('click', () => {
-    document.querySelector('.sidebar').classList.toggle('open')
-    document.getElementById('sidebarOverlay').classList.toggle('open')
-  })
-  document.getElementById('sidebarOverlay').addEventListener('click', () => {
-    document.querySelector('.sidebar').classList.remove('open')
-    document.getElementById('sidebarOverlay').classList.remove('open')
-  })
-  document.querySelectorAll('.sidebar .nav-item').forEach(item => {
-    item.addEventListener('click', () => {
+    document.getElementById('menuToggle').addEventListener('click', () => {
+      document.querySelector('.sidebar').classList.toggle('open')
+      document.getElementById('sidebarOverlay').classList.toggle('open')
+    })
+    document.getElementById('sidebarOverlay').addEventListener('click', () => {
       document.querySelector('.sidebar').classList.remove('open')
       document.getElementById('sidebarOverlay').classList.remove('open')
     })
-  })
+    document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelector('.sidebar').classList.remove('open')
+        document.getElementById('sidebarOverlay').classList.remove('open')
+      })
+    })
+  }
+
+  init()
 </script>
 </body>
 </html>
