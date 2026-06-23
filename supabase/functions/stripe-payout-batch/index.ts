@@ -96,15 +96,21 @@ Deno.serve(async (req: Request) => {
       continue
     }
 
-    // Get scout's Stripe account
+    // Get scout's Stripe account (stored on scout_profiles, not users)
     const { data: scout } = await supabase
-      .from('users')
-      .select('stripe_account_id')
-      .eq('id', insp.scout_id)
+      .from('scout_profiles')
+      .select('stripe_account_id, stripe_payouts_enabled')
+      .eq('user_id', insp.scout_id)
       .single()
 
     if (!scout?.stripe_account_id) {
       results.push({ inspection_id: insp.id, status: 'skipped', error: 'no Stripe Connect account' })
+      skipped++
+      continue
+    }
+
+    if (!scout?.stripe_payouts_enabled) {
+      results.push({ inspection_id: insp.id, status: 'skipped', error: 'Stripe account not yet enabled for payouts' })
       skipped++
       continue
     }
