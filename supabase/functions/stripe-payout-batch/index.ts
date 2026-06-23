@@ -60,9 +60,11 @@ Deno.serve(async (req: Request) => {
   }
 
   // Create payout batch
+  const batchRef = `BATCH-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`
   const { data: batch, error: batchErr } = await supabase
     .from('payout_batches')
     .insert({
+      batch_reference: batchRef,
       status: 'Processing',
       total_amount: pendingInspections.reduce((s, i) => s + (parseFloat(i.pricing_snapshot?.pay_to_scout ?? '0')), 0),
       created_by: user.id,
