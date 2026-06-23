@@ -109,8 +109,9 @@ Deno.serve(async (req: Request) => {
   const isFullRefund = resolution === 'FullRefundToClient'
   const isPartialRefund = resolution === 'PartialRefundToClient'
   const isRelease = resolution === 'PaymentReleasedToScout'
+  const isFraud = resolution === 'WithheldFraud'
 
-  if (isFullRefund || isPartialRefund) {
+  if (isFullRefund || isPartialRefund || isFraud) {
     if (!originalPayment?.stripe_payment_intent_id) {
       // No payment on record (draft inspection) — just cancel
       await supabase.from('inspections').update({ status: 'Cancelled', updated_at: now }).eq('id', dispute.inspection_id)
@@ -118,7 +119,7 @@ Deno.serve(async (req: Request) => {
       return ok({ success: true, refunded: false, note: 'No Stripe payment found — inspection cancelled without charge reversal' })
     }
 
-    const refundAmount = isFullRefund
+    const refundAmount = (isFullRefund || isFraud)
       ? originalPayment.amount
       : Math.min(parseFloat(partial_refund_amount ?? '0'), originalPayment.amount)
 
@@ -163,6 +164,18 @@ Deno.serve(async (req: Request) => {
 
     // Update inspection status
     await supabase.from('inspections').update({ status: 'Cancelled', updated_at: now }).eq('id', dispute.inspection_id)
+
+    // Flag scout account on fraud
+    if (isFraud && dispute.scout_id) {
+      await supabase
+        .from('users')
+        .update({ is_active: false, updated_at: now })
+        .eq('id', dispute.scout_id)
+      await supabase
+        .from('scout_profiles')
+        .update({ scout_status: 'Suspended', updated_at: now })
+        .eq('user_id', dispute.scout_id)
+    }
 
     // Xero credit note (non-fatal)
     if (refundPayment && originalPayment.xero_invoice_id) {
@@ -235,12 +248,14 @@ async function notifyParties(
     FullRefundToClient: `Your dispute has been resolved. A full refund of $${refundAmount?.toFixed(2)} has been issued and will appear within 5–10 business days.`,
     PartialRefundToClient: `Your dispute has been resolved. A partial refund of $${refundAmount?.toFixed(2)} has been issued and will appear within 5–10 business days.`,
     PaymentReleasedToScout: 'Your dispute has been reviewed. Payment has been released to the Scout.',
+    WithheldFraud: `Your dispute has been resolved. A full refund of $${refundAmount?.toFixed(2)} has been issued and will appear within 5–10 business days.`,
     Dismissed: 'Your dispute has been reviewed and dismissed. No action has been taken.',
   }
   const scoutMessages: Record<string, string> = {
     FullRefundToClient: 'A dispute for one of your inspections was resolved with a full refund to the client. Your payout for this job has been withheld.',
     PartialRefundToClient: 'A dispute for one of your inspections was resolved with a partial refund to the client.',
     PaymentReleasedToScout: 'Great news — the dispute on your inspection has been resolved in your favour. Payment will be included in the next payout batch.',
+    WithheldFraud: 'Your account has been suspended due to a fraud determination. Please contact support if you believe this is an error.',
     Dismissed: 'A dispute raised against one of your inspections has been dismissed. No action has been taken.',
   }
 
