@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <script>window._googleMapsReady = function(){}</script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBDTc3xKB4nlhqjMPRQQTDYFjPiUc8wa1o&libraries=places&callback=_googleMapsReady"></script>
   <script src="https://js.stripe.com/v3/"></script>
   <style>
     :root { --purple: #560591; --tint: #F5EEFF; --bg: #F7F5FA; --border: #EEE; --green: #22C55E; --red: #E53935; }
@@ -84,6 +86,9 @@
     .loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: #999; font-size: 14px; gap: 10px; }
     .spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #E0E0E0; border-top-color: var(--purple); animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+    /* Suppress any Stripe-injected wallet / "Save with" buttons */
+    #stripeCardElement iframe[name*="__privateStripeFrame"],
+    .stripe-save-button, [data-stripe-button] { display: none !important; }
     .menu-toggle { display: none; width: 36px; height: 36px; border: none; background: transparent; cursor: pointer; align-items: center; justify-content: center; border-radius: 8px; padding: 0; flex-shrink: 0; }
     .menu-toggle i { font-size: 22px; color: #555; }
     .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 99; }
@@ -162,6 +167,55 @@
   let clientProfile = null
   let notifEmail = true
   let notifApp = true
+
+  const _mapsLoaded = new Promise(resolve => {
+    if (typeof google !== 'undefined' && google.maps) resolve()
+    else window._googleMapsReady = resolve
+  })
+
+  async function setupBillingAddressAutocomplete() {
+    await _mapsLoaded
+    const input = document.getElementById('billingAddress')
+    if (!input) return
+    const ac = new google.maps.places.Autocomplete(input, {
+      types: ['address'],
+      componentRestrictions: { country: 'au' }
+    })
+    ac.addListener('place_changed', () => {
+      const place = ac.getPlace()
+      if (!place.address_components) return
+
+      const stateAbbrevMap = {
+        'New South Wales': 'NSW',
+        'Victoria': 'VIC',
+        'Queensland': 'QLD',
+        'Western Australia': 'WA',
+        'South Australia': 'SA',
+        'Tasmania': 'TAS',
+        'Australian Capital Territory': 'ACT',
+        'Northern Territory': 'NT'
+      }
+
+      let streetNumber = '', route = '', suburb = '', state = '', postcode = ''
+      for (const comp of place.address_components) {
+        if (comp.types.includes('street_number')) streetNumber = comp.long_name
+        else if (comp.types.includes('route')) route = comp.long_name
+        else if (comp.types.includes('locality')) suburb = comp.long_name
+        else if (comp.types.includes('administrative_area_level_1')) {
+          state = stateAbbrevMap[comp.long_name] || comp.short_name
+        }
+        else if (comp.types.includes('postal_code')) postcode = comp.long_name
+      }
+
+      input.value = [streetNumber, route].filter(Boolean).join(' ')
+      const suburbEl = document.getElementById('billingSuburb')
+      const stateEl = document.getElementById('billingState')
+      const postcodeEl = document.getElementById('billingPostcode')
+      if (suburbEl) suburbEl.value = suburb
+      if (stateEl) stateEl.value = state
+      if (postcodeEl) postcodeEl.value = postcode
+    })
+  }
 
   function showToast(msg, type = 'success') {
     const t = document.getElementById('toast')
@@ -303,9 +357,11 @@
         <div id="stripeCardWrapper" style="display:none">
           <div id="stripeCardElement" style="border:1.5px solid #E0E0E0;border-radius:8px;padding:12px 14px;background:#fff;margin-bottom:8px"></div>
           <div id="cardError" style="color:#DC2626;font-size:12px;margin-bottom:8px;display:none"></div>
+          <div style="display:flex;justify-content:flex-end;margin-top:4px">
+            <button id="saveCardBtn" style="height:44px;background:#560591;color:#fff;border:none;border-radius:10px;padding:0 28px;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;">Save card</button>
+          </div>
         </div>
-        <div style="display:flex;gap:10px;margin-top:8px">
-          <button class="btn-save" id="saveCardBtn" style="display:none">Save card</button>
+        <div style="margin-top:8px">
           <button class="btn-secondary" id="showCardFormBtn">Add card</button>
         </div>
       </div>
@@ -366,6 +422,7 @@
     document.getElementById('logoutBtn').addEventListener('click', handleLogout)
     document.getElementById('sidebarLogoutBtn').addEventListener('click', handleLogout)
     document.getElementById('avatarInput').addEventListener('change', handleAvatarUpload)
+    setupBillingAddressAutocomplete()
     setupPaymentMethod()
   }
 
@@ -441,7 +498,6 @@
 
     showFormBtn.addEventListener('click', () => {
       document.getElementById('stripeCardWrapper').style.display = 'block'
-      document.getElementById('saveCardBtn').style.display = 'inline-flex'
       showFormBtn.style.display = 'none'
       cardElement.mount('#stripeCardElement')
     })
@@ -478,9 +534,8 @@
         const brand = (result.brand || 'Card').charAt(0).toUpperCase() + (result.brand || 'card').slice(1)
         infoEl.innerHTML = `<span style="color:#166534"><i class="ti ti-circle-check" style="font-size:14px;vertical-align:-2px"></i> ${brand} ending ${result.last4} saved</span>`
         document.getElementById('stripeCardWrapper').style.display = 'none'
-        saveBtn.style.display = 'none'
         showFormBtn.textContent = 'Update card'
-        showFormBtn.style.display = 'inline-flex'
+        showFormBtn.style.display = 'inline-block'
         showToast('Payment method saved successfully')
       } catch (err) {
         errorEl.textContent = err.message
