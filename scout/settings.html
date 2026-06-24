@@ -73,11 +73,6 @@
     .stripe-sub.connected { color: #166534; }
     .btn-stripe { height: 38px; background: #635BFF; color: #fff; border: none; border-radius: 8px; padding: 0 16px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap; flex-shrink: 0; }
     .btn-stripe.connected { background: #166534; }
-    .service-areas-input { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border: 1.5px solid #E0E0E0; border-radius: 8px; min-height: 48px; cursor: text; transition: border-color 0.15s; }
-    .service-areas-input:focus-within { border-color: var(--purple); }
-    .area-tag { display: flex; align-items: center; gap: 6px; background: var(--tint); border: 1px solid #D4B8F5; border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 600; color: var(--purple); }
-    .area-tag button { background: none; border: none; cursor: pointer; color: var(--purple); font-size: 14px; line-height: 1; padding: 0; display: flex; align-items: center; }
-    .area-input { border: none; outline: none; font-size: 13px; font-family: 'Inter', sans-serif; color: #0D0D0D; min-width: 120px; background: transparent; }
     .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #F3F3F3; }
     .toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
     .toggle-label { font-size: 14px; font-weight: 500; color: #0D0D0D; }
@@ -185,7 +180,6 @@
   let userData = null
   let scoutProfile = null
   let rtwRecord = null
-  let serviceAreas = []
   let idFileName = null
   let notifEmail = true
   let notifApp = true
@@ -260,7 +254,6 @@
       document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
     }
 
-    serviceAreas = scoutProfile?.service_areas || []
     notifEmail = scoutProfile?.notification_email ?? true
     notifApp = scoutProfile?.notification_in_app ?? true
     _homeLat = scoutProfile?.home_lat || null
@@ -339,18 +332,6 @@
       </div>`
   }
 
-  function renderServiceAreas() {
-    return `
-      <div class="service-areas-input" id="serviceAreasContainer" onclick="document.getElementById('areaInput').focus()">
-        ${serviceAreas.map(area => `
-          <div class="area-tag">
-            ${area}
-            <button onclick="removeArea('${area}')" type="button">×</button>
-          </div>`).join('')}
-        <input class="area-input" id="areaInput" placeholder="${serviceAreas.length === 0 ? 'Type a suburb or postcode and press Enter...' : 'Add more...'}" >
-      </div>
-      <div class="hint">Press Enter after each suburb or postcode. These help clients find Scouts in their area.</div>`
-  }
 
   function renderPage() {
     const idUploaded = !!scoutProfile?.id_document_url
@@ -483,16 +464,6 @@
 
       <div class="card">
         <div class="card-header">
-          <div class="card-title"><i class="ti ti-map-pin"></i> Service areas</div>
-        </div>
-        <div id="serviceAreasWrap">${renderServiceAreas()}</div>
-        <div style="display:flex;justify-content:flex-end;margin-top:14px">
-          <button class="btn-save" id="saveAreasBtn">Save areas</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
           <div class="card-title"><i class="ti ti-bell"></i> Notifications</div>
         </div>
         <div class="toggle-row">
@@ -531,27 +502,11 @@
 
   function setupListeners() {
     document.getElementById('savePersonalBtn').addEventListener('click', savePersonal)
-    document.getElementById('saveAreasBtn').addEventListener('click', saveAreas)
     document.getElementById('saveNotifBtn').addEventListener('click', saveNotifications)
     document.getElementById('resetPasswordBtn').addEventListener('click', sendPasswordReset)
     document.getElementById('logoutBtn').addEventListener('click', handleLogout)
     document.getElementById('sidebarLogoutBtn').addEventListener('click', handleLogout)
     document.getElementById('avatarInput').addEventListener('change', handleAvatarUpload)
-
-    const areaInput = document.getElementById('areaInput')
-    if (areaInput) {
-      areaInput.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && e.target.value.trim()) {
-          e.preventDefault()
-          const val = e.target.value.trim()
-          if (!serviceAreas.includes(val)) {
-            serviceAreas.push(val)
-            document.getElementById('serviceAreasWrap').innerHTML = renderServiceAreas()
-            setupAreaInput()
-          }
-        }
-      })
-    }
 
     document.getElementById('idFileInput').addEventListener('change', handleIdUpload)
     setupHomeAddressAutocomplete()
@@ -602,29 +557,6 @@
       uploadingDiv.remove()
     }
     e.target.value = ''
-  }
-
-  function setupAreaInput() {
-    const areaInput = document.getElementById('areaInput')
-    if (areaInput) {
-      areaInput.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && e.target.value.trim()) {
-          e.preventDefault()
-          const val = e.target.value.trim()
-          if (!serviceAreas.includes(val)) {
-            serviceAreas.push(val)
-            document.getElementById('serviceAreasWrap').innerHTML = renderServiceAreas()
-            setupAreaInput()
-          }
-        }
-      })
-    }
-  }
-
-  window.removeArea = (area) => {
-    serviceAreas = serviceAreas.filter(a => a !== area)
-    document.getElementById('serviceAreasWrap').innerHTML = renderServiceAreas()
-    setupAreaInput()
   }
 
   window.toggleNotif = (type) => {
@@ -848,23 +780,6 @@
 
     showToast('ID document uploaded. Our team will verify it within 24 hours.')
     setTimeout(() => window.location.reload(), 1500)
-  }
-
-  async function saveAreas() {
-    const btn = document.getElementById('saveAreasBtn')
-    btn.disabled = true
-    btn.textContent = 'Saving...'
-
-    const { error } = await supabase
-      .from('scout_profiles')
-      .update({ service_areas: serviceAreas, updated_at: new Date().toISOString() })
-      .eq('user_id', currentUser.id)
-
-    btn.disabled = false
-    btn.textContent = 'Save areas'
-
-    if (error) showToast('Error saving areas. Please try again.', 'error')
-    else showToast('Service areas saved successfully')
   }
 
   async function saveNotifications() {

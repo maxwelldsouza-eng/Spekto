@@ -223,8 +223,7 @@ export async function createScoutProfile(userId) {
 }
 
 export async function updateScoutProfile(
-  userId, dateOfBirth, abn,
-  serviceAreas, phoneNumber
+  userId, dateOfBirth, abn, phoneNumber
 ) {
   try {
     const { data, error } = await supabase
@@ -232,7 +231,6 @@ export async function updateScoutProfile(
       .update({
         date_of_birth: dateOfBirth || null,
         abn: abn || null,
-        service_areas: serviceAreas || null,
         updated_at: new Date().toISOString()
       })
       .eq('user_id', userId)
