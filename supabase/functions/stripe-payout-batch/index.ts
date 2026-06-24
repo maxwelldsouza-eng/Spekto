@@ -133,7 +133,7 @@ Deno.serve(async (req: Request) => {
         stripe_account_id: scout.stripe_account_id,
         scout_payout: scoutAmount,
         amount: scoutAmount,
-        status: 'pending',
+        status: 'Pending',
         item_type: 'Payout',
         xero_sync_status: 'Pending',
         created_at: new Date().toISOString(),
@@ -159,7 +159,7 @@ Deno.serve(async (req: Request) => {
 
       await supabase
         .from('payout_batch_items')
-        .update({ stripe_transfer_id: transfer.id, status: 'processing', updated_at: new Date().toISOString() })
+        .update({ stripe_transfer_id: transfer.id, status: 'Processing', updated_at: new Date().toISOString() })
         .eq('id', item.id)
 
       results.push({ inspection_id: insp.id, status: 'paid', transfer_id: transfer.id })
@@ -168,7 +168,7 @@ Deno.serve(async (req: Request) => {
       const msg = stripeErr instanceof Error ? stripeErr.message : String(stripeErr)
       await supabase
         .from('payout_batch_items')
-        .update({ status: 'failed', failure_reason: msg, updated_at: new Date().toISOString() })
+        .update({ status: 'Failed', failure_reason: msg, updated_at: new Date().toISOString() })
         .eq('id', item.id)
       results.push({ inspection_id: insp.id, status: 'failed', error: msg })
     }
