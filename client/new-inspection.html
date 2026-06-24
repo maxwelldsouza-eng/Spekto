@@ -287,6 +287,7 @@
             <input type="text" id="address" placeholder="Start typing an address...">
           </div>
           <div class="error-msg" id="addressError">Address is required</div>
+          <div class="error-msg" id="addressGeoError">Please select an address from the dropdown so we can locate it on the map</div>
         </div>
         <div class="field">
           <label>Property listing link <span class="optional-tag">Optional</span></label>
@@ -521,6 +522,18 @@
         error.style.display = 'none'
       }
     })
+
+    // Also require that the address was confirmed via autocomplete (so lat/lng are captured)
+    const addrInput = document.getElementById('address')
+    const geoError = document.getElementById('addressGeoError')
+    if (addrInput.value.trim() && (!_lat || !_lng)) {
+      addrInput.classList.add('invalid')
+      geoError.style.display = 'block'
+      valid = false
+    } else {
+      geoError.style.display = 'none'
+    }
+
     return valid
   }
 
@@ -529,6 +542,13 @@
       document.getElementById(id).classList.remove('invalid')
       const errorMap = { inspDate: 'dateError', inspTime: 'timeError', address: 'addressError' }
       document.getElementById(errorMap[id]).style.display = 'none'
+      // If the user manually edits the address field, invalidate the stored coords
+      // so a stale autocomplete selection doesn't silently survive the edit
+      if (id === 'address') {
+        _lat = null
+        _lng = null
+        document.getElementById('addressGeoError').style.display = 'none'
+      }
     })
   })
 
