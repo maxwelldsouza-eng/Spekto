@@ -45,12 +45,12 @@ Deno.serve(async (req: Request) => {
 
   if (!allPending?.length) return ok({ batch_id: null, total: 0, processed: 0, skipped: 0, results: [] })
 
-  // Exclude inspections already in a non-failed batch item
+  // Exclude inspections already in an active/processing/paid batch item (allow re-batching of Failed items)
   const { data: existingItems } = await supabase
     .from('payout_batch_items')
     .select('inspection_id')
     .in('inspection_id', allPending.map(i => i.id))
-    .not('status', 'eq', 'failed')
+    .in('status', ['Pending', 'Processing', 'Paid', 'OnHold'])
 
   const alreadyBatched = new Set((existingItems || []).map(i => i.inspection_id))
   const pendingInspections = allPending.filter(i => !alreadyBatched.has(i.id))
@@ -161,6 +161,11 @@ Deno.serve(async (req: Request) => {
         .from('payout_batch_items')
         .update({ stripe_transfer_id: transfer.id, status: 'Processing', updated_at: new Date().toISOString() })
         .eq('id', item.id)
+
+      await supabase
+        .from('inspections')
+        .update({ status: 'Paid', updated_at: new Date().toISOString() })
+        .eq('id', insp.id)
 
       results.push({ inspection_id: insp.id, status: 'paid', transfer_id: transfer.id })
       processed++
