@@ -72,8 +72,12 @@ Deno.serve(async (req: Request) => {
 
       if (accountId && account) {
         if (account.charges_enabled && account.payouts_enabled) {
-          // Mark as Active in DB if not already set
-          await supabase.from('scout_profiles').update({ stripe_connect_status: 'Active', updated_at: new Date().toISOString() }).eq('user_id', user.id)
+          await supabase.from('scout_profiles').update({
+            stripe_connect_status: 'Active',
+            stripe_payouts_enabled: true,
+            stripe_charges_enabled: true,
+            updated_at: new Date().toISOString(),
+          }).eq('user_id', user.id)
           return ok({ already_active: true, account_id: accountId })
         }
         // Account exists but onboarding incomplete — fall through to generate a fresh link
