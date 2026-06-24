@@ -159,8 +159,13 @@ Deno.serve(async (req: Request) => {
 
       await supabase
         .from('payout_batch_items')
-        .update({ stripe_transfer_id: transfer.id, status: 'Processing', updated_at: new Date().toISOString() })
+        .update({ stripe_transfer_id: transfer.id, status: 'Paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq('id', item.id)
+
+      await supabase
+        .from('inspections')
+        .update({ status: 'Paid', updated_at: new Date().toISOString() })
+        .eq('id', insp.id)
 
       results.push({ inspection_id: insp.id, status: 'paid', transfer_id: transfer.id })
       processed++
@@ -178,7 +183,7 @@ Deno.serve(async (req: Request) => {
   await supabase
     .from('payout_batches')
     .update({
-      status: processed > 0 ? 'Processing' : 'Failed',
+      status: processed > 0 ? 'Processed' : 'Failed',
       processed_at: new Date().toISOString(),
     })
     .eq('id', batch.id)

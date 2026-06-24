@@ -38,64 +38,6 @@ Deno.serve(async (req: Request) => {
   try {
     switch (event.type) {
 
-      case 'transfer.paid': {
-        const transfer = event.data.object as Stripe.Transfer
-        const batchItemId = transfer.metadata?.batch_item_id
-        const batchId = transfer.metadata?.batch_id
-
-        if (batchItemId) {
-          const { data: item } = await supabase
-            .from('payout_batch_items')
-            .update({
-              status: 'Paid',
-              paid_at: new Date(transfer.created * 1000).toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', batchItemId)
-            .select('inspection_id')
-            .single()
-
-          if (item?.inspection_id) {
-            await supabase
-              .from('inspections')
-              .update({ status: 'Paid', updated_at: new Date().toISOString() })
-              .eq('id', item.inspection_id)
-          }
-        }
-
-        if (batchId) {
-          const { data: unpaid } = await supabase
-            .from('payout_batch_items')
-            .select('id')
-            .eq('batch_id', batchId)
-            .not('status', 'in', '("Paid","Cancelled")')
-
-          if (!unpaid?.length) {
-            await supabase
-              .from('payout_batches')
-              .update({ status: 'Processed', updated_at: new Date().toISOString() })
-              .eq('id', batchId)
-          }
-        }
-        break
-      }
-
-      case 'transfer.failed': {
-        const transfer = event.data.object as Stripe.Transfer
-        const batchItemId = transfer.metadata?.batch_item_id
-        if (batchItemId) {
-          await supabase
-            .from('payout_batch_items')
-            .update({
-              status: 'Failed',
-              failure_reason: 'Transfer failed after submission to Stripe',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', batchItemId)
-        }
-        break
-      }
-
       case 'transfer.reversed': {
         const transfer = event.data.object as Stripe.Transfer
         const batchItemId = transfer.metadata?.batch_item_id
