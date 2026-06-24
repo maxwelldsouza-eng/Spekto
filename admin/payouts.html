@@ -513,16 +513,16 @@
 
       supabase.from('payout_batch_items')
         .select('*, scout:scout_id(first_name, last_name), payout_batches(batch_reference, created_at), inspections(ref_number, address)')
-        .eq('status', 'processing'),
+        .eq('status', 'Processing'),
 
       supabase.from('payout_batch_items')
         .select('*, scout:scout_id(first_name, last_name), payout_batches(batch_reference, created_at), inspections(ref_number, address)')
-        .eq('status', 'paid')
+        .eq('status', 'Paid')
         .order('updated_at', { ascending: false }),
 
       supabase.from('payout_batch_items')
         .select('*, scout:scout_id(first_name, last_name), payout_batches(batch_reference, created_at), inspections(ref_number, address)')
-        .eq('status', 'failed')
+        .eq('status', 'Failed')
         .order('updated_at', { ascending: false }),
 
       supabase.from('payout_batches')

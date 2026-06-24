@@ -195,7 +195,7 @@
     // Find inspection IDs that already have a non-failed batch item
     const batchedInspectionIds = new Set(
       (batchItems || [])
-        .filter(b => b.status !== 'failed')
+        .filter(b => b.status !== 'Failed')
         .map(b => b.inspections?.id)
         .filter(Boolean)
     )
@@ -208,9 +208,9 @@
   }
 
   function renderPage(batchItems, unbatchedInspections) {
-    const paidItems = batchItems.filter(b => b.status === 'paid')
-    const processingItems = batchItems.filter(b => b.status === 'processing')
-    const pendingBatchItems = batchItems.filter(b => b.status === 'pending')
+    const paidItems = batchItems.filter(b => b.status === 'Paid')
+    const processingItems = batchItems.filter(b => b.status === 'Processing')
+    const pendingBatchItems = batchItems.filter(b => b.status === 'Pending')
 
     const totalEarned = paidItems.reduce((s, b) => s + (parseFloat(b.amount) || 0), 0)
     const inBatchAmount = [...processingItems, ...pendingBatchItems]
@@ -312,27 +312,27 @@
 
     // Split rows into the two tabs
     const awaitingRows = allRows.filter(r => {
-      if (r.type === 'batch') return r.status === 'pending' || r.status === 'processing' || r.status === 'failed'
+      if (r.type === 'batch') return r.status === 'Pending' || r.status === 'Processing' || r.status === 'Failed'
       return r.status === 'PendingPayment' || r.status === 'Completed'
     })
-    const paidRows = allRows.filter(r => r.type === 'batch' && r.status === 'paid')
+    const paidRows = allRows.filter(r => r.type === 'batch' && r.status === 'Paid')
 
     const statusLabelMap = {
-      paid: 'Paid',
-      processing: 'Processing',
-      pending: 'In batch',
-      failed: 'Failed',
-      reversed: 'Reversed',
+      Paid: 'Paid',
+      Processing: 'Processing',
+      Pending: 'In batch',
+      Failed: 'Failed',
+      Reversed: 'Reversed',
       Completed: 'Awaiting release',
       PendingPayment: 'Awaiting release',
       Disputed: 'Disputed',
     }
     const statusBadgeMap = {
-      paid: 'Paid',
-      processing: 'Completed',
-      pending: 'PendingPayment',
-      failed: 'Disputed',
-      reversed: 'Disputed',
+      Paid: 'Paid',
+      Processing: 'Completed',
+      Pending: 'PendingPayment',
+      Failed: 'Disputed',
+      Reversed: 'Disputed',
       Completed: 'PendingPayment',
       PendingPayment: 'PendingPayment',
       Disputed: 'Disputed',

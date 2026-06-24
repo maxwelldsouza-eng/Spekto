@@ -159,7 +159,7 @@ Deno.serve(async (req: Request) => {
 
       await supabase
         .from('payout_batch_items')
-        .update({ stripe_transfer_id: transfer.id, status: 'Processing', updated_at: new Date().toISOString() })
+        .update({ stripe_transfer_id: transfer.id, status: 'Paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq('id', item.id)
 
       await supabase
