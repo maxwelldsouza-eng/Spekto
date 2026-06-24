@@ -115,13 +115,29 @@ Deno.serve(async (req: Request) => {
       continue
     }
 
+    // Fetch payment record (payment_id is NOT NULL on batch items)
+    const { data: payment } = await supabase
+      .from('payments')
+      .select('id')
+      .eq('inspection_id', insp.id)
+      .single()
+
+    if (!payment?.id) {
+      results.push({ inspection_id: insp.id, status: 'skipped', error: 'no payment record found' })
+      skipped++
+      continue
+    }
+
     // Create batch item
-    const { data: item } = await supabase
+    const { data: item, error: itemErr } = await supabase
       .from('payout_batch_items')
       .insert({
         batch_id: batch.id,
         inspection_id: insp.id,
         scout_id: insp.scout_id,
+        payment_id: payment.id,
+        stripe_account_id: scout.stripe_account_id,
+        scout_payout: scoutAmount,
         amount: scoutAmount,
         status: 'pending',
         item_type: 'Payout',
@@ -133,7 +149,7 @@ Deno.serve(async (req: Request) => {
       .single()
 
     if (!item) {
-      results.push({ inspection_id: insp.id, status: 'failed', error: 'could not create batch item' })
+      results.push({ inspection_id: insp.id, status: 'failed', error: 'could not create batch item: ' + (itemErr?.message ?? 'unknown') })
       continue
     }
 
