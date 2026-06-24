@@ -620,7 +620,7 @@
         submitBtn.textContent = 'Setting up payment...'
         const { data: { session } } = await supabase.auth.getSession()
 
-        const res = await fetch('https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/create-inspection', {
+        const res = await fetch('https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/stripe-create-inspection', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -637,16 +637,22 @@
         })
 
         const result = await res.json()
+        submitBtn.disabled = false
+        submitBtn.textContent = 'Submit Inspection'
+
         if (!res.ok) {
-          submitBtn.disabled = false
-          submitBtn.textContent = 'Submit Inspection'
           alert('Error: ' + (result.error ?? 'Could not create inspection'))
           return
         }
 
-        submitBtn.disabled = false
-        submitBtn.textContent = 'Submit Inspection'
-        openPaymentModal(result.client_secret, result.inspection_id, pricingPayload)
+        if (result.success) {
+          // Saved card was charged successfully — go straight to success screen
+          document.getElementById('paySuccessOverlay').style.display = 'flex'
+          return
+        }
+
+        // requires_action (3DS) or requires_payment_method (no saved card) — show card modal
+        openPaymentModal(result.client_secret, result.inspection_id, pricingPayload, result.requires_action)
       } catch (err) {
         submitBtn.disabled = false
         submitBtn.textContent = 'Submit Inspection'
@@ -728,31 +734,47 @@
   let _cardElement = null
   let _pendingInspectionId = null
   let _pendingClientSecret = null
+  let _pendingRequiresAction = false
 
   function getStripe() {
     if (!_stripeInstance) _stripeInstance = Stripe(STRIPE_PK)
     return _stripeInstance
   }
 
-  window.openPaymentModal = function(clientSecret, inspectionId, pricingSnap) {
+  window.openPaymentModal = function(clientSecret, inspectionId, pricingSnap, requiresAction) {
     _pendingClientSecret = clientSecret
     _pendingInspectionId = inspectionId
+    _pendingRequiresAction = !!requiresAction
 
     if (pricingSnap) {
       document.getElementById('pmTotal').textContent = '$' + parseFloat(pricingSnap.total || 0).toFixed(2)
     }
 
+    if (_pendingRequiresAction) {
+      // 3DS challenge — saved card needs authentication, no new card entry needed
+      document.querySelector('.payment-modal-title').textContent = 'Authentication required'
+      document.getElementById('pmCardElement').style.display = 'none'
+      const banner = document.querySelector('#paymentOverlay .payment-modal [style*="F0FDF4"]')
+      if (banner) banner.textContent = 'Your saved card requires additional authentication. Click below to complete the security check.'
+    } else {
+      // No saved card — collect card details
+      document.querySelector('.payment-modal-title').textContent = 'No payment method on file'
+      document.getElementById('pmCardElement').style.display = ''
+    }
+
     document.getElementById('paymentOverlay').classList.add('open')
 
-    const stripe = getStripe()
-    if (!_cardElement) {
-      const elements = stripe.elements()
-      _cardElement = elements.create('card', {
-        hidePostalCode: true,
-        style: { base: { fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#0D0D0D', '::placeholder': { color: '#bbb' } } }
-      })
+    if (!_pendingRequiresAction) {
+      const stripe = getStripe()
+      if (!_cardElement) {
+        const elements = stripe.elements()
+        _cardElement = elements.create('card', {
+          hidePostalCode: true,
+          style: { base: { fontFamily: 'Inter, sans-serif', fontSize: '14px', color: '#0D0D0D', '::placeholder': { color: '#bbb' } } }
+        })
+      }
+      _cardElement.mount('#pmCardElement')
     }
-    _cardElement.mount('#pmCardElement')
   }
 
   document.getElementById('pmCancel').addEventListener('click', () => {
@@ -760,6 +782,7 @@
     if (_cardElement) _cardElement.unmount()
     _pendingClientSecret = null
     _pendingInspectionId = null
+    _pendingRequiresAction = false
   })
 
   document.getElementById('pmPay').addEventListener('click', async () => {
@@ -770,9 +793,22 @@
     errorEl.textContent = ''
 
     const stripe = getStripe()
-    const { paymentIntent, error } = await stripe.confirmCardPayment(_pendingClientSecret, {
-      payment_method: { card: _cardElement }
-    })
+    let paymentIntent, error
+
+    if (_pendingRequiresAction) {
+      // 3DS: handle the card action for the already-confirmed PaymentIntent
+      const result = await stripe.handleCardAction(_pendingClientSecret)
+      paymentIntent = result.paymentIntent
+      error = result.error
+    } else {
+      // New card: confirm with card element and save for future use
+      const result = await stripe.confirmCardPayment(_pendingClientSecret, {
+        payment_method: { card: _cardElement },
+        setup_future_usage: 'off_session'
+      })
+      paymentIntent = result.paymentIntent
+      error = result.error
+    }
 
     if (error) {
       errorEl.textContent = error.message
@@ -781,16 +817,15 @@
       return
     }
 
-    if (paymentIntent.status === 'succeeded') {
+    if (paymentIntent && paymentIntent.status === 'succeeded') {
       // Mark inspection as Posted via a follow-up (webhook will also do this, but do it here immediately)
-      // Also save the payment method as default for future inspections
+      // Also save the payment method as default for future inspections (new card case only)
       try {
-        // supabase is available from the module script above
         const { data: { session } } = await window._supabaseClient.auth.getSession()
         const pmId = typeof paymentIntent.payment_method === 'string'
           ? paymentIntent.payment_method
           : paymentIntent.payment_method?.id
-        if (pmId) {
+        if (pmId && !_pendingRequiresAction) {
           await fetch(`${SUPABASE_URL}/functions/v1/stripe-save-payment-method`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
