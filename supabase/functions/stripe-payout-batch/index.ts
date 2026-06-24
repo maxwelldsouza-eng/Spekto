@@ -115,18 +115,12 @@ Deno.serve(async (req: Request) => {
       continue
     }
 
-    // Fetch payment record (payment_id is NOT NULL on batch items)
+    // Fetch payment record if it exists (nullable — legacy inspections may not have one)
     const { data: payment } = await supabase
       .from('payments')
       .select('id')
       .eq('inspection_id', insp.id)
-      .single()
-
-    if (!payment?.id) {
-      results.push({ inspection_id: insp.id, status: 'skipped', error: 'no payment record found' })
-      skipped++
-      continue
-    }
+      .maybeSingle()
 
     // Create batch item
     const { data: item, error: itemErr } = await supabase
@@ -135,7 +129,7 @@ Deno.serve(async (req: Request) => {
         batch_id: batch.id,
         inspection_id: insp.id,
         scout_id: insp.scout_id,
-        payment_id: payment.id,
+        payment_id: payment?.id ?? null,
         stripe_account_id: scout.stripe_account_id,
         scout_payout: scoutAmount,
         amount: scoutAmount,

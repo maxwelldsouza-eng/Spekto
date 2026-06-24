@@ -708,10 +708,13 @@
         return
       }
 
-      const skipped = result.results?.filter(r => r.status === 'skipped').length || 0
+      const skippedItems = result.results?.filter(r => r.status === 'skipped') || []
       const failed = result.results?.filter(r => r.status === 'failed').length || 0
       let msg = `${result.processed} of ${result.total} payouts sent via Stripe`
-      if (skipped) msg += ` · ${skipped} skipped (no Connect account)`
+      if (skippedItems.length) {
+        const reasons = [...new Set(skippedItems.map(r => r.error).filter(Boolean))]
+        msg += ` · ${skippedItems.length} skipped (${reasons.join('; ')})`
+      }
       if (failed) msg += ` · ${failed} failed`
       showToast(msg, result.processed > 0 ? 'success' : 'error')
 
