@@ -26,57 +26,89 @@ function ok(payload: unknown) {
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, content-type' } })
-  }
-
-  const authHeader = req.headers.get('Authorization')
-  if (!authHeader) return err('Unauthorized', 401)
-
-  const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
-  if (authErr || !user) return err('Unauthorized', 401)
-
-  const { data: userData } = await supabase
-    .from('users')
-    .select('stripe_account_id, first_name, last_name, email')
-    .eq('id', user.id)
-    .single()
-
-  if (!userData) return err('User not found', 404)
-
-  let accountId = userData.stripe_account_id
-
-  // If account exists, check if it's fully onboarded
-  if (accountId) {
-    const account = await stripe.accounts.retrieve(accountId)
-    if (account.charges_enabled && account.payouts_enabled) {
-      return ok({ already_active: true, account_id: accountId })
-    }
-    // Account exists but onboarding incomplete — generate a fresh link
-  } else {
-    // Create new Connect Express account
-    const account = await stripe.accounts.create({
-      type: 'express',
-      country: 'AU',
-      email: userData.email,
-      capabilities: { transfers: { requested: true } },
-      business_type: 'individual',
-      metadata: { supabase_user_id: user.id },
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'authorization, content-type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      },
     })
-    accountId = account.id
-
-    await Promise.all([
-      supabase.from('users').update({ stripe_account_id: accountId, updated_at: new Date().toISOString() }).eq('id', user.id),
-      supabase.from('scout_profiles').update({ stripe_account_id: accountId, updated_at: new Date().toISOString() }).eq('user_id', user.id),
-    ])
   }
 
-  // Generate onboarding link
-  const accountLink = await stripe.accountLinks.create({
-    account: accountId,
-    refresh_url: `${BASE_URL}/settings.html?stripe=refresh`,
-    return_url: `${BASE_URL}/settings.html?stripe=connected`,
-    type: 'account_onboarding',
-  })
+  try {
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) return err('Unauthorized', 401)
 
-  return ok({ url: accountLink.url, account_id: accountId })
+    const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
+    if (authErr || !user) return err('Unauthorized', 401)
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('stripe_account_id, first_name, last_name, email')
+      .eq('id', user.id)
+      .single()
+
+    if (!userData) return err('User not found', 404)
+
+    let accountId = userData.stripe_account_id
+
+    // If account exists, check if it's fully onboarded
+    if (accountId) {
+      let account
+      try {
+        account = await stripe.accounts.retrieve(accountId)
+      } catch (stripeErr: any) {
+        // Account ID is stale (e.g. from a different Stripe key/mode) — clear it and create a fresh one
+        if (stripeErr?.code === 'resource_missing' || stripeErr?.statusCode === 404) {
+          accountId = null
+          await Promise.all([
+            supabase.from('users').update({ stripe_account_id: null, updated_at: new Date().toISOString() }).eq('id', user.id),
+            supabase.from('scout_profiles').update({ stripe_account_id: null, stripe_connect_status: null, updated_at: new Date().toISOString() }).eq('user_id', user.id),
+          ])
+        } else {
+          throw stripeErr
+        }
+      }
+
+      if (accountId && account) {
+        if (account.charges_enabled && account.payouts_enabled) {
+          // Mark as Active in DB if not already set
+          await supabase.from('scout_profiles').update({ stripe_connect_status: 'Active', updated_at: new Date().toISOString() }).eq('user_id', user.id)
+          return ok({ already_active: true, account_id: accountId })
+        }
+        // Account exists but onboarding incomplete — fall through to generate a fresh link
+      }
+    }
+
+    if (!accountId) {
+      // Create new Connect Express account
+      const account = await stripe.accounts.create({
+        type: 'express',
+        country: 'AU',
+        email: userData.email,
+        capabilities: { transfers: { requested: true } },
+        business_type: 'individual',
+        metadata: { supabase_user_id: user.id },
+      })
+      accountId = account.id
+
+      await Promise.all([
+        supabase.from('users').update({ stripe_account_id: accountId, updated_at: new Date().toISOString() }).eq('id', user.id),
+        supabase.from('scout_profiles').update({ stripe_account_id: accountId, stripe_connect_status: 'Pending', updated_at: new Date().toISOString() }).eq('user_id', user.id),
+      ])
+    }
+
+    // Generate onboarding link
+    const accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${BASE_URL}/settings.html?stripe=refresh`,
+      return_url: `${BASE_URL}/settings.html?stripe=connected`,
+      type: 'account_onboarding',
+    })
+
+    return ok({ url: accountLink.url, account_id: accountId })
+  } catch (e: any) {
+    const message = e?.message ?? 'Internal server error'
+    return err(message, e?.statusCode ?? 500)
+  }
 })
