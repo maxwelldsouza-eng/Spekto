@@ -197,7 +197,10 @@
       .main { margin-left: 0; }
       .stats { grid-template-columns: repeat(2, 1fr); }
       .content { padding: 16px; }
-      .topbar { padding: 14px 16px; }
+      .topbar { padding: 14px 16px; gap: 12px; }
+      .topbar-title { font-size: 15px; white-space: nowrap; }
+      .btn-new-label { display: none; }
+      .btn-new { padding: 10px 12px; }
       .tile-grid { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 420px) {
@@ -246,7 +249,7 @@
       <button class="menu-toggle" id="menuToggle"><i class="ti ti-menu-2"></i></button>
       <div class="topbar-title">My Inspections</div>
       <a class="btn-new" href="new-inspection.html">
-        <i class="ti ti-plus" style="font-size:15px"></i> New Inspection
+        <i class="ti ti-plus" style="font-size:15px"></i><span class="btn-new-label"> New Inspection</span>
       </a>
     </div>
 
