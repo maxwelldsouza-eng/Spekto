@@ -178,6 +178,7 @@
 
   let pricingData = []
   let mpData = null
+  let xeroData = null
   let adminData = null
 
   async function init() {
@@ -214,13 +215,15 @@
   }
 
   async function loadData() {
-    const [{ data: pricing }, { data: mp }] = await Promise.all([
+    const [{ data: pricing }, { data: mp }, { data: xero }] = await Promise.all([
       supabase.from('pricing').select('*').order('id'),
-      supabase.from('marketplace_pricing').select('*').eq('id', 'standard').single()
+      supabase.from('marketplace_pricing').select('*').eq('id', 'standard').single(),
+      supabase.from('xero_tokens').select('tenant_name, updated_at').eq('id', 1).maybeSingle()
     ])
 
     pricingData = pricing || []
     mpData = mp
+    xeroData = xero
 
     render()
   }
@@ -372,9 +375,60 @@
             <i class="ti ti-device-floppy"></i> Save settings
           </button>
         </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-head">
+          <div>
+            <div class="section-title"><i class="ti ti-file-invoice"></i> Xero Integration</div>
+            <div class="section-desc">Connect Xero to automatically sync invoices, payouts and refunds.</div>
+          </div>
+          ${xeroData ? `<div class="section-meta">Connected ${fmtDate(xeroData.updated_at)}</div>` : ''}
+        </div>
+        <div class="pricing-grid" style="padding:20px 24px">
+          ${xeroData ? `
+            <div style="display:flex;align-items:center;gap:12px;padding:4px 0">
+              <div style="width:10px;height:10px;border-radius:50%;background:#22C55E;flex-shrink:0"></div>
+              <div>
+                <div style="font-size:14px;font-weight:600;color:#0D0D0D">${xeroData.tenant_name ?? 'Connected'}</div>
+                <div style="font-size:12px;color:#999;margin-top:2px">Xero organisation connected</div>
+              </div>
+            </div>
+            <div style="margin-top:16px;display:flex;gap:10px">
+              <a href="https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/xero-connect" class="btn-save" style="text-decoration:none">
+                <i class="ti ti-refresh"></i> Reconnect
+              </a>
+              <button class="btn-save" style="background:#DC2626" onclick="disconnectXero()">
+                <i class="ti ti-plug-x"></i> Disconnect
+              </button>
+            </div>
+          ` : `
+            <div style="display:flex;align-items:center;gap:12px;padding:4px 0">
+              <div style="width:10px;height:10px;border-radius:50%;background:#E0E0E0;flex-shrink:0"></div>
+              <div>
+                <div style="font-size:14px;font-weight:600;color:#0D0D0D">Not connected</div>
+                <div style="font-size:12px;color:#999;margin-top:2px">Connect your Xero organisation to enable accounting sync</div>
+              </div>
+            </div>
+            <div style="margin-top:16px">
+              <a href="https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/xero-connect" class="btn-save" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px">
+                <i class="ti ti-plug"></i> Connect Xero
+              </a>
+            </div>
+          `}
+        </div>
       </div>`
 
     document.getElementById('mp_price').addEventListener('input', recalcGst)
+  }
+
+  window.disconnectXero = async function() {
+    if (!confirm('Disconnect Xero? Accounting sync will stop until reconnected.')) return
+    const { error } = await supabase.from('xero_tokens').delete().eq('id', 1)
+    if (error) { showToast('Failed to disconnect: ' + error.message, 'error'); return }
+    xeroData = null
+    render()
+    showToast('Xero disconnected')
   }
 
   function recalcGst() {
