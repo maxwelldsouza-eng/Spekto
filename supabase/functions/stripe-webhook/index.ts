@@ -1,5 +1,6 @@
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { xeroPost, getOrCreateXeroContact } from '../_shared/xero-client.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2024-06-20',
@@ -58,10 +59,12 @@ Deno.serve(async (req: Request) => {
         const pi = event.data.object as Stripe.PaymentIntent
 
         if (pi.metadata?.inspection_id) {
+          const inspectionId = pi.metadata.inspection_id
+
           await supabase
             .from('inspections')
             .update({ status: 'Posted', updated_at: new Date().toISOString() })
-            .eq('id', pi.metadata.inspection_id)
+            .eq('id', inspectionId)
             .eq('status', 'Draft')
 
           await supabase
@@ -69,11 +72,119 @@ Deno.serve(async (req: Request) => {
             .update({ status: 'succeeded', updated_at: new Date().toISOString() })
             .eq('stripe_payment_intent_id', pi.id)
 
+          // Xero sync — non-fatal
+          try {
+            const { data: payment } = await supabase
+              .from('payments')
+              .select('id, amount, client_id')
+              .eq('stripe_payment_intent_id', pi.id)
+              .single()
+
+            if (payment) {
+              const clientId = payment.client_id ?? pi.metadata?.supabase_user_id
+              const { data: client } = await supabase
+                .from('users')
+                .select('email, first_name, last_name')
+                .eq('id', clientId)
+                .single()
+
+              if (client) {
+                const clientName = `${client.first_name ?? ''} ${client.last_name ?? ''}`.trim() || client.email
+                const contactId = await getOrCreateXeroContact(client.email, clientName)
+                if (contactId) {
+                  const xeroRes = await xeroPost('/Invoices', {
+                    Invoices: [{
+                      Type: 'ACCREC',
+                      Contact: { ContactID: contactId },
+                      LineItems: [{
+                        Description: `Spekto inspection – ${inspectionId}`,
+                        Quantity: 1,
+                        UnitAmount: payment.amount,
+                        AccountCode: '200',
+                        TaxType: 'NONE',
+                      }],
+                      LineAmountTypes: 'NOTAX',
+                      Reference: `INS-${inspectionId}`,
+                      Status: 'AUTHORISED',
+                    }],
+                  })
+                  const xeroSync = xeroRes.ok ? 'Synced' : 'Failed'
+                  const xeroData = xeroRes.ok ? await xeroRes.json() : null
+                  if (!xeroRes.ok) console.error('Xero invoice failed:', await xeroRes.text().catch(() => ''))
+                  await supabase.from('payments').update({
+                    xero_invoice_id: xeroData?.Invoices?.[0]?.InvoiceID ?? null,
+                    xero_sync_status: xeroSync,
+                    updated_at: new Date().toISOString(),
+                  }).eq('id', payment.id)
+                }
+              }
+            }
+          } catch (xeroErr: any) {
+            console.error('Xero inspection sync error (non-fatal):', xeroErr.message)
+          }
+
         } else if (pi.metadata?.type === 'marketplace' && pi.metadata?.purchase_id) {
+          const purchaseId = pi.metadata.purchase_id
+
           await supabase
             .from('marketplace_purchases')
             .update({ status: 'Completed', purchased_at: new Date().toISOString() })
-            .eq('id', pi.metadata.purchase_id)
+            .eq('id', purchaseId)
+
+          // Xero sync — non-fatal
+          try {
+            const { data: purchase } = await supabase
+              .from('marketplace_purchases')
+              .select('id, amount, buyer_id, buyer_email')
+              .eq('id', purchaseId)
+              .single()
+
+            if (purchase) {
+              let buyerEmail = purchase.buyer_email
+              let buyerName = buyerEmail
+              if (purchase.buyer_id) {
+                const { data: buyer } = await supabase
+                  .from('users')
+                  .select('email, first_name, last_name')
+                  .eq('id', purchase.buyer_id)
+                  .single()
+                if (buyer) {
+                  buyerEmail = buyer.email
+                  buyerName = `${buyer.first_name ?? ''} ${buyer.last_name ?? ''}`.trim() || buyer.email
+                }
+              }
+              if (buyerEmail) {
+                const contactId = await getOrCreateXeroContact(buyerEmail, buyerName ?? buyerEmail)
+                if (contactId) {
+                  const xeroRes = await xeroPost('/Invoices', {
+                    Invoices: [{
+                      Type: 'ACCREC',
+                      Contact: { ContactID: contactId },
+                      LineItems: [{
+                        Description: `Spekto marketplace purchase – ${purchaseId}`,
+                        Quantity: 1,
+                        UnitAmount: purchase.amount,
+                        AccountCode: '201',
+                        TaxType: 'NONE',
+                      }],
+                      LineAmountTypes: 'NOTAX',
+                      Reference: `MP-${purchaseId}`,
+                      Status: 'AUTHORISED',
+                    }],
+                  })
+                  const xeroSync = xeroRes.ok ? 'Synced' : 'Failed'
+                  const xeroData = xeroRes.ok ? await xeroRes.json() : null
+                  if (!xeroRes.ok) console.error('Xero marketplace invoice failed:', await xeroRes.text().catch(() => ''))
+                  await supabase.from('marketplace_purchases').update({
+                    xero_invoice_id: xeroData?.Invoices?.[0]?.InvoiceID ?? null,
+                    xero_sync_status: xeroSync,
+                  }).eq('id', purchaseId)
+                }
+              }
+            }
+          } catch (xeroErr: any) {
+            console.error('Xero marketplace sync error (non-fatal):', xeroErr.message)
+          }
         }
         break
       }
