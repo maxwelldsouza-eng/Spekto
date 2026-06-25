@@ -182,14 +182,13 @@ Deno.serve(async (req: Request) => {
               Invoices: [{
                 Type: 'ACCPAY',
                 Contact: { ContactID: contactId },
+                DueDate: new Date().toISOString().split('T')[0],
                 LineItems: [{
                   Description: `Spekto scout payout — ${insp.address}`,
                   Quantity: 1,
                   UnitAmount: scoutAmount,
                   AccountCode: '200',
-                  TaxType: 'NONE',
                 }],
-                LineAmountTypes: 'EXCLUSIVE',
                 Reference: `PAYOUT-${item.id}`,
                 Status: 'AUTHORISED',
               }],

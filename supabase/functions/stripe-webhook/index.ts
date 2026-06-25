@@ -96,14 +96,13 @@ Deno.serve(async (req: Request) => {
                     Invoices: [{
                       Type: 'ACCREC',
                       Contact: { ContactID: contactId },
+                      DueDate: new Date().toISOString().split('T')[0],
                       LineItems: [{
                         Description: `Spekto inspection – ${inspectionId}`,
                         Quantity: 1,
-                        UnitAmount: payment.amount,
+                        UnitAmount: parseFloat(payment.amount),
                         AccountCode: '200',
-                        TaxType: 'NONE',
                       }],
-                      LineAmountTypes: 'EXCLUSIVE',
                       Reference: `INS-${inspectionId}`,
                       Status: 'AUTHORISED',
                     }],
@@ -160,14 +159,13 @@ Deno.serve(async (req: Request) => {
                     Invoices: [{
                       Type: 'ACCREC',
                       Contact: { ContactID: contactId },
+                      DueDate: new Date().toISOString().split('T')[0],
                       LineItems: [{
                         Description: `Spekto marketplace purchase – ${purchaseId}`,
                         Quantity: 1,
-                        UnitAmount: purchase.amount,
+                        UnitAmount: parseFloat(purchase.amount),
                         AccountCode: '200',
-                        TaxType: 'NONE',
                       }],
-                      LineAmountTypes: 'EXCLUSIVE',
                       Reference: `MP-${purchaseId}`,
                       Status: 'AUTHORISED',
                     }],

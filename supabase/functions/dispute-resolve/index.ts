@@ -73,8 +73,8 @@ Deno.serve(async (req: Request) => {
     .from('payments')
     .select('id, stripe_payment_intent_id, amount, spekto_fee_ex_gst, gst, xero_invoice_id, client_id')
     .eq('inspection_id', dispute.inspection_id)
-    .eq('payment_type', 'inspection')
-    .eq('status', 'paid')
+    .eq('payment_type', 'Charge')
+    .eq('status', 'Completed')
     .maybeSingle()
 
   const now = new Date().toISOString()
@@ -151,7 +151,7 @@ Deno.serve(async (req: Request) => {
         spekto_fee_ex_gst: -refundExGst,
         gst: -(refundAmount - refundExGst),
         currency: 'aud',
-        status: 'refunded',
+        status: 'Refunded',
         payment_type: isFullRefund ? 'Refund' : 'PartialRefund',
         stripe_refund_id: stripeRefundId,
         related_payment_id: originalPayment.id,
@@ -190,15 +190,14 @@ Deno.serve(async (req: Request) => {
               Type: 'ACCREC',
               Contact: { ContactID: contactId },
               Date: today,
+              DueDate: today,
               Status: 'AUTHORISED',
-              LineAmountTypes: 'EXCLUSIVE',
               CurrencyCode: 'AUD',
               Reference: `REFUND-${dispute_id.substring(0, 8).toUpperCase()}`,
               LineItems: [{
                 Description: `${isFullRefund ? 'Full' : 'Partial'} refund — ${inspection?.address ?? dispute.inspection_id}`,
                 Quantity: 1,
-                UnitAmount: refundExGst,
-                TaxType: 'NONE',
+                UnitAmount: refundAmount,
                 AccountCode: '200',
               }],
             }],
