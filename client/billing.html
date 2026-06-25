@@ -451,15 +451,15 @@ body{font-family:'Inter',sans-serif;color:#0D0D0D;padding:60px;max-width:680px;m
           </div>
         </div>`
     }).join('')
-  }
 
-  document.addEventListener('click', e => {
-    const btn = e.target.closest('[data-receipt-id]')
-    if (!btn) return
-    e.stopPropagation()
-    const item = receiptItemsById.get(btn.dataset.receiptId)
-    if (item) printReceipt(item)
-  })
+    container.querySelectorAll('[data-receipt-id]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation()
+        const item = receiptItemsById.get(btn.dataset.receiptId)
+        if (item) printReceipt(item)
+      })
+    })
+  }
 
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await supabase.auth.signOut()

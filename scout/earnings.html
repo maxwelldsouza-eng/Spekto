@@ -478,6 +478,14 @@ ${row.transfer_id ? `<div class="transfer-note">Stripe transfer: ${row.transfer_
 
     document.getElementById('mainContent').innerHTML = html
 
+    document.querySelectorAll('[data-payout-key]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation()
+        const row = receiptRowsById.get(btn.dataset.payoutKey)
+        if (row) printPayoutReceipt(row)
+      })
+    })
+
     // Wire up tab switching
     document.querySelectorAll('#mainContent .tab').forEach(tab => {
       tab.addEventListener('click', () => {
@@ -497,14 +505,6 @@ ${row.transfer_id ? `<div class="transfer-note">Stripe transfer: ${row.transfer_
     tuesday.setDate(now.getDate() + daysUntilTuesday)
     return tuesday.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })
   }
-
-  document.addEventListener('click', e => {
-    const btn = e.target.closest('[data-payout-key]')
-    if (!btn) return
-    e.stopPropagation()
-    const row = receiptRowsById.get(btn.dataset.payoutKey)
-    if (row) printPayoutReceipt(row)
-  })
 
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await supabase.auth.signOut()
