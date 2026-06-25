@@ -69,7 +69,7 @@ Deno.serve(async (req: Request) => {
 
           await supabase
             .from('payments')
-            .update({ status: 'succeeded', updated_at: new Date().toISOString() })
+            .update({ status: 'Completed', updated_at: new Date().toISOString() })
             .eq('stripe_payment_intent_id', pi.id)
 
           // Xero sync — non-fatal
@@ -194,7 +194,7 @@ Deno.serve(async (req: Request) => {
         if (pi.metadata?.inspection_id) {
           await supabase
             .from('payments')
-            .update({ status: 'failed', updated_at: new Date().toISOString() })
+            .update({ status: 'Failed', updated_at: new Date().toISOString() })
             .eq('stripe_payment_intent_id', pi.id)
         }
         break

@@ -159,9 +159,9 @@ Deno.serve(async (req: Request) => {
     spekto_fee_ex_gst: parseFloat(pricing_snapshot.fee_excluding_gst ?? 0),
     gst: parseFloat(pricing_snapshot.gst ?? 0),
     currency: 'aud',
-    status: 'pending',
+    status: 'Pending',
     stripe_payment_intent_id: pi.id,
-    payment_type: 'inspection',
+    payment_type: 'Charge',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   })
