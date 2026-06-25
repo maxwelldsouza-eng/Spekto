@@ -96,6 +96,17 @@ Deno.serve(async (req: Request) => {
       .eq('id', user.id)
   }
 
+  // Fetch pricing config for access window and download cap
+  const { data: mpPricing } = await supabase
+    .from('marketplace_pricing')
+    .select('access_duration_hours, max_downloads')
+    .eq('id', 'standard')
+    .single()
+
+  const accessHours = mpPricing?.access_duration_hours ?? 48
+  const maxDownloads = mpPricing?.max_downloads ?? 3
+  const accessExpiresAt = new Date(Date.now() + accessHours * 60 * 60 * 1000).toISOString()
+
   // Check for saved payment method
   const paymentMethods = await stripe.paymentMethods.list({ customer: customerId, type: 'card' })
   const defaultPm = paymentMethods.data[0] ?? null
@@ -108,6 +119,8 @@ Deno.serve(async (req: Request) => {
       buyer_id: user.id,
       purchase_price: priceIncGst,
       status: 'pending',
+      access_expires_at: accessExpiresAt,
+      max_downloads: maxDownloads,
       created_at: new Date().toISOString(),
     })
     .select()

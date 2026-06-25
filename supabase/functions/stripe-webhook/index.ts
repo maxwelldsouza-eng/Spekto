@@ -56,18 +56,24 @@ Deno.serve(async (req: Request) => {
 
       case 'payment_intent.succeeded': {
         const pi = event.data.object as Stripe.PaymentIntent
-        const inspectionId = pi.metadata?.inspection_id
-        if (inspectionId) {
+
+        if (pi.metadata?.inspection_id) {
           await supabase
             .from('inspections')
             .update({ status: 'Posted', updated_at: new Date().toISOString() })
-            .eq('id', inspectionId)
+            .eq('id', pi.metadata.inspection_id)
             .eq('status', 'Draft')
 
           await supabase
             .from('payments')
             .update({ status: 'succeeded', updated_at: new Date().toISOString() })
             .eq('stripe_payment_intent_id', pi.id)
+
+        } else if (pi.metadata?.type === 'marketplace' && pi.metadata?.purchase_id) {
+          await supabase
+            .from('marketplace_purchases')
+            .update({ status: 'paid', purchased_at: new Date().toISOString() })
+            .eq('id', pi.metadata.purchase_id)
         }
         break
       }
