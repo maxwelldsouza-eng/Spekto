@@ -56,6 +56,8 @@
     .listing-type-pill { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.65); color: #fff; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.3px; }
     .listing-new-pill { position: absolute; top: 10px; right: 10px; background: #22C55E; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
     .listing-purchased-pill { position: absolute; top: 10px; right: 10px; background: var(--purple); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
+    .listing-expired-pill { position: absolute; top: 10px; right: 10px; background: #6B7280; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
+    .listing-card-expired { opacity: 0.65; }
     .listing-info { padding: 14px 16px; }
     .listing-addr { font-size: 14px; font-weight: 600; color: #0D0D0D; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .listing-suburb { font-size: 12px; color: #999; margin-bottom: 8px; }
@@ -123,6 +125,16 @@
       .search-bar { flex-direction: column; }
     }
     @media (max-width: 420px) { .listing-grid { grid-template-columns: 1fr; } }
+
+    /* Tab pills */
+    .tab-pills { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab-pill { border-radius: 20px; padding: 7px 18px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; border: 1.5px solid #E0E0E0; background: #fff; color: #666; transition: all 0.15s; }
+    .tab-pill.active { background: var(--purple); color: #fff; border-color: var(--purple); }
+    .tab-pill:not(.active):hover { border-color: var(--purple); color: var(--purple); background: var(--tint); }
+
+    /* Purchased checkmark overlay */
+    .thumb-check-overlay { position: absolute; inset: 0; background: rgba(34,197,94,0.12); display: flex; align-items: center; justify-content: center; pointer-events: none; }
+    .thumb-check-overlay i { font-size: 36px; color: #22C55E; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35)); }
   </style>
 </head>
 <body>
@@ -260,8 +272,10 @@
   let searchQuery = ''
   let selectedListing = null
   let currentUser = null
-  let purchasedListingIds = new Set()
+  let purchasedMap = new Map() // listing_id -> access_expires_at (or null)
+  let ownInspectionIds = new Set() // inspection IDs the current user commissioned — excluded from marketplace
   let pendingClientSecret = null
+  let activeTab = 'browse'
 
   function getStripe() {
     if (!stripe) stripe = Stripe(STRIPE_PK)
@@ -273,9 +287,10 @@
     if (!user) { window.location.href = '../auth/login.html'; return }
     currentUser = user
 
-    const [{ data: userData }, { data: purchases }] = await Promise.all([
+    const [{ data: userData }, { data: purchases }, { data: ownInspections }] = await Promise.all([
       supabase.from('users').select('first_name, last_name, avatar_url').eq('id', user.id).single(),
-      supabase.from('marketplace_purchases').select('listing_id').eq('buyer_id', user.id).eq('status', 'paid'),
+      supabase.from('marketplace_purchases').select('listing_id, access_expires_at').eq('buyer_id', user.id).eq('status', 'paid'),
+      supabase.from('inspections').select('id').eq('client_id', user.id),
     ])
 
     if (userData) {
@@ -288,7 +303,8 @@
       document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
     }
 
-    purchasedListingIds = new Set((purchases || []).map(p => p.listing_id))
+    purchasedMap = new Map((purchases || []).map(p => [p.listing_id, p.access_expires_at]))
+    ownInspectionIds = new Set((ownInspections || []).map(i => i.id))
 
     initNotificationBell(supabase, currentUser.id)
     await loadListings()
@@ -316,7 +332,7 @@
       return
     }
 
-    allListings = data || []
+    allListings = (data || []).filter(l => !ownInspectionIds.has(l.inspection_id))
     filteredListings = [...allListings]
     renderListings()
 
@@ -332,32 +348,80 @@
   function renderListings() {
     const container = document.getElementById('listingsContainer')
 
-    if (filteredListings.length === 0) {
-      const hasSearch = searchQuery.length > 0
-      container.innerHTML = `
-        <div class="empty-state">
-          <i class="ti ti-building-store"></i>
-          <h3>${hasSearch ? 'No listings found' : 'No listings available yet'}</h3>
-          <p>${hasSearch
-            ? `No property videos found for "${searchQuery}". Try a different suburb or postcode.`
-            : 'Marketplace listings appear here as Scouts complete inspections in the area.'}</p>
-        </div>`
+    // Determine which listings to show based on active tab
+    // My Purchases shows all purchased listings (active + expired)
+    const displayListings = activeTab === 'purchases'
+      ? filteredListings.filter(l => purchasedMap.has(l.id))
+      : filteredListings
+
+    // Build tab pills
+    const tabsEl = document.createElement('div')
+    tabsEl.className = 'tab-pills'
+    tabsEl.innerHTML = `
+      <button class="tab-pill${activeTab === 'browse' ? ' active' : ''}" id="tabBrowse">Browse</button>
+      <button class="tab-pill${activeTab === 'purchases' ? ' active' : ''}" id="tabPurchases">My Purchases</button>`
+
+    // Attach tab click handlers after inserting into DOM (done at end)
+    container.innerHTML = ''
+    container.appendChild(tabsEl)
+
+    // Tab click handlers
+    tabsEl.querySelector('#tabBrowse').addEventListener('click', () => {
+      if (activeTab !== 'browse') { activeTab = 'browse'; renderListings() }
+    })
+    tabsEl.querySelector('#tabPurchases').addEventListener('click', () => {
+      if (activeTab !== 'purchases') { activeTab = 'purchases'; renderListings() }
+    })
+
+    // Empty state for My Purchases with no purchases
+    if (activeTab === 'purchases' && displayListings.length === 0) {
+      const empty = document.createElement('div')
+      empty.className = 'empty-state'
+      empty.innerHTML = `
+        <i class="ti ti-shopping-bag"></i>
+        <h3>No purchases yet</h3>
+        <p>You haven't purchased any videos yet. Browse the marketplace to get started.</p>`
+      container.appendChild(empty)
       return
     }
 
+    // Generic empty state (search no results, or no listings at all)
+    if (displayListings.length === 0) {
+      const hasSearch = searchQuery.length > 0
+      const empty = document.createElement('div')
+      empty.className = 'empty-state'
+      empty.innerHTML = `
+        <i class="ti ti-building-store"></i>
+        <h3>${hasSearch ? 'No listings found' : 'No listings available yet'}</h3>
+        <p>${hasSearch
+          ? `No property videos found for "${searchQuery}". Try a different suburb or postcode.`
+          : 'Marketplace listings appear here as Scouts complete inspections in the area.'}</p>`
+      container.appendChild(empty)
+      return
+    }
+
+    // Section header
     const header = document.createElement('div')
     header.className = 'section-header'
-    header.innerHTML = `
-      <div class="section-title">${searchQuery ? `Results for "${searchQuery}"` : 'Available listings'}</div>
-      <div class="section-count">${filteredListings.length} listing${filteredListings.length !== 1 ? 's' : ''}</div>`
+    if (activeTab === 'purchases') {
+      header.innerHTML = `
+        <div class="section-title">My Purchases</div>
+        <div class="section-count">${displayListings.length} purchased</div>`
+    } else {
+      header.innerHTML = `
+        <div class="section-title">${searchQuery ? `Results for "${searchQuery}"` : 'Available listings'}</div>
+        <div class="section-count">${displayListings.length} listing${displayListings.length !== 1 ? 's' : ''}</div>`
+    }
 
     const grid = document.createElement('div')
     grid.className = 'listing-grid'
 
     const now = new Date()
-    filteredListings.forEach((listing, idx) => {
-      const isPurchased = purchasedListingIds.has(listing.id)
-      const isNew = !isPurchased && (now - new Date(listing.created_at)) < 7 * 24 * 60 * 60 * 1000
+    displayListings.forEach((listing) => {
+      const expiresAt = purchasedMap.has(listing.id) ? purchasedMap.get(listing.id) : null
+      const isPurchased = purchasedMap.has(listing.id) && (!expiresAt || new Date(expiresAt) > now)
+      const isExpired = purchasedMap.has(listing.id) && expiresAt && new Date(expiresAt) <= now
+      const isNew = !purchasedMap.has(listing.id) && (now - new Date(listing.created_at)) < 7 * 24 * 60 * 60 * 1000
       const recordedAt = listing.captures?.recorded_at
         ? new Date(listing.captures.recorded_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
         : '—'
@@ -365,17 +429,30 @@
       const priceIncGst = parseFloat(listing.price || '20')
       const videoUrl = listing.captures?.video_url || ''
 
+      let expiryLabel = ''
+      if (isPurchased && expiresAt) {
+        const hoursLeft = Math.max(0, Math.ceil((new Date(expiresAt) - now) / (1000 * 60 * 60)))
+        expiryLabel = hoursLeft <= 6
+          ? `<div class="listing-meta-chip" style="color:#DC2626"><i class="ti ti-clock" style="color:#DC2626"></i> Expires in ${hoursLeft}h</div>`
+          : `<div class="listing-meta-chip"><i class="ti ti-clock"></i> Access expires ${new Date(expiresAt).toLocaleDateString('en-AU', { day:'numeric', month:'short' })}</div>`
+      }
+
       const card = document.createElement('div')
-      card.className = 'listing-card'
+      card.className = `listing-card${isExpired ? ' listing-card-expired' : ''}`
       card.innerHTML = `
         <div class="listing-thumb">
-          <div class="preview-play" onclick="${isPurchased ? `window.open('${videoUrl}','_blank')` : `openPurchaseModal(${idx})`}">
+          <div class="preview-play" onclick="${isPurchased ? `window.open('${videoUrl}','_blank')` : `openPurchaseModal('${listing.id}')`}" style="${isExpired ? 'cursor:default;opacity:0.4' : ''}">
             <i class="ti ti-player-play"></i>
           </div>
+          ${isPurchased && activeTab === 'purchases'
+            ? '<div class="thumb-check-overlay"><i class="ti ti-circle-check"></i></div>'
+            : ''}
           <div class="listing-type-pill">${typeLabel}</div>
           ${isPurchased
             ? '<div class="listing-purchased-pill">Purchased</div>'
-            : isNew ? '<div class="listing-new-pill">New</div>' : ''}
+            : isExpired
+              ? '<div class="listing-expired-pill">Expired</div>'
+              : isNew ? '<div class="listing-new-pill">New</div>' : ''}
         </div>
         <div class="listing-info">
           <div class="listing-addr">${listing.address}</div>
@@ -383,6 +460,7 @@
           <div class="listing-meta">
             <div class="listing-meta-chip"><i class="ti ti-calendar"></i> ${recordedAt}</div>
             ${listing.captures?.gps_latitude ? '<div class="listing-meta-chip"><i class="ti ti-map-pin"></i> GPS verified</div>' : ''}
+            ${expiryLabel}
           </div>
         </div>
         <div class="listing-footer">
@@ -392,18 +470,19 @@
           </div>
           ${isPurchased
             ? `<a class="btn-watch" href="${videoUrl}" target="_blank"><i class="ti ti-player-play"></i> Watch</a>`
-            : `<button class="btn-buy" onclick="openPurchaseModal(${idx})">Purchase</button>`}
+            : isExpired
+              ? `<button class="btn-buy" onclick="openPurchaseModal('${listing.id}')">Repurchase</button>`
+              : `<button class="btn-buy" onclick="openPurchaseModal('${listing.id}')">Purchase</button>`}
         </div>`
       grid.appendChild(card)
     })
 
-    container.innerHTML = ''
     container.appendChild(header)
     container.appendChild(grid)
   }
 
-  window.openPurchaseModal = (idx) => {
-    selectedListing = filteredListings[idx]
+  window.openPurchaseModal = (listingId) => {
+    selectedListing = allListings.find(l => l.id === listingId)
     if (!selectedListing) return
 
     pendingClientSecret = null
@@ -446,10 +525,12 @@
   }
 
   function onPurchaseSuccess() {
-    purchasedListingIds.add(selectedListing.id)
+    // Store with a null expiry — actual value loads from DB on next visit
+    // isPurchased logic treats null access_expires_at as non-expired
+    purchasedMap.set(selectedListing.id, null)
     document.getElementById('purchaseModal').classList.remove('open')
     renderListings()
-    showToast('Purchase successful — you now have full access to this video.')
+    showToast('Purchase successful — you now have 48 hours of access to this video.')
   }
 
   async function handleConfirmClick() {
