@@ -72,7 +72,7 @@ Deno.serve(async (req: Request) => {
         } else if (pi.metadata?.type === 'marketplace' && pi.metadata?.purchase_id) {
           await supabase
             .from('marketplace_purchases')
-            .update({ status: 'paid', purchased_at: new Date().toISOString() })
+            .update({ status: 'Completed', purchased_at: new Date().toISOString() })
             .eq('id', pi.metadata.purchase_id)
         }
         break

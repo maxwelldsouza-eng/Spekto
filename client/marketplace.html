@@ -289,7 +289,7 @@
 
     const [{ data: userData }, { data: purchases }, { data: ownInspections }] = await Promise.all([
       supabase.from('users').select('first_name, last_name, avatar_url').eq('id', user.id).single(),
-      supabase.from('marketplace_purchases').select('listing_id, access_expires_at').eq('buyer_id', user.id).eq('status', 'paid'),
+      supabase.from('marketplace_purchases').select('listing_id, access_expires_at').eq('buyer_id', user.id).eq('status', 'Completed'),
       supabase.from('inspections').select('id').eq('client_id', user.id),
     ])
 

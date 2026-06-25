@@ -50,7 +50,7 @@ Deno.serve(async (req: Request) => {
   // Get listing
   const { data: listing } = await supabase
     .from('marketplace_listings')
-    .select('id, address, price, status')
+    .select('id, address, price, gst, price_ex_gst, status, capture_id')
     .eq('id', listing_id)
     .single()
 
@@ -63,7 +63,7 @@ Deno.serve(async (req: Request) => {
     .select('id')
     .eq('listing_id', listing_id)
     .eq('buyer_id', user.id)
-    .eq('status', 'paid')
+    .eq('status', 'Completed')
     .maybeSingle()
 
   if (existing) return ok({ already_purchased: true, purchase_id: existing.id })
@@ -116,9 +116,16 @@ Deno.serve(async (req: Request) => {
     .from('marketplace_purchases')
     .insert({
       listing_id,
+      capture_id: listing.capture_id,
       buyer_id: user.id,
+      buyer_email: userData.email,
+      amount: priceIncGst,
+      gst: parseFloat(listing.gst ?? '0'),
+      amount_ex_gst: parseFloat(listing.price_ex_gst ?? '0'),
+      currency: 'aud',
+      access_token: crypto.randomUUID(),
       purchase_price: priceIncGst,
-      status: 'pending',
+      status: 'Pending',
       access_expires_at: accessExpiresAt,
       max_downloads: maxDownloads,
       created_at: new Date().toISOString(),
@@ -164,7 +171,7 @@ Deno.serve(async (req: Request) => {
     // Webhook will also fire but update is idempotent
     await supabase
       .from('marketplace_purchases')
-      .update({ status: 'paid', purchased_at: new Date().toISOString() })
+      .update({ status: 'Completed', purchased_at: new Date().toISOString() })
       .eq('id', purchase.id)
     return ok({ success: true, purchase_id: purchase.id })
   }
