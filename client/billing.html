@@ -62,7 +62,8 @@
     .badge-PendingPayment { background: #FEF9C3; color: #854D0E; }
     .badge-Posted { background: #EDE4F7; color: #560591; }
     .badge-Paid { background: #DCFCE7; color: #166534; }
-    .receipt-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--purple); font-weight: 600; cursor: pointer; }
+    .receipt-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--purple); font-weight: 600; cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; }
+    .receipt-row:hover { text-decoration: underline; }
     .receipt-row i { font-size: 13px; }
     .empty-state { text-align: center; padding: 60px 20px; background: #fff; border-radius: 14px; border: 1px solid var(--border); }
     .empty-state i { font-size: 40px; color: #ddd; margin-bottom: 16px; display: block; }
@@ -143,16 +144,97 @@
 
   let allItems = []
   let currentFilter = 'all'
+  let currentUser = null
+  let userProfile = null
+  const receiptItemsById = new Map()
+
+  function printReceipt(item) {
+    const isRefund = item.kind === 'refund' || item.amount < 0
+    const amount = Math.abs(parseFloat(item.amount) || 0)
+    const refNum = item.ref_number || (item.id || '').substring(0, 8).toUpperCase() || '—'
+    const dateStr = new Date(item.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+    const nameStr = userProfile ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() : ''
+    const emailStr = currentUser?.email || ''
+    const typeLabel = isRefund ? 'Refund issued'
+      : item.kind === 'marketplace' ? 'Marketplace Video Access'
+      : 'Property Inspection'
+    const statusLabel = isRefund ? 'Refunded' : 'Paid'
+    const totalColor = isRefund ? '#166534' : '#560591'
+    const prefix = isRefund ? '−' : ''
+    const billLabel = isRefund ? 'Refund To' : 'Bill To'
+
+    const w = window.open('', '_blank', 'width=760,height=920')
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Spekto Receipt ${refNum}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;color:#0D0D0D;padding:60px;max-width:680px;margin:0 auto}
+.logo{font-family:'DM Sans',sans-serif;font-size:26px;font-weight:800;color:#560591;letter-spacing:-1.5px}
+.receipt-type{font-size:12px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:48px}
+.ref-num{font-size:16px;font-weight:700;text-align:right}
+.ref-date{font-size:13px;color:#999;margin-top:3px;text-align:right}
+.bill-section{margin-bottom:40px}
+.bill-label{font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.bill-name{font-size:15px;font-weight:600}
+.bill-email{font-size:13px;color:#666;margin-top:2px}
+.divider{border:none;border-top:1.5px solid #E5E7EB;margin-bottom:0}
+.line-item{display:flex;justify-content:space-between;gap:24px;padding:20px 0;border-bottom:1px solid #F3F4F6}
+.item-title{font-size:14px;font-weight:600}
+.item-addr{font-size:12px;color:#999;margin-top:4px}
+.item-amt{font-size:15px;font-weight:700;white-space:nowrap;color:${isRefund ? '#166534' : '#0D0D0D'}}
+.total-row{display:flex;justify-content:space-between;align-items:baseline;padding:20px 0}
+.total-label{font-size:14px;font-weight:700}
+.total-amt{font-size:24px;font-weight:800;font-family:'DM Sans',sans-serif;color:${totalColor}}
+.status-pill{display:inline-flex;align-items:center;gap:6px;background:#DCFCE7;color:#166534;font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;margin-bottom:32px}
+.dot{width:7px;height:7px;border-radius:50%;background:#22C55E;display:inline-block}
+.gst-note{font-size:12px;color:#999;margin-bottom:40px}
+.footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #F3F4F6;padding-top:20px}
+.footer-logo{font-family:'DM Sans',sans-serif;font-size:15px;font-weight:800;color:#560591;letter-spacing:-1px}
+.footer-note{font-size:11px;color:#bbb}
+@media print{body{padding:24px}}
+</style></head><body>
+<div class="header">
+  <div><div class="logo">SPEKTO</div><div class="receipt-type">${isRefund ? 'Refund Receipt' : 'Payment Receipt'}</div></div>
+  <div><div class="ref-num">#${refNum}</div><div class="ref-date">${dateStr}</div></div>
+</div>
+<div class="bill-section">
+  <div class="bill-label">${billLabel}</div>
+  ${nameStr ? `<div class="bill-name">${nameStr}</div>` : ''}
+  ${emailStr ? `<div class="bill-email">${emailStr}</div>` : ''}
+</div>
+<hr class="divider">
+<div class="line-item">
+  <div><div class="item-title">${typeLabel}</div><div class="item-addr">${item.address}</div></div>
+  <div class="item-amt">${prefix}$${amount.toFixed(2)}</div>
+</div>
+<div class="total-row">
+  <div class="total-label">Total ${statusLabel}</div>
+  <div class="total-amt">${prefix}$${amount.toFixed(2)}</div>
+</div>
+<div class="status-pill"><span class="dot"></span>${statusLabel}</div>
+<div class="gst-note">No GST applicable — Spekto is not currently GST registered.</div>
+<div class="footer">
+  <div class="footer-logo">SPEKTO</div>
+  <div class="footer-note">Generated ${new Date().toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'})}</div>
+</div>
+<script>window.onload=()=>{window.focus();window.print()}<\/script>
+</body></html>`)
+    w.document.close()
+  }
 
   async function init() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { window.location.href = '../auth/login.html'; return; }
+    currentUser = user
 
     const { data: userData } = await supabase
       .from('users')
       .select('first_name, last_name, avatar_url')
       .eq('id', user.id)
       .single()
+    userProfile = userData
 
     if (userData) {
       const initials = (userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')
@@ -166,20 +248,25 @@
 
     initNotificationBell(supabase, user.id)
 
-    // Payments table is empty (Stripe not yet live) — derive billing history from inspections directly
-    const { data: inspections } = await supabase
-      .from('inspections')
-      .select('id, ref_number, address, date, inspection_type, status, pricing_snapshot, created_at, updated_at')
-      .eq('client_id', user.id)
-      .not('status', 'in', '("Draft","Posted","Cancelled")')
-      .order('created_at', { ascending: false })
-
-    // Fetch marketplace purchases
-    const { data: purchases } = await supabase
-      .from('marketplace_purchases')
-      .select('id, purchase_price, status, purchased_at, created_at, marketplace_listings(address)')
-      .eq('buyer_id', user.id)
-      .order('created_at', { ascending: false })
+    const [{ data: inspections }, { data: purchases }, { data: refundPayments }] = await Promise.all([
+      supabase
+        .from('inspections')
+        .select('id, ref_number, address, date, inspection_type, status, pricing_snapshot, created_at, updated_at')
+        .eq('client_id', user.id)
+        .not('status', 'in', '("Draft","Posted","Cancelled")')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('marketplace_purchases')
+        .select('id, purchase_price, status, purchased_at, created_at, marketplace_listings(address)')
+        .eq('buyer_id', user.id)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('payments')
+        .select('id, amount, payment_type, created_at, inspections(id, address, ref_number)')
+        .eq('client_id', user.id)
+        .in('payment_type', ['Refund', 'PartialRefund'])
+        .order('created_at', { ascending: false }),
+    ])
 
     // Map inspection status → billing status label
     function inspStatusToBilling(status) {
@@ -217,8 +304,22 @@
       stripe_receipt_url: null,
     }))
 
-    allItems = [...paymentItems, ...purchaseItems]
+    const refundMapped = (refundPayments || []).map(p => ({
+      id: p.id,
+      kind: 'refund',
+      amount: parseFloat(p.amount || 0),
+      status: 'Refunded',
+      payment_type: p.payment_type,
+      date: p.created_at,
+      address: p.inspections?.address || '—',
+      inspection_id: p.inspections?.id,
+      ref_number: p.inspections?.ref_number,
+      stripe_receipt_url: null,
+    }))
+
+    allItems = [...paymentItems, ...purchaseItems, ...refundMapped]
       .sort((a, b) => new Date(b.date) - new Date(a.date))
+    allItems.forEach(item => receiptItemsById.set(item.id, item))
 
     renderPage()
   }
@@ -326,11 +427,8 @@
         : item.status === 'failed' ? 'Disputed'
         : 'Pending'
 
-      const receiptLink = item.stripe_receipt_url
-        ? `<a class="receipt-row" href="${item.stripe_receipt_url}" target="_blank" onclick="event.stopPropagation()"><i class="ti ti-receipt"></i> View receipt</a>`
-        : item.inspection_id
-          ? `<div class="receipt-row" onclick="event.stopPropagation();window.location.href='inspection-detail.html?id=${item.inspection_id}'"><i class="ti ti-external-link"></i> View inspection</div>`
-          : ''
+      receiptItemsById.set(item.id, item)
+      const receiptLink = `<button class="receipt-row" data-receipt-id="${item.id}"><i class="ti ti-receipt"></i> Download receipt</button>`
 
       return `
         <div class="billing-item" ${item.inspection_id ? `onclick="window.location.href='inspection-detail.html?id=${item.inspection_id}'"` : ''}>
@@ -354,6 +452,14 @@
         </div>`
     }).join('')
   }
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-receipt-id]')
+    if (!btn) return
+    e.stopPropagation()
+    const item = receiptItemsById.get(btn.dataset.receiptId)
+    if (item) printReceipt(item)
+  })
 
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await supabase.auth.signOut()

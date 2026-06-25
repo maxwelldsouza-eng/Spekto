@@ -72,7 +72,8 @@ import { someFunction } from '../database/database.js'
 | `check-work-rights` | Validates Scout right-to-work documents |
 | `create-inspection` | Direct DB inspection creation (fallback) |
 | `send-auth-email` | Resend API email hook (bypasses Supabase SMTP) |
-| `xero-oauth-callback` | Xero OAuth callback handler |
+| `xero-connect` | Redirects to Xero OAuth authorization page |
+| `xero-oauth-callback` | Xero OAuth callback — exchanges code for tokens, stores in `xero_tokens` |
 | `backfill-coords` | Backfills lat/lng on existing inspections |
 | `_shared` | Shared utilities (CORS headers, etc.) |
 
@@ -156,7 +157,7 @@ Fonts: `DM Sans 800` (logo/headings), `Inter` (body). Icons: Tabler Icons via CD
 ## Known Gaps
 
 - **Mobile navigation** — sidebar hides on mobile with no hamburger/drawer fallback. Affects all screens.
-- **Xero integration** — OAuth callback exists (`xero-oauth-callback`) but integration is not complete.
+- **Stripe fees (account 404)** — not yet synced to Xero; requires separate reconciliation.
 - **Email confirmation** — currently disabled in Supabase Auth for testing. Must be re-enabled before launch.
 - **Google OAuth redirect** — still pointed at `http://localhost:3000` in Google Cloud Console; needs updating to the production GitHub Pages URL.
 

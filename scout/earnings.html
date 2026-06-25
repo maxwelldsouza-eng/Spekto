@@ -78,6 +78,8 @@
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
     .tab-empty { text-align: center; padding: 32px 20px; color: #999; font-size: 13px; }
+    .earning-receipt-btn { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--purple); background: none; border: none; padding: 0; cursor: pointer; font-family: inherit; }
+    .earning-receipt-btn:hover { text-decoration: underline; }
     .empty-state { text-align: center; padding: 48px 20px; background: #fff; border-radius: 14px; border: 1px solid var(--border); }
     .empty-state i { font-size: 36px; color: #ddd; margin-bottom: 12px; display: block; }
     .empty-state h3 { font-size: 15px; font-weight: 600; color: #0D0D0D; margin-bottom: 6px; }
@@ -154,15 +156,92 @@
     'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
   )
 
+  let currentUser = null
+  let userProfile = null
+  const receiptRowsById = new Map()
+
+  function printPayoutReceipt(row) {
+    const amount = parseFloat(row.amount) || 0
+    const refNum = row.ref_number || (row.transfer_id || '').substring(0, 12) || '—'
+    const paidDate = row.paid_at || row.sortDate
+    const dateStr = new Date(paidDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+    const nameStr = userProfile ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() : ''
+    const emailStr = currentUser?.email || ''
+
+    const w = window.open('', '_blank', 'width=760,height=920')
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Spekto Payout Receipt ${refNum}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;color:#0D0D0D;padding:60px;max-width:680px;margin:0 auto}
+.logo{font-family:'DM Sans',sans-serif;font-size:26px;font-weight:800;color:#560591;letter-spacing:-1.5px}
+.receipt-type{font-size:12px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:48px}
+.ref-num{font-size:16px;font-weight:700;text-align:right}
+.ref-date{font-size:13px;color:#999;margin-top:3px;text-align:right}
+.bill-section{margin-bottom:40px}
+.bill-label{font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.bill-name{font-size:15px;font-weight:600}
+.bill-email{font-size:13px;color:#666;margin-top:2px}
+.divider{border:none;border-top:1.5px solid #E5E7EB;margin-bottom:0}
+.line-item{display:flex;justify-content:space-between;gap:24px;padding:20px 0;border-bottom:1px solid #F3F4F6}
+.item-title{font-size:14px;font-weight:600}
+.item-addr{font-size:12px;color:#999;margin-top:4px}
+.item-amt{font-size:15px;font-weight:700;white-space:nowrap}
+.total-row{display:flex;justify-content:space-between;align-items:baseline;padding:20px 0}
+.total-label{font-size:14px;font-weight:700}
+.total-amt{font-size:24px;font-weight:800;font-family:'DM Sans',sans-serif;color:#560591}
+.status-pill{display:inline-flex;align-items:center;gap:6px;background:#DCFCE7;color:#166534;font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;margin-bottom:32px}
+.dot{width:7px;height:7px;border-radius:50%;background:#22C55E;display:inline-block}
+.transfer-note{font-size:12px;color:#999;margin-bottom:16px;font-family:monospace}
+.gst-note{font-size:12px;color:#999;margin-bottom:40px}
+.footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #F3F4F6;padding-top:20px}
+.footer-logo{font-family:'DM Sans',sans-serif;font-size:15px;font-weight:800;color:#560591;letter-spacing:-1px}
+.footer-note{font-size:11px;color:#bbb}
+@media print{body{padding:24px}}
+</style></head><body>
+<div class="header">
+  <div><div class="logo">SPEKTO</div><div class="receipt-type">Payout Receipt</div></div>
+  <div><div class="ref-num">${refNum ? '#' + refNum : ''}</div><div class="ref-date">${dateStr}</div></div>
+</div>
+<div class="bill-section">
+  <div class="bill-label">Paid To</div>
+  ${nameStr ? `<div class="bill-name">${nameStr}</div>` : ''}
+  ${emailStr ? `<div class="bill-email">${emailStr}</div>` : ''}
+</div>
+<hr class="divider">
+<div class="line-item">
+  <div><div class="item-title">Scout payout — Property Inspection</div><div class="item-addr">${row.address}</div></div>
+  <div class="item-amt">$${amount.toFixed(2)}</div>
+</div>
+<div class="total-row">
+  <div class="total-label">Total Paid</div>
+  <div class="total-amt">$${amount.toFixed(2)}</div>
+</div>
+<div class="status-pill"><span class="dot"></span>Paid</div>
+${row.transfer_id ? `<div class="transfer-note">Stripe transfer: ${row.transfer_id}</div>` : ''}
+<div class="gst-note">No GST applicable — Spekto is not currently GST registered.</div>
+<div class="footer">
+  <div class="footer-logo">SPEKTO</div>
+  <div class="footer-note">Generated ${new Date().toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'})}</div>
+</div>
+<script>window.onload=()=>{window.focus();window.print()}<\/script>
+</body></html>`)
+    w.document.close()
+  }
+
   async function init() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { window.location.href = '../auth/login.html'; return; }
+    currentUser = user
 
     const { data: userData } = await supabase
       .from('users')
       .select('first_name, last_name, avatar_url')
       .eq('id', user.id)
       .single()
+    userProfile = userData
 
     if (userData) {
       const initials = (userData.first_name?.[0] || '') + (userData.last_name?.[0] || '')
@@ -341,7 +420,9 @@
     function buildRowHtml(rows) {
       if (rows.length === 0) return null
       let out = '<div class="earnings-list">'
-      rows.forEach(row => {
+      rows.forEach((row, idx) => {
+        const rowKey = row.inspection_id || `row-${idx}`
+        receiptRowsById.set(rowKey, row)
         const date = row.date ? new Date(row.date) : new Date(row.sortDate)
         const day = date.getDate().toString().padStart(2, '0')
         const month = date.toLocaleString('default', { month: 'short' })
@@ -356,6 +437,9 @@
           : ''
         const transferLabel = row.transfer_id
           ? `<div class="earning-type" style="margin-top:2px;font-size:10px;color:#bbb;font-family:monospace">${row.transfer_id.substring(0,20)}…</div>`
+          : ''
+        const receiptBtn = row.status === 'Paid'
+          ? `<button class="earning-receipt-btn" data-payout-key="${rowKey}"><i class="ti ti-receipt" style="font-size:12px"></i> Receipt</button>`
           : ''
         out += `
           <div class="earning-item" ${row.inspection_id ? `onclick="window.location.href='inspection-detail.html?id=${row.inspection_id}'"` : ''} style="cursor:${row.inspection_id?'pointer':'default'}">
@@ -372,6 +456,7 @@
             <div class="earning-right">
               <div class="earning-amount">${amountDisplay}</div>
               <span class="earning-badge badge-${badgeKey}">${statusLabel}</span>
+              ${receiptBtn}
             </div>
           </div>`
       })
@@ -412,6 +497,14 @@
     tuesday.setDate(now.getDate() + daysUntilTuesday)
     return tuesday.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })
   }
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-payout-key]')
+    if (!btn) return
+    e.stopPropagation()
+    const row = receiptRowsById.get(btn.dataset.payoutKey)
+    if (row) printPayoutReceipt(row)
+  })
 
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await supabase.auth.signOut()

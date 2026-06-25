@@ -96,6 +96,8 @@
     .toast { position: fixed; bottom: 24px; right: 24px; background: #1F2937; color: #fff; font-size: 13px; font-weight: 500; padding: 12px 20px; border-radius: 10px; z-index: 999; display: none; }
     .toast.success { background: #166534; }
     .toast.error { background: #991B1B; }
+    .admin-receipt-btn { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--purple); background: none; border: none; padding: 0; cursor: pointer; font-family: 'Inter', sans-serif; white-space: nowrap; }
+    .admin-receipt-btn:hover { text-decoration: underline; }
     .ref-tag { display: inline-block; font-size: 10px; font-weight: 600; color: #999; background: #F3F4F6; border-radius: 5px; padding: 1px 6px; margin-left: 6px; white-space: nowrap; vertical-align: middle; }
     .batch-ref-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; color: #6B7280; background: #F3F4F6; border-radius: 4px; padding: 2px 6px; margin-left: 4px; font-family: 'Inter', sans-serif; letter-spacing: 0.2px; white-space: nowrap; vertical-align: middle; }
     .batch-filter-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--purple); background: #F5EEFF; border: 1px solid #D8B4FE; border-radius: 20px; padding: 4px 12px; margin-bottom: 14px; cursor: pointer; user-select: none; }
@@ -204,6 +206,79 @@
   let adminData = null
   let completedPayoutItems = []
   let activeBatchFilter = null
+  const adminReceiptItemsById = new Map()
+
+  function printAdminReceipt(item) {
+    const u = item.scout
+    const insp = item.inspections
+    const amount = parseFloat(item.amount) || 0
+    const paidDate = item.paid_at || item.updated_at
+    const dateStr = paidDate ? new Date(paidDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'
+    const nameStr = u ? `${u.first_name || ''} ${u.last_name || ''}`.trim() : 'Unknown Scout'
+    const addr = insp?.address || '—'
+    const refNum = insp?.ref_number || (item.id || '').substring(0, 8).toUpperCase()
+    const transferId = item.stripe_transfer_id || ''
+
+    const w = window.open('', '_blank', 'width=760,height=920')
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Spekto Payout Receipt ${refNum}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;color:#0D0D0D;padding:60px;max-width:680px;margin:0 auto}
+.logo{font-family:'DM Sans',sans-serif;font-size:26px;font-weight:800;color:#560591;letter-spacing:-1.5px}
+.receipt-type{font-size:12px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:48px}
+.ref-num{font-size:16px;font-weight:700;text-align:right}
+.ref-date{font-size:13px;color:#999;margin-top:3px;text-align:right}
+.bill-section{margin-bottom:40px}
+.bill-label{font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.bill-name{font-size:15px;font-weight:600}
+.divider{border:none;border-top:1.5px solid #E5E7EB;margin-bottom:0}
+.line-item{display:flex;justify-content:space-between;gap:24px;padding:20px 0;border-bottom:1px solid #F3F4F6}
+.item-title{font-size:14px;font-weight:600}
+.item-addr{font-size:12px;color:#999;margin-top:4px}
+.item-amt{font-size:15px;font-weight:700;white-space:nowrap}
+.total-row{display:flex;justify-content:space-between;align-items:baseline;padding:20px 0}
+.total-label{font-size:14px;font-weight:700}
+.total-amt{font-size:24px;font-weight:800;font-family:'DM Sans',sans-serif;color:#560591}
+.status-pill{display:inline-flex;align-items:center;gap:6px;background:#DCFCE7;color:#166534;font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;margin-bottom:16px}
+.dot{width:7px;height:7px;border-radius:50%;background:#22C55E;display:inline-block}
+.transfer-note{font-size:12px;color:#999;margin-bottom:32px;font-family:monospace}
+.gst-note{font-size:12px;color:#999;margin-bottom:40px}
+.footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #F3F4F6;padding-top:20px}
+.footer-logo{font-family:'DM Sans',sans-serif;font-size:15px;font-weight:800;color:#560591;letter-spacing:-1px}
+.footer-note{font-size:11px;color:#bbb}
+@media print{body{padding:24px}}
+</style></head><body>
+<div class="header">
+  <div><div class="logo">SPEKTO</div><div class="receipt-type">Payout Receipt — Admin Copy</div></div>
+  <div><div class="ref-num">#${refNum}</div><div class="ref-date">${dateStr}</div></div>
+</div>
+<div class="bill-section">
+  <div class="bill-label">Paid To (Scout)</div>
+  <div class="bill-name">${nameStr}</div>
+</div>
+<hr class="divider">
+<div class="line-item">
+  <div><div class="item-title">Scout payout — Property Inspection</div><div class="item-addr">${addr}</div></div>
+  <div class="item-amt">$${amount.toFixed(2)}</div>
+</div>
+<div class="total-row">
+  <div class="total-label">Total Paid</div>
+  <div class="total-amt">$${amount.toFixed(2)}</div>
+</div>
+<div class="status-pill"><span class="dot"></span>Paid</div>
+${transferId ? `<div class="transfer-note">Stripe transfer: ${transferId}</div>` : ''}
+<div class="gst-note">No GST applicable — Spekto is not currently GST registered.</div>
+<div class="footer">
+  <div class="footer-logo">SPEKTO</div>
+  <div class="footer-note">Generated ${new Date().toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'})}</div>
+</div>
+<script>window.onload=()=>{window.focus();window.print()}<\/script>
+</body></html>`)
+    w.document.close()
+  }
 
   // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -362,6 +437,7 @@
       ? `<div class="batch-filter-chip" id="batchFilterChip" data-batchref="${filterBatchRef}"><i class="ti ti-filter" style="font-size:13px"></i> Filtered by: ${filterBatchRef}<span class="chip-x">&#x2715;</span></div>`
       : ''
     const rows = items.map(item => {
+      adminReceiptItemsById.set(item.id, item)
       const u = item.scout
       const batch = item.payout_batches
       const insp = item.inspections
@@ -384,6 +460,7 @@
           <div class="row-right">
             <span class="badge badge-Paid">Paid</span>
             <div class="row-amount">${amount}</div>
+            <button class="admin-receipt-btn" data-admin-receipt-id="${item.id}"><i class="ti ti-receipt" style="font-size:12px"></i> Receipt</button>
           </div>
         </div>`
     }).join('')
@@ -785,6 +862,14 @@
       document.querySelector('.sidebar').classList.remove('open')
       document.getElementById('sidebarOverlay').classList.remove('open')
     })
+  })
+
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-admin-receipt-id]')
+    if (!btn) return
+    e.stopPropagation()
+    const item = adminReceiptItemsById.get(btn.dataset.adminReceiptId)
+    if (item) printAdminReceipt(item)
   })
 
   init()

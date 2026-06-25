@@ -29,7 +29,6 @@ export async function getXeroToken(): Promise<XeroTokenRow> {
   const expiresAt = new Date(data.expires_at).getTime()
   const nowMs = Date.now()
 
-  // Refresh if expiring within 5 minutes
   if (expiresAt - nowMs < 5 * 60 * 1000) {
     return await refreshXeroToken(data)
   }
@@ -94,4 +93,22 @@ export async function xeroGet(path: string): Promise<Response> {
       'Accept': 'application/json',
     },
   })
+}
+
+export async function getOrCreateXeroContact(email: string, name: string): Promise<string | null> {
+  try {
+    const searchRes = await xeroGet(`/Contacts?where=EmailAddress%3D%3D%22${encodeURIComponent(email)}%22`)
+    if (searchRes.ok) {
+      const data = await searchRes.json()
+      if (data.Contacts?.length > 0) return data.Contacts[0].ContactID
+    }
+    const createRes = await xeroPost('/Contacts', {
+      Contacts: [{ Name: name || email, EmailAddress: email }],
+    })
+    if (!createRes.ok) return null
+    const createData = await createRes.json()
+    return createData.Contacts?.[0]?.ContactID ?? null
+  } catch {
+    return null
+  }
 }
