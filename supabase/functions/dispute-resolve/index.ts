@@ -198,7 +198,7 @@ Deno.serve(async (req: Request) => {
                 Description: `${isFullRefund ? 'Full' : 'Partial'} refund — ${inspection?.address ?? dispute.inspection_id}`,
                 Quantity: 1,
                 UnitAmount: refundExGst,
-                TaxType: 'OUTPUT2',
+                TaxType: 'NONE',
                 AccountCode: '200',
               }],
             }],

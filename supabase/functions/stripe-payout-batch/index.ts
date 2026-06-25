@@ -1,5 +1,6 @@
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { xeroPost, getOrCreateXeroContact } from '../_shared/xero-client.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2024-06-20',
@@ -169,6 +170,43 @@ Deno.serve(async (req: Request) => {
 
       results.push({ inspection_id: insp.id, status: 'paid', transfer_id: transfer.id })
       processed++
+
+      // Xero sync — non-fatal
+      try {
+        const { data: scoutUser } = await supabase.from('users').select('email, first_name, last_name').eq('id', insp.scout_id).single()
+        if (scoutUser) {
+          const scoutName = `${scoutUser.first_name ?? ''} ${scoutUser.last_name ?? ''}`.trim() || scoutUser.email
+          const contactId = await getOrCreateXeroContact(scoutUser.email, scoutName)
+          if (contactId) {
+            const xeroRes = await xeroPost('/Invoices', {
+              Invoices: [{
+                Type: 'ACCPAY',
+                Contact: { ContactID: contactId },
+                LineItems: [{
+                  Description: `Spekto scout payout — ${insp.address}`,
+                  Quantity: 1,
+                  UnitAmount: scoutAmount,
+                  AccountCode: '200',
+                  TaxType: 'NONE',
+                }],
+                LineAmountTypes: 'EXCLUSIVE',
+                Reference: `PAYOUT-${item.id}`,
+                Status: 'AUTHORISED',
+              }],
+            })
+            const xeroSync = xeroRes.ok ? 'Synced' : 'Failed'
+            const xeroData = xeroRes.ok ? await xeroRes.json() : null
+            if (!xeroRes.ok) console.error('Xero payout bill failed:', await xeroRes.text().catch(() => ''))
+            await supabase.from('payout_batch_items').update({
+              xero_bill_id: xeroData?.Invoices?.[0]?.InvoiceID ?? null,
+              xero_sync_status: xeroSync,
+              updated_at: new Date().toISOString(),
+            }).eq('id', item.id)
+          }
+        }
+      } catch (xeroErr: unknown) {
+        console.error('Xero payout sync error (non-fatal):', xeroErr instanceof Error ? xeroErr.message : String(xeroErr))
+      }
     } catch (stripeErr: unknown) {
       const msg = stripeErr instanceof Error ? stripeErr.message : String(stripeErr)
       await supabase
