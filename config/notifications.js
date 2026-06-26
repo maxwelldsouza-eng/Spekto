@@ -51,7 +51,6 @@ export function initNotificationBell(supabase, userId) {
 
   let notifications = []
   let dropdownOpen = false
-  let markReadTimer = null
 
   async function loadNotifications() {
     const { data } = await supabase
@@ -170,11 +169,6 @@ export function initNotificationBell(supabase, userId) {
       notifications = data
       renderDropdown()
     })
-
-    // Mark all read after 1 second
-    markReadTimer = setTimeout(() => {
-      markAllRead()
-    }, 1000)
   }
 
   function closeDropdown() {
@@ -182,10 +176,6 @@ export function initNotificationBell(supabase, userId) {
     if (!dropdown) return
     dropdown.style.display = 'none'
     dropdownOpen = false
-    if (markReadTimer) {
-      clearTimeout(markReadTimer)
-      markReadTimer = null
-    }
   }
 
   // Bell button click
