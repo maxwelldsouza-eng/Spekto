@@ -387,10 +387,10 @@
 
   function renderOnboardingCard() {
     const STEPS = [
-      { name: 'Identity Verification', desc: 'Upload your passport or driver\'s licence for review', done: scoutVerified },
-      { name: 'Right to Work Check', desc: 'Verify your right to work in Australia', done: scoutRTWApproved },
-      { name: 'Stripe Payout Setup', desc: 'Connect your bank account to receive weekly payouts', done: scoutConnectActive },
-      { name: 'Home Address', desc: 'Set your address so we can show you nearby jobs', done: scoutHasAddress },
+      { name: 'Identity Verification', desc: 'Upload your passport or driver\'s licence for review', done: scoutVerified, anchor: 'card-identity' },
+      { name: 'Right to Work Check', desc: 'Verify your right to work in Australia', done: scoutRTWApproved, anchor: 'card-rtw' },
+      { name: 'Stripe Payout Setup', desc: 'Connect your bank account to receive weekly payouts', done: scoutConnectActive, anchor: 'card-payouts' },
+      { name: 'Home Address', desc: 'Set your address so we can show you nearby jobs', done: scoutHasAddress, anchor: 'card-personal' },
     ]
     const card = document.getElementById('onboardingCard')
     const doneCount = STEPS.filter(s => s.done).length
@@ -412,7 +412,7 @@
               <div class="step-name${s.done ? ' done' : ''}">${s.name}</div>
               ${!s.done ? `<div class="step-desc">${s.desc}</div>` : ''}
             </div>
-            ${s.done ? '<span class="step-done-label">✓ Done</span>' : '<a href="settings.html" class="step-cta">Set up →</a>'}
+            ${s.done ? '<span class="step-done-label">✓ Done</span>' : `<a href="settings.html#${s.anchor}" class="step-cta">Set up →</a>`}
           </div>`).join('')}
       </div>`
   }
@@ -420,10 +420,10 @@
   function showOnboardingGate() {
     document.getElementById('onboardingGateModal')?.remove()
     const STEPS = [
-      { name: 'Identity Verification', done: scoutVerified },
-      { name: 'Right to Work Check', done: scoutRTWApproved },
-      { name: 'Stripe Payout Setup', done: scoutConnectActive },
-      { name: 'Home Address', done: scoutHasAddress },
+      { name: 'Identity Verification', done: scoutVerified, anchor: 'card-identity' },
+      { name: 'Right to Work Check', done: scoutRTWApproved, anchor: 'card-rtw' },
+      { name: 'Stripe Payout Setup', done: scoutConnectActive, anchor: 'card-payouts' },
+      { name: 'Home Address', done: scoutHasAddress, anchor: 'card-personal' },
     ]
     const el = document.createElement('div')
     el.id = 'onboardingGateModal'
@@ -434,7 +434,7 @@
           <i class="ti ti-lock" style="font-size:20px;color:#854D0E"></i>
         </div>
         <div style="font-size:17px;font-weight:700;color:#1A0533;margin-bottom:8px;text-align:center">Finish setting up your account</div>
-        <div style="font-size:13px;color:#666;line-height:1.6;margin-bottom:20px;text-align:center">Complete the steps below before you can accept inspection jobs.</div>
+        <div style="font-size:13px;color:#666;line-height:1.6;margin-bottom:20px;text-align:center">Tap any incomplete step to go straight to that section in Settings.</div>
         <div style="margin-bottom:20px">
           ${STEPS.map(s => `
             <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #F5F5F5">
@@ -444,13 +444,12 @@
               <div style="flex:1;font-size:13px;font-weight:${s.done ? '400' : '600'};color:${s.done ? '#aaa' : '#0D0D0D'};${s.done ? 'text-decoration:line-through' : ''}">
                 ${s.name}
               </div>
-              ${s.done ? '<span style="font-size:11px;font-weight:700;color:#16A34A;text-transform:uppercase;letter-spacing:.3px">Done</span>' : ''}
+              ${s.done
+                ? '<span style="font-size:11px;font-weight:700;color:#16A34A;text-transform:uppercase;letter-spacing:.3px">Done</span>'
+                : `<a href="settings.html#${s.anchor}" style="font-size:12px;font-weight:700;color:var(--purple);text-decoration:none;white-space:nowrap;flex-shrink:0">Set up →</a>`}
             </div>`).join('')}
         </div>
-        <div style="display:flex;gap:10px">
-          <button onclick="document.getElementById('onboardingGateModal').remove()" style="flex:1;height:42px;background:#fff;color:#666;border:1.5px solid #E0E0E0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Cancel</button>
-          <a href="settings.html" style="flex:1;height:42px;background:var(--purple);color:#fff;border-radius:8px;font-size:13px;font-weight:700;font-family:Inter,sans-serif;text-decoration:none;display:flex;align-items:center;justify-content:center">Go to Settings</a>
-        </div>
+        <button onclick="document.getElementById('onboardingGateModal').remove()" style="width:100%;height:42px;background:#fff;color:#666;border:1.5px solid #E0E0E0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">Close</button>
       </div>`
     el.addEventListener('click', e => { if (e.target === el) el.remove() })
     document.body.appendChild(el)

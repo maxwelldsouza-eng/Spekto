@@ -342,7 +342,7 @@
       : ''
 
     document.getElementById('mainContent').innerHTML = `
-      <div class="card">
+      <div class="card" id="card-personal">
         <div class="profile-hero">
           <label for="avatarInput" style="display:contents">
             <div class="profile-avatar" id="profileAvatarEl">
@@ -405,7 +405,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" id="card-identity">
         <div class="card-header">
           <div class="card-title"><i class="ti ti-id-badge"></i> Identity verification</div>
           ${getVerificationBadge()}
@@ -446,7 +446,7 @@
           <div class="hint" style="margin-top:10px">Your document is stored securely and only seen by our verification team. It will not be shared with clients or scouts.</div>`}
       </div>
 
-      <div class="card">
+      <div class="card" id="card-rtw">
         <div class="card-header">
           <div class="card-title"><i class="ti ti-passport"></i> Rights to Work</div>
         </div>
@@ -454,7 +454,7 @@
         ${getRTWCard()}
       </div>
 
-      <div class="card">
+      <div class="card" id="card-payouts">
         <div class="card-header">
           <div class="card-title"><i class="ti ti-wallet"></i> Payouts</div>
         </div>
@@ -828,6 +828,11 @@
     } else if (stripeParam === 'refresh') {
       showToast('Your setup link expired. Click Connect to try again.', 'error')
       window.history.replaceState({}, '', 'settings.html')
+    }
+    // Scroll to anchor if arriving from the onboarding gate modal
+    if (window.location.hash) {
+      const target = document.querySelector(window.location.hash)
+      if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
     }
   })
 
