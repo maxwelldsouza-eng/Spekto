@@ -1,6 +1,7 @@
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { xeroPost, getOrCreateXeroContact } from '../_shared/xero-client.ts'
+import { sendNotification } from '../_shared/notify.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2024-06-20',
@@ -155,6 +156,14 @@ Deno.serve(async (req: Request) => {
       console.error('Xero credit note error (non-fatal):', xeroErr instanceof Error ? xeroErr.message : String(xeroErr))
     }
   }
+
+  // Notify client (non-fatal)
+  await sendNotification(supabase, {
+    user_id: user.id,
+    type: 'inspection_cancelled_refund',
+    inspection_id,
+    extra: { amount: refundAmount.toFixed(2) },
+  })
 
   return ok({ success: true, refunded: true, refund_amount: refundAmount, stripe_refund_id: stripeRefundId })
 })

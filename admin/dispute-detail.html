@@ -652,6 +652,24 @@
       messages = newMsgs || []
       document.getElementById('messagesContainer').innerHTML = renderMessages()
       showToast('Message sent')
+
+      // Notify recipient for non-internal messages (non-fatal)
+      if (!isInternal) {
+        const recipientUserId = currentMsgTab === 'client' ? inspection?.client_id : inspection?.scout_id
+        const { data: { session } } = await supabase.auth.getSession()
+        if (recipientUserId && session) {
+          fetch('https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/notify', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: recipientUserId,
+              type: 'admin_message',
+              inspection_id: dispute?.inspection_id ?? null,
+              extra: { message_text: text },
+            }),
+          }).catch(() => {})
+        }
+      }
     } else {
       showToast('Error sending message', 'error')
     }

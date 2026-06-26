@@ -314,6 +314,17 @@
     }
 
     initNotificationBell(supabase, user.id)
+
+    // Welcome email — fire once, idempotency enforced server-side
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      fetch('https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/notify', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, type: 'welcome_client' }),
+      }).catch(() => {})
+    }
+
     await loadInspections(user.id)
   }
 

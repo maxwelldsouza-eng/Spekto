@@ -320,6 +320,17 @@
     currentRadius = scoutProfile?.preferred_radius_km || 10
 
     initNotificationBell(supabase, currentUser.id)
+
+    // Welcome email — fire once, idempotency enforced server-side
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      fetch('https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/notify', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: currentUser.id, type: 'welcome_scout' }),
+      }).catch(() => {})
+    }
+
     renderRatingWidget()
     renderOnboardingCard()
     await loadAll()
@@ -761,6 +772,17 @@
       .eq('status', 'Posted')
 
     if (!error) {
+      // Notify the client (non-fatal)
+      if (insp?.client_id) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          fetch('https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/notify', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: insp.client_id, type: 'inspection_accepted', inspection_id: inspectionId }),
+          }).catch(() => {})
+        }
+      }
       await loadAll()
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
       document.querySelector('[data-tab="active"]').classList.add('active')

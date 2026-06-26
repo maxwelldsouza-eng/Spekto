@@ -665,14 +665,21 @@
       .eq('id', inspectionId)
       .eq('client_id', currentUser.id)
 
-    // Notify the scout that a dispute was raised
-    if (inspection.scout_id) {
-      await supabase.from('notifications').insert({
-        user_id: inspection.scout_id,
-        type: 'dispute_raised',
-        inspection_id: inspectionId,
-        message: `A dispute has been raised on your inspection at ${inspection.address}. Spekto support will be in touch.`
-      })
+    // Notify the client (confirmation) and the scout (dispute raised) — non-fatal
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      const notifyBase = 'https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/notify'
+      const headers = { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
+      fetch(notifyBase, {
+        method: 'POST', headers,
+        body: JSON.stringify({ user_id: currentUser.id, type: 'dispute_received', inspection_id: inspectionId }),
+      }).catch(() => {})
+      if (inspection.scout_id) {
+        fetch(notifyBase, {
+          method: 'POST', headers,
+          body: JSON.stringify({ user_id: inspection.scout_id, type: 'dispute_raised', inspection_id: inspectionId }),
+        }).catch(() => {})
+      }
     }
 
     confirmBtn.disabled = false

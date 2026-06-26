@@ -1,6 +1,7 @@
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { xeroPost, getOrCreateXeroContact } from '../_shared/xero-client.ts'
+import { sendNotification } from '../_shared/notify.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2024-06-20',
@@ -71,6 +72,27 @@ Deno.serve(async (req: Request) => {
             .from('payments')
             .update({ status: 'Completed', updated_at: new Date().toISOString() })
             .eq('stripe_payment_intent_id', pi.id)
+
+          // Payment receipt notification
+          try {
+            const clientId = pi.metadata?.supabase_user_id
+            if (clientId) {
+              const amountDollars = ((pi.amount ?? 0) / 100).toFixed(2)
+              const last4 = (pi.payment_method as any)?.card?.last4 ?? ''
+              await sendNotification(supabase, {
+                user_id: clientId,
+                type: 'payment_receipt',
+                inspection_id: inspectionId,
+                extra: {
+                  amount: amountDollars,
+                  ...(last4 ? { payment_method_last4: last4 } : {}),
+                  receipt_number: pi.id,
+                },
+              })
+            }
+          } catch (notifyErr: any) {
+            console.error('Payment receipt notification failed (non-fatal):', notifyErr.message)
+          }
 
           // Xero sync — non-fatal
           try {

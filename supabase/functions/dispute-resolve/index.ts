@@ -1,6 +1,7 @@
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { xeroPost, xeroGet } from '../_shared/xero-client.ts'
+import { sendNotification } from '../_shared/notify.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2024-06-20',
@@ -115,7 +116,7 @@ Deno.serve(async (req: Request) => {
     if (!originalPayment?.stripe_payment_intent_id) {
       // No payment on record (draft inspection) — just cancel
       await supabase.from('inspections').update({ status: 'Cancelled', updated_at: now }).eq('id', dispute.inspection_id)
-      await notifyParties({ inspection_id: dispute.inspection_id, client_id: inspection?.client_id ?? '', scout_id: inspection?.scout_id ?? '' }, resolution, notes)
+      await notifyDisputeParties(dispute.inspection_id, inspection?.client_id, inspection?.scout_id, resolution, notes)
       return ok({ success: true, refunded: false, note: 'No Stripe payment found — inspection cancelled without charge reversal' })
     }
 
@@ -222,59 +223,71 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    await notifyParties({ inspection_id: dispute.inspection_id, client_id: inspection?.client_id ?? '', scout_id: inspection?.scout_id ?? '' }, resolution, notes, refundAmount)
+    await notifyDisputeParties(dispute.inspection_id, inspection?.client_id, inspection?.scout_id, resolution, notes, refundAmount)
     return ok({ success: true, refunded: true, stripe_refund_id: stripeRefundId, amount: refundAmount })
   }
 
   if (isRelease) {
     await supabase.from('inspections').update({ status: 'PendingPayment', updated_at: now }).eq('id', dispute.inspection_id)
-    await notifyParties({ inspection_id: dispute.inspection_id, client_id: inspection?.client_id ?? '', scout_id: inspection?.scout_id ?? '' }, resolution, notes)
+    await notifyDisputeParties(dispute.inspection_id, inspection?.client_id, inspection?.scout_id, resolution, notes)
     return ok({ success: true })
   }
 
   // Dismissed
-  await notifyParties({ inspection_id: dispute.inspection_id, client_id: inspection?.client_id ?? '', scout_id: inspection?.scout_id ?? '' }, resolution, notes)
+  await notifyDisputeParties(dispute.inspection_id, inspection?.client_id, inspection?.scout_id, resolution, notes)
   return ok({ success: true })
 })
 
-async function notifyParties(
-  dispute: { inspection_id: string; client_id: string; scout_id: string },
-  resolution: string,
-  notes: string | null,
+const CLIENT_DECISION: Record<string, string> = {
+  FullRefundToClient: 'Full refund issued — amount will appear within 5–10 business days.',
+  PartialRefundToClient: 'Partial refund issued — amount will appear within 5–10 business days.',
+  PaymentReleasedToScout: 'Payment has been released to the Scout.',
+  WithheldFraud: 'Full refund issued — amount will appear within 5–10 business days.',
+  Dismissed: 'Dispute dismissed — no action taken.',
+}
+const SCOUT_DECISION: Record<string, string> = {
+  FullRefundToClient: 'Full refund issued to client. Your payout for this job has been withheld.',
+  PartialRefundToClient: 'Partial refund issued to client.',
+  PaymentReleasedToScout: 'Resolved in your favour — payment included in the next payout batch.',
+  WithheldFraud: 'Account suspended due to fraud determination. Contact support if you believe this is an error.',
+  Dismissed: 'Dispute dismissed — no action taken.',
+}
+
+async function notifyDisputeParties(
+  inspection_id: string,
+  client_id?: string,
+  scout_id?: string,
+  resolution?: string,
+  notes?: string | null,
   refundAmount?: number,
 ) {
-  const clientMessages: Record<string, string> = {
-    FullRefundToClient: `Your dispute has been resolved. A full refund of $${refundAmount?.toFixed(2)} has been issued and will appear within 5–10 business days.`,
-    PartialRefundToClient: `Your dispute has been resolved. A partial refund of $${refundAmount?.toFixed(2)} has been issued and will appear within 5–10 business days.`,
-    PaymentReleasedToScout: 'Your dispute has been reviewed. Payment has been released to the Scout.',
-    WithheldFraud: `Your dispute has been resolved. A full refund of $${refundAmount?.toFixed(2)} has been issued and will appear within 5–10 business days.`,
-    Dismissed: 'Your dispute has been reviewed and dismissed. No action has been taken.',
+  const extra: Record<string, string> = {}
+  if (notes) extra.admin_note = notes
+
+  const clientDecision = (CLIENT_DECISION[resolution ?? ''] ?? 'Dispute resolved.') +
+    (refundAmount ? ` Refund: $${refundAmount.toFixed(2)}.` : '') +
+    (notes ? ` Admin note: ${notes}` : '')
+  const scoutDecision = (SCOUT_DECISION[resolution ?? ''] ?? 'Dispute resolved.') +
+    (notes ? ` Admin note: ${notes}` : '')
+
+  const promises: Promise<void>[] = []
+
+  if (client_id) {
+    promises.push(sendNotification(supabase, {
+      user_id: client_id,
+      type: 'dispute_resolved_client',
+      inspection_id,
+      extra: { decision_text: clientDecision },
+    }))
   }
-  const scoutMessages: Record<string, string> = {
-    FullRefundToClient: 'A dispute for one of your inspections was resolved with a full refund to the client. Your payout for this job has been withheld.',
-    PartialRefundToClient: 'A dispute for one of your inspections was resolved with a partial refund to the client.',
-    PaymentReleasedToScout: 'Great news — the dispute on your inspection has been resolved in your favour. Payment will be included in the next payout batch.',
-    WithheldFraud: 'Your account has been suspended due to a fraud determination. Please contact support if you believe this is an error.',
-    Dismissed: 'A dispute raised against one of your inspections has been dismissed. No action has been taken.',
+  if (scout_id) {
+    promises.push(sendNotification(supabase, {
+      user_id: scout_id,
+      type: 'dispute_resolved_scout',
+      inspection_id,
+      extra: { decision_text: scoutDecision },
+    }))
   }
 
-  const clientMsg = clientMessages[resolution] || 'Your dispute has been resolved.'
-  const scoutMsg = scoutMessages[resolution] || 'A dispute involving your inspection has been resolved.'
-
-  await Promise.all([
-    supabase.from('notifications').insert({
-      user_id: dispute.client_id,
-      type: 'dispute_resolved',
-      inspection_id: dispute.inspection_id,
-      message: notes ? `${clientMsg} Admin note: ${notes}` : clientMsg,
-    }),
-    dispute.scout_id
-      ? supabase.from('notifications').insert({
-          user_id: dispute.scout_id,
-          type: 'dispute_resolved',
-          inspection_id: dispute.inspection_id,
-          message: notes ? `${scoutMsg} Admin note: ${notes}` : scoutMsg,
-        })
-      : Promise.resolve(),
-  ])
+  await Promise.all(promises)
 }
