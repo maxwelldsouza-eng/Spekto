@@ -54,18 +54,18 @@ Deno.serve(async (req: Request) => {
   if (!dispute_id || !resolution) return err('Missing dispute_id or resolution')
 
   // Load dispute + inspection + original charge payment
-  const { data: dispute } = await supabase
+  const { data: dispute, error: disputeErr } = await supabase
     .from('disputes')
-    .select('id, inspection_id, client_id, scout_id, status')
+    .select('id, inspection_id, status')
     .eq('id', dispute_id)
     .single()
 
-  if (!dispute) return err('Dispute not found', 404)
+  if (disputeErr || !dispute) return err('Dispute not found', 404)
   if (['Resolved', 'Dismissed'].includes(dispute.status)) return err('Dispute already resolved')
 
   const { data: inspection } = await supabase
     .from('inspections')
-    .select('id, address, client_id')
+    .select('id, address, client_id, scout_id')
     .eq('id', dispute.inspection_id)
     .single()
 
@@ -81,7 +81,7 @@ Deno.serve(async (req: Request) => {
   const today = now.split('T')[0]
 
   // ── Update dispute ──────────────────────────────────────────────────────────
-  const { error: disputeErr } = await supabase
+  const { error: updateErr } = await supabase
     .from('disputes')
     .update({
       status: resolution === 'Dismissed' ? 'Dismissed' : 'Resolved',
@@ -93,7 +93,7 @@ Deno.serve(async (req: Request) => {
     })
     .eq('id', dispute_id)
 
-  if (disputeErr) return err('Failed to update dispute: ' + disputeErr.message)
+  if (updateErr) return err('Failed to update dispute: ' + updateErr.message)
 
   // ── Log admin action ────────────────────────────────────────────────────────
   await supabase.from('admin_actions').insert({
@@ -115,7 +115,7 @@ Deno.serve(async (req: Request) => {
     if (!originalPayment?.stripe_payment_intent_id) {
       // No payment on record (draft inspection) — just cancel
       await supabase.from('inspections').update({ status: 'Cancelled', updated_at: now }).eq('id', dispute.inspection_id)
-      await notifyParties(dispute, resolution, notes)
+      await notifyParties({ inspection_id: dispute.inspection_id, client_id: inspection?.client_id ?? '', scout_id: inspection?.scout_id ?? '' }, resolution, notes)
       return ok({ success: true, refunded: false, note: 'No Stripe payment found — inspection cancelled without charge reversal' })
     }
 
@@ -166,15 +166,15 @@ Deno.serve(async (req: Request) => {
     await supabase.from('inspections').update({ status: 'Cancelled', updated_at: now }).eq('id', dispute.inspection_id)
 
     // Flag scout account on fraud
-    if (isFraud && dispute.scout_id) {
+    if (isFraud && inspection?.scout_id) {
       await supabase
         .from('users')
         .update({ is_active: false, updated_at: now })
-        .eq('id', dispute.scout_id)
+        .eq('id', inspection.scout_id)
       await supabase
         .from('scout_profiles')
         .update({ scout_status: 'Suspended', updated_at: now })
-        .eq('user_id', dispute.scout_id)
+        .eq('user_id', inspection.scout_id)
     }
 
     // Xero credit note (non-fatal)
@@ -222,18 +222,18 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    await notifyParties(dispute, resolution, notes, refundAmount)
+    await notifyParties({ inspection_id: dispute.inspection_id, client_id: inspection?.client_id ?? '', scout_id: inspection?.scout_id ?? '' }, resolution, notes, refundAmount)
     return ok({ success: true, refunded: true, stripe_refund_id: stripeRefundId, amount: refundAmount })
   }
 
   if (isRelease) {
     await supabase.from('inspections').update({ status: 'PendingPayment', updated_at: now }).eq('id', dispute.inspection_id)
-    await notifyParties(dispute, resolution, notes)
+    await notifyParties({ inspection_id: dispute.inspection_id, client_id: inspection?.client_id ?? '', scout_id: inspection?.scout_id ?? '' }, resolution, notes)
     return ok({ success: true })
   }
 
   // Dismissed
-  await notifyParties(dispute, resolution, notes)
+  await notifyParties({ inspection_id: dispute.inspection_id, client_id: inspection?.client_id ?? '', scout_id: inspection?.scout_id ?? '' }, resolution, notes)
   return ok({ success: true })
 })
 

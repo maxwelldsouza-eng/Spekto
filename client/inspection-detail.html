@@ -699,21 +699,60 @@
   })
 
   document.getElementById('confirmCancelBtn').addEventListener('click', async () => {
-    const { error } = await supabase
-      .from('inspections')
-      .update({ status: 'Cancelled', cancelled_at: new Date().toISOString(), cancelled_by: currentUser.id, updated_at: new Date().toISOString() })
-      .eq('id', inspectionId)
-      .eq('client_id', currentUser.id)
-      .in('status', ['Posted', 'Draft'])
+    const btn = document.getElementById('confirmCancelBtn')
 
-    if (!error) {
-      inspection.status = 'Cancelled'
-      document.getElementById('cancelPanel').style.display = 'none'
-      const badge = document.getElementById('statusBadge')
-      badge.className = 'badge badge-Cancelled'
-      badge.textContent = 'Cancelled'
-      renderActions()
-      renderContent()
+    if (inspection.status === 'Posted') {
+      // Posted = payment already taken → call edge function for refund
+      btn.disabled = true
+      btn.textContent = 'Processing refund…'
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const res = await fetch('https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/cancel-inspection', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+          body: JSON.stringify({ inspection_id: inspectionId }),
+        })
+        const result = await res.json()
+        if (!res.ok) {
+          alert(result.error || 'Cancellation failed. Please try again.')
+          btn.disabled = false
+          btn.textContent = 'Yes, cancel inspection'
+          return
+        }
+        inspection.status = 'Cancelled'
+        document.getElementById('cancelPanel').style.display = 'none'
+        const badge = document.getElementById('statusBadge')
+        badge.className = 'badge badge-Cancelled'
+        badge.textContent = 'Cancelled'
+        if (result.refunded) {
+          const amt = parseFloat(result.refund_amount || 0).toFixed(2)
+          alert(`Inspection cancelled. A refund of $${amt} has been issued and will appear within 5–10 business days.`)
+        }
+        renderActions()
+        renderContent()
+      } catch (e) {
+        alert('Network error. Please try again.')
+        btn.disabled = false
+        btn.textContent = 'Yes, cancel inspection'
+      }
+    } else {
+      // Draft = no payment taken → direct DB update
+      const { error } = await supabase
+        .from('inspections')
+        .update({ status: 'Cancelled', cancelled_at: new Date().toISOString(), cancelled_by: currentUser.id, updated_at: new Date().toISOString() })
+        .eq('id', inspectionId)
+        .eq('client_id', currentUser.id)
+        .eq('status', 'Draft')
+
+      if (!error) {
+        inspection.status = 'Cancelled'
+        document.getElementById('cancelPanel').style.display = 'none'
+        const badge = document.getElementById('statusBadge')
+        badge.className = 'badge badge-Cancelled'
+        badge.textContent = 'Cancelled'
+        renderActions()
+        renderContent()
+      }
     }
   })
 
