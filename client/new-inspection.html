@@ -385,6 +385,9 @@
   }
 
   async function init() {
+    // Prevent selecting past dates at the browser level
+    document.getElementById('inspDate').min = new Date().toLocaleDateString('en-CA')
+
     const params = new URLSearchParams(window.location.search)
     editId = params.get('id')
 
@@ -517,6 +520,7 @@
       const error = document.getElementById(errorId)
       if (!input.value.trim()) {
         input.classList.add('invalid')
+        error.textContent = id === 'inspDate' ? 'Date is required' : error.textContent
         error.style.display = 'block'
         valid = false
       } else {
@@ -524,6 +528,19 @@
         error.style.display = 'none'
       }
     })
+
+    // Date must not be in the past
+    const dateInput = document.getElementById('inspDate')
+    const dateError = document.getElementById('dateError')
+    if (dateInput.value) {
+      const today = new Date().toLocaleDateString('en-CA')
+      if (dateInput.value < today) {
+        dateInput.classList.add('invalid')
+        dateError.textContent = 'Inspection date cannot be in the past'
+        dateError.style.display = 'block'
+        valid = false
+      }
+    }
 
     // Also require that the address was confirmed via autocomplete (so lat/lng are captured)
     const addrInput = document.getElementById('address')
