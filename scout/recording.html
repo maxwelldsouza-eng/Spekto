@@ -650,6 +650,16 @@
       .update({ status: 'Completed', updated_at: new Date().toISOString() })
       .eq('id', inspectionId)
 
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        fetch('https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/notify', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: inspection.client_id, type: 'inspection_completed', inspection_id: inspectionId }),
+        }).catch(() => {})
+      }
+    }).catch(() => {})
+
     showToast('Inspection submitted successfully!')
     setTimeout(() => { window.location.href = `inspection-detail.html?id=${inspectionId}` }, 1500)
   }
