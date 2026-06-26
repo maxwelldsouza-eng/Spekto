@@ -43,7 +43,7 @@ export function initNotificationBell(supabase, userId) {
         <button class="notif-mark-all" id="notifMarkAll">Mark all read</button>
       </div>
       <div class="notif-list" id="notifList">
-        <div class="notif-empty">Loading...</div>
+        <div class="notif-empty">You're all caught up</div>
       </div>
     </div>
   `
@@ -58,8 +58,9 @@ export function initNotificationBell(supabase, userId) {
       .from('notifications')
       .select('*')
       .eq('user_id', userId)
+      .eq('is_read', false)
       .order('created_at', { ascending: false })
-      .limit(20)
+      .limit(50)
     return data || []
   }
 
@@ -94,7 +95,7 @@ export function initNotificationBell(supabase, userId) {
     }
 
     if (notifications.length === 0) {
-      list.innerHTML = '<div class="notif-empty">No notifications yet</div>'
+      list.innerHTML = '<div class="notif-empty">You\'re all caught up</div>'
       return
     }
 
@@ -154,7 +155,7 @@ export function initNotificationBell(supabase, userId) {
       .eq('user_id', userId)
       .eq('is_read', false)
 
-    notifications = notifications.map(n => ({ ...n, is_read: true }))
+    notifications = []
     renderDropdown()
   }
 
