@@ -143,7 +143,6 @@ function buildEmail(type: string, ctx: Record<string, string>): { subject: strin
                 <li><strong>A Scout picks it up</strong> — and gets to work</li>
                 <li><strong>Get your video</strong> — a detailed walkthrough delivered straight to your dashboard</li>
               </ol>
-              <p>Ready to get started? Your first inspection is just a few clicks away.</p>
               ${cta('Post Your First Inspection', ctx.newInspectionLink)}
               <p style="margin-top:28px;color:#555">Welcome aboard,<br><strong>The Spekto Team</strong></p>`
       return { subject, html: wrap(ctx.recipientFirstName, body) }
