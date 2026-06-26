@@ -319,8 +319,8 @@
                     <div class="form-group">
                         <label>Select your role</label>
                         <div class="role-selector">
-                            <label class="role-card selected" for="role-client">
-                                <input type="radio" id="role-client" name="role" value="Client" checked>
+                            <label class="role-card" for="role-client">
+                                <input type="radio" id="role-client" name="role" value="Client">
                                 <div class="role-title">Client</div>
                             </label>
                             <label class="role-card" for="role-scout">
@@ -328,6 +328,7 @@
                                 <div class="role-title">Scout</div>
                             </label>
                         </div>
+                        <div class="error-message" id="roleError" style="display:none">Please select Client or Scout to continue</div>
                     </div>
                     <button type="submit" class="btn btn-primary" id="createAccountBtn">Create account</button>
                 </form>
@@ -385,9 +386,10 @@
         // Event Listeners
         roleCards.forEach(card => {
             card.addEventListener('click', () => {
-                document.querySelector('.role-card.selected').classList.remove('selected');
+                roleCards.forEach(c => c.classList.remove('selected'));
                 card.classList.add('selected');
                 card.querySelector('input[type="radio"]').checked = true;
+                document.getElementById('roleError').style.display = 'none';
             });
         });
 
@@ -479,7 +481,11 @@
                 showError(passwordInput, 'Password must be at least 8 characters');
                 isValid = false;
             }
-            
+            if (!document.querySelector('input[name="role"]:checked')) {
+                document.getElementById('roleError').style.display = 'block';
+                isValid = false;
+            }
+
             return isValid;
         };
 
