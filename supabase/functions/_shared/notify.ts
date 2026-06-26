@@ -133,12 +133,21 @@ function buildEmail(type: string, ctx: Record<string, string>): { subject: strin
 
   let subject = '', body = ''
   switch (type) {
-    case 'welcome_client':
+    case 'welcome_client': {
       subject = `Welcome to Spekto, ${ctx.recipientFirstName}! 👋`
-      body = `<p>You're ready to book your first property inspection — find a Scout in just a few taps.</p>
-              <ul style="padding-left:20px;line-height:2"><li>Post an inspection for any property</li><li>Get matched with a nearby verified Scout</li><li>Receive a full video walkthrough</li><li>Track everything from your dashboard</li></ul>
-              ${cta('Post Your First Inspection', ctx.newInspectionLink)}`
-      break
+      body = `<p>Welcome to Spekto! We're really glad you're here.</p>
+              <p>Spekto connects you with trusted local Scouts who can inspect any property for you and send back a full video walkthrough — so you can make confident decisions without driving across town (or interstate).</p>
+              <p><strong>Here's how it works:</strong></p>
+              <ol style="padding-left:20px;line-height:2">
+                <li><strong>Post an inspection</strong> — tell us the property address and what you need checked</li>
+                <li><strong>A Scout picks it up</strong> — and gets to work</li>
+                <li><strong>Get your video</strong> — a detailed walkthrough delivered straight to your dashboard</li>
+              </ol>
+              <p>Ready to get started? Your first inspection is just a few clicks away.</p>
+              ${cta('Post Your First Inspection', ctx.newInspectionLink)}
+              <p style="margin-top:28px;color:#555">Welcome aboard,<br><strong>The Spekto Team</strong></p>`
+      return { subject, html: wrap(ctx.recipientFirstName, body) }
+    }
     case 'welcome_scout':
       subject = `Welcome to Spekto — complete your onboarding to start earning`
       body = `<p>Thanks for joining Spekto as a Scout. You'll earn a payout for every inspection you complete.</p>
