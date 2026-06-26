@@ -88,7 +88,7 @@ Deno.serve(async (req: Request) => {
       status: resolution === 'Dismissed' ? 'Dismissed' : 'Resolved',
       resolution,
       resolution_notes: notes || null,
-      resolved_by: user.id,
+      resolved_by: adminRow.id,
       resolved_at: now,
       updated_at: now,
     })

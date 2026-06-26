@@ -338,11 +338,13 @@
     badge.className = `badge badge-${dispute.status}`
     badge.textContent = dispute.status.replace(/([A-Z])/g, ' $1').trim()
 
+    document.getElementById('topbarActions').innerHTML = ''
+
     if (!['Resolved','Dismissed'].includes(dispute.status)) {
       const updateBtn = document.createElement('button')
       updateBtn.className = 'btn-action btn-status'
       updateBtn.innerHTML = '<i class="ti ti-edit" style="font-size:13px"></i> Update status'
-      updateBtn.addEventListener('click', showStatusModal)
+      updateBtn.addEventListener('click', (e) => { e.stopPropagation(); showStatusDropdown(updateBtn) })
       document.getElementById('topbarActions').appendChild(updateBtn)
     }
 
@@ -750,42 +752,122 @@
       .not('status', 'in', '("Resolved","Dismissed")')
   }
 
-  window.showStatusModal = () => {
-    const statuses = ['Submitted','UnderReview','AwaitingResponse','DecisionMade']
-    const current = dispute.status
-    const next = statuses[statuses.indexOf(current) + 1] || current
-    if (confirm(`Update status from "${current}" to "${next.replace(/([A-Z])/g,' $1').trim()}"?`)) {
-      updateDisputeStatus(next).then(async () => {
-        // Notify client and scout of status change
-        const statusMessages = {
-          UnderReview: 'Your dispute is now under review by Spekto support.',
-          AwaitingResponse: 'Spekto support requires your response on the dispute.',
-          DecisionMade: 'A decision has been made on your dispute. Please check the dispute details.',
-          Resolved: 'Your dispute has been resolved. Please check the dispute details for the outcome.',
-          Dismissed: 'Your dispute has been dismissed by Spekto support.'
-        }
-        const msg = statusMessages[next]
-        if (msg && dispute.raised_by) {
-          await supabase.from('notifications').insert({
-            user_id: dispute.raised_by,
-            type: 'dispute_status_changed',
-            inspection_id: dispute.inspection_id,
-            message: `Dispute update: ${msg}`
-          })
-        }
-        // If AwaitingResponse, also notify the scout
-        if (next === 'AwaitingResponse' && inspection.scout_id) {
-          await supabase.from('notifications').insert({
-            user_id: inspection.scout_id,
-            type: 'dispute_status_changed',
-            inspection_id: dispute.inspection_id,
-            message: `Spekto support requires your response on the dispute for inspection at ${inspection.address}.`
-          })
-        }
-        showToast('Status updated')
-        loadDispute()
+  const STATUS_LABEL = {
+    UnderReview: 'Under Review',
+    AwaitingResponse: 'Awaiting Response',
+    DecisionMade: 'Decision Made'
+  }
+
+  const STATUS_TRANSITIONS = {
+    Submitted: ['UnderReview'],
+    UnderReview: ['AwaitingResponse', 'DecisionMade'],
+    AwaitingResponse: ['UnderReview'],
+    DecisionMade: ['UnderReview']
+  }
+
+  let _statusDropdown = null
+
+  function closeStatusDropdown() {
+    if (_statusDropdown) {
+      _statusDropdown.remove()
+      _statusDropdown = null
+    }
+  }
+
+  function showStatusDropdown(anchorBtn) {
+    if (_statusDropdown) {
+      closeStatusDropdown()
+      return
+    }
+
+    const nextStatuses = STATUS_TRANSITIONS[dispute.status] || []
+    if (nextStatuses.length === 0) return
+
+    const dropdown = document.createElement('div')
+    dropdown.style.cssText = [
+      'position:absolute',
+      'z-index:200',
+      'background:#fff',
+      'border-radius:10px',
+      'box-shadow:0 8px 24px rgba(0,0,0,0.10)',
+      'border:1px solid #EEE',
+      'min-width:180px',
+      'overflow:hidden'
+    ].join(';')
+
+    nextStatuses.forEach(status => {
+      const label = STATUS_LABEL[status] || status.replace(/([A-Z])/g, ' $1').trim()
+      const item = document.createElement('button')
+      item.style.cssText = [
+        'display:block',
+        'width:100%',
+        'padding:11px 16px',
+        'text-align:left',
+        'background:none',
+        'border:none',
+        'font-size:13px',
+        'font-weight:600',
+        'font-family:Inter,sans-serif',
+        'color:#0D0D0D',
+        'cursor:pointer',
+        'transition:background 0.12s'
+      ].join(';')
+      item.textContent = label
+      item.addEventListener('mouseenter', () => { item.style.background = '#F5EEFF'; item.style.color = '#560591' })
+      item.addEventListener('mouseleave', () => { item.style.background = 'none'; item.style.color = '#0D0D0D' })
+      item.addEventListener('click', async (e) => {
+        e.stopPropagation()
+        closeStatusDropdown()
+        await applyStatusTransition(status)
+      })
+      dropdown.appendChild(item)
+    })
+
+    // Position below the anchor button
+    const rect = anchorBtn.getBoundingClientRect()
+    dropdown.style.position = 'fixed'
+    dropdown.style.top = (rect.bottom + 6) + 'px'
+    dropdown.style.right = (window.innerWidth - rect.right) + 'px'
+
+    document.body.appendChild(dropdown)
+    _statusDropdown = dropdown
+
+    // Close on outside click
+    setTimeout(() => {
+      document.addEventListener('click', closeStatusDropdown, { once: true })
+    }, 0)
+  }
+
+  async function applyStatusTransition(newStatus) {
+    await updateDisputeStatus(newStatus)
+
+    // Notify client of status change
+    const statusMessages = {
+      UnderReview: 'Your dispute is now under review by Spekto support.',
+      AwaitingResponse: 'Spekto support requires your response on the dispute.',
+      DecisionMade: 'A decision has been made on your dispute. Please check the dispute details.'
+    }
+    const msg = statusMessages[newStatus]
+    if (msg && dispute.raised_by) {
+      await supabase.from('notifications').insert({
+        user_id: dispute.raised_by,
+        type: 'dispute_status_changed',
+        inspection_id: dispute.inspection_id,
+        message: `Dispute update: ${msg}`
       })
     }
+    // If AwaitingResponse, also notify the scout
+    if (newStatus === 'AwaitingResponse' && inspection.scout_id) {
+      await supabase.from('notifications').insert({
+        user_id: inspection.scout_id,
+        type: 'dispute_status_changed',
+        inspection_id: dispute.inspection_id,
+        message: `Spekto support requires your response on the dispute for inspection at ${inspection.address}.`
+      })
+    }
+
+    showToast('Status updated')
+    loadDispute()
   }
 
   document.getElementById('menuToggle').addEventListener('click', () => {
