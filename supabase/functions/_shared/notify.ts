@@ -80,10 +80,11 @@ export async function sendNotification(supabase: SupabaseClient, input: NotifyIn
     if (!resendKey) { console.warn('[notify] RESEND_API_KEY not set — skipping email'); return }
 
     const { subject, html } = buildEmail(type, ctx)
+    const toAddress = Deno.env.get('RESEND_TO_OVERRIDE') || recipient.email
     const resendRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: RESEND_FROM, to: recipient.email, subject, html }),
+      body: JSON.stringify({ from: RESEND_FROM, to: toAddress, subject, html }),
     })
 
     if (!resendRes.ok) console.error('[notify] Resend error:', await resendRes.text().catch(() => ''))
