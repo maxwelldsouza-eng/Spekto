@@ -54,19 +54,26 @@ export async function sendNotification(supabase: SupabaseClient, input: NotifyIn
       if (s) ctx.scoutName = `${s.first_name ?? ''} ${s.last_name ?? ''}`.trim()
     }
 
-    const message = buildMessage(type, ctx)
-
-    const { data: notif } = await supabase.from('notifications').insert({
-      user_id, type, inspection_id: inspection_id ?? null,
-      message, is_read: false, email_sent: false,
-    }).select('id').single()
-
-    let shouldEmail = ntConfig.is_mandatory
-    if (!shouldEmail) {
+    let shouldInApp = true
+    let shouldEmail = true
+    if (!ntConfig.is_mandatory) {
       const { data: pref } = await supabase.from('notification_preferences')
-        .select('email_enabled').eq('user_id', user_id).eq('type', type).maybeSingle()
+        .select('email_enabled, inapp_enabled').eq('user_id', user_id).eq('type', type).maybeSingle()
+      shouldInApp = pref?.inapp_enabled ?? true
       shouldEmail = pref?.email_enabled ?? true
     }
+    if (!shouldInApp && !shouldEmail) return
+
+    const message = buildMessage(type, ctx)
+    let notifId: string | null = null
+    if (shouldInApp) {
+      const { data: notif } = await supabase.from('notifications').insert({
+        user_id, type, inspection_id: inspection_id ?? null,
+        message, is_read: false, email_sent: false,
+      }).select('id').single()
+      notifId = notif?.id ?? null
+    }
+
     if (!shouldEmail) return
 
     const resendKey = Deno.env.get('RESEND_API_KEY')
@@ -81,11 +88,11 @@ export async function sendNotification(supabase: SupabaseClient, input: NotifyIn
 
     if (!resendRes.ok) console.error('[notify] Resend error:', await resendRes.text().catch(() => ''))
 
-    if (notif?.id) {
+    if (notifId) {
       await supabase.from('notifications').update({
         email_sent: resendRes.ok,
         email_sent_at: resendRes.ok ? new Date().toISOString() : null,
-      }).eq('id', notif.id)
+      }).eq('id', notifId)
     }
   } catch (e: unknown) {
     console.error('[notify] Unexpected error:', e instanceof Error ? e.message : String(e))

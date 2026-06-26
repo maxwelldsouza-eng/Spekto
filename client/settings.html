@@ -165,8 +165,7 @@
   let currentUser = null
   let userData = null
   let clientProfile = null
-  let notifEmail = true
-  let notifApp = true
+  let notifPrefs = {}
 
   const _mapsLoaded = new Promise(resolve => {
     if (typeof google !== 'undefined' && google.maps) resolve()
@@ -249,8 +248,6 @@
       document.getElementById('userName').textContent = userData.first_name + ' ' + userData.last_name
     }
 
-    notifEmail = clientProfile?.notification_email ?? true
-    notifApp = clientProfile?.notification_in_app ?? true
 
     renderPage()
   }
@@ -368,23 +365,13 @@
 
       <div class="card">
         <div class="card-title"><i class="ti ti-bell"></i> Notifications</div>
-        <div class="toggle-row">
-          <div>
-            <div class="toggle-label">Email notifications</div>
-            <div class="toggle-sub">Receive inspection updates and alerts by email</div>
-          </div>
-          <button class="toggle ${notifEmail ? 'on' : ''}" id="toggleEmail" onclick="toggleNotif('email')"></button>
+        <p style="font-size:13px;color:#999;margin:0 0 16px">Mandatory notifications (payments, disputes, cancellations) are always on and cannot be disabled.</p>
+        <div style="display:grid;grid-template-columns:1fr 68px 68px;align-items:center;padding-bottom:8px;border-bottom:1.5px solid #EDE8F5;margin-bottom:2px">
+          <div></div>
+          <div style="font-size:11px;font-weight:700;color:#888;text-align:center;text-transform:uppercase;letter-spacing:0.4px">Email</div>
+          <div style="font-size:11px;font-weight:700;color:#888;text-align:center;text-transform:uppercase;letter-spacing:0.4px">In-App</div>
         </div>
-        <div class="toggle-row">
-          <div>
-            <div class="toggle-label">In-app notifications</div>
-            <div class="toggle-sub">Receive alerts inside the Spekto app</div>
-          </div>
-          <button class="toggle ${notifApp ? 'on' : ''}" id="toggleApp" onclick="toggleNotif('app')"></button>
-        </div>
-        <div style="display:flex;justify-content:flex-end;margin-top:16px">
-          <button class="btn-save" id="saveNotifBtn">Save preferences</button>
-        </div>
+        <div id="notifPrefsRows"><div style="padding:14px 0;color:#bbb;font-size:13px">Loading…</div></div>
       </div>
 
       <div class="card">
@@ -416,7 +403,7 @@
     document.getElementById('savePersonalBtn').addEventListener('click', savePersonal)
     document.getElementById('saveCompanyBtn').addEventListener('click', saveCompany)
     document.getElementById('saveBillingBtn').addEventListener('click', saveBilling)
-    document.getElementById('saveNotifBtn').addEventListener('click', saveNotifications)
+    loadNotifPrefs()
     document.getElementById('resetPasswordBtn').addEventListener('click', sendPasswordReset)
     document.getElementById('switchToScoutBtn').addEventListener('click', switchToScout)
     document.getElementById('logoutBtn').addEventListener('click', handleLogout)
@@ -547,14 +534,54 @@
     })
   }
 
-  window.toggleNotif = (type) => {
-    if (type === 'email') {
-      notifEmail = !notifEmail
-      document.getElementById('toggleEmail').className = `toggle ${notifEmail ? 'on' : ''}`
-    } else {
-      notifApp = !notifApp
-      document.getElementById('toggleApp').className = `toggle ${notifApp ? 'on' : ''}`
-    }
+  const CLIENT_NOTIF_TYPES = [
+    { type: 'inspection_accepted', label: 'Inspection accepted', sub: 'When a Scout accepts your inspection' },
+    { type: 'inspection_completed', label: 'Inspection completed', sub: 'When your inspection is ready to view' },
+    { type: 'admin_message', label: 'Messages from Admin', sub: 'When Spekto Admin sends you a message' },
+  ]
+
+  async function loadNotifPrefs() {
+    const types = CLIENT_NOTIF_TYPES.map(t => t.type)
+    const { data: prefs } = await supabase
+      .from('notification_preferences')
+      .select('type, email_enabled, inapp_enabled')
+      .eq('user_id', currentUser.id)
+      .in('type', types)
+
+    notifPrefs = {}
+    for (const p of (prefs || [])) notifPrefs[p.type] = { email: p.email_enabled, inapp: p.inapp_enabled }
+
+    const rows = CLIENT_NOTIF_TYPES.map(({ type, label, sub }) => {
+      const email = notifPrefs[type]?.email ?? true
+      const inapp = notifPrefs[type]?.inapp ?? true
+      return `<div style="display:grid;grid-template-columns:1fr 68px 68px;align-items:center;padding:11px 0;border-bottom:1px solid #F5F2FB">
+        <div>
+          <div style="font-size:14px;font-weight:500;color:#1A0533">${label}</div>
+          <div style="font-size:12px;color:#aaa;margin-top:2px">${sub}</div>
+        </div>
+        <div style="display:flex;justify-content:center">
+          <button class="toggle ${email ? 'on' : ''}" onclick="setNotifPref('${type}','email',this)"></button>
+        </div>
+        <div style="display:flex;justify-content:center">
+          <button class="toggle ${inapp ? 'on' : ''}" onclick="setNotifPref('${type}','inapp',this)"></button>
+        </div>
+      </div>`
+    }).join('')
+
+    document.getElementById('notifPrefsRows').innerHTML = rows
+  }
+
+  window.setNotifPref = async (type, channel, btn) => {
+    const newVal = !btn.classList.contains('on')
+    btn.className = `toggle ${newVal ? 'on' : ''}`
+    if (!notifPrefs[type]) notifPrefs[type] = { email: true, inapp: true }
+    notifPrefs[type][channel] = newVal
+    await supabase.from('notification_preferences').upsert({
+      user_id: currentUser.id, type,
+      email_enabled: notifPrefs[type].email,
+      inapp_enabled: notifPrefs[type].inapp,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,type' })
   }
 
   async function savePersonal() {
@@ -630,22 +657,6 @@
     else showToast('Billing address saved successfully')
   }
 
-  async function saveNotifications() {
-    const btn = document.getElementById('saveNotifBtn')
-    btn.disabled = true
-    btn.textContent = 'Saving...'
-
-    const { error } = await supabase
-      .from('client_profiles')
-      .update({ notification_email: notifEmail, notification_in_app: notifApp, updated_at: new Date().toISOString() })
-      .eq('user_id', currentUser.id)
-
-    btn.disabled = false
-    btn.textContent = 'Save preferences'
-
-    if (error) showToast('Error saving preferences.', 'error')
-    else showToast('Notification preferences saved')
-  }
 
   async function switchToScout() {
     const btn = document.getElementById('switchToScoutBtn')
