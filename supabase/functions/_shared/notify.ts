@@ -1,7 +1,7 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const APP_BASE = 'https://maxwelldsouza-eng.github.io/Spekto'
-const RESEND_FROM = 'Spekto <notifications@spekto.com.au>'
+const RESEND_FROM = 'Spekto <onboarding@resend.dev>'
 
 export interface NotifyInput {
   user_id: string
