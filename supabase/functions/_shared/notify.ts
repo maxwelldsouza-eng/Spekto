@@ -33,6 +33,7 @@ export async function sendNotification(supabase: SupabaseClient, input: NotifyIn
 
     const ctx: Record<string, string> = {
       recipientName,
+      recipientFirstName: recipient.first_name ?? recipientName,
       address: inspection?.address ?? extra.address ?? '',
       inspectionRef: extra.inspection_ref ?? (inspection?.ref_number ? `#${inspection.ref_number}` : ''),
       inspectionDate: extra.inspection_date ?? inspection?.date ?? '',
@@ -103,7 +104,7 @@ export async function sendNotification(supabase: SupabaseClient, input: NotifyIn
 function buildMessage(type: string, ctx: Record<string, string>): string {
   const a = ctx.address, r = ctx.inspectionRef
   switch (type) {
-    case 'welcome_client': return `Welcome to Spekto, ${ctx.recipientName}!`
+    case 'welcome_client': return `Welcome to Spekto, ${ctx.recipientFirstName}! 👋 You're ready to book your first property inspection — find a Scout in just a few taps.`
     case 'welcome_scout': return `Welcome to Spekto, ${ctx.recipientName}! Complete your onboarding to start accepting jobs.`
     case 'inspection_declined': return `${ctx.scoutName ?? 'Your Scout'} is no longer able to complete your inspection at ${a}. We're finding you a new Scout.`
     case 'inspection_cancelled_refund': return `Your inspection at ${a} has been cancelled. A refund of $${ctx.amount ?? '0.00'} is on its way.`
@@ -133,8 +134,8 @@ function buildEmail(type: string, ctx: Record<string, string>): { subject: strin
   let subject = '', body = ''
   switch (type) {
     case 'welcome_client':
-      subject = `Welcome to Spekto, ${ctx.recipientName}`
-      body = `<p>Thanks for joining Spekto. We connect you with verified Scouts who can carry out property inspections on your behalf.</p>
+      subject = `Welcome to Spekto, ${ctx.recipientFirstName}! 👋`
+      body = `<p>You're ready to book your first property inspection — find a Scout in just a few taps.</p>
               <ul style="padding-left:20px;line-height:2"><li>Post an inspection for any property</li><li>Get matched with a nearby verified Scout</li><li>Receive a full video walkthrough</li><li>Track everything from your dashboard</li></ul>
               ${cta('Post Your First Inspection', ctx.newInspectionLink)}`
       break
