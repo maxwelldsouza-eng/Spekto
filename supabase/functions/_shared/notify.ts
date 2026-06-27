@@ -1,4 +1,4 @@
-import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+﻿import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const APP_BASE = 'https://maxwelldsouza-eng.github.io/Spekto'
 const RESEND_FROM = 'Spekto <onboarding@resend.dev>'
@@ -107,7 +107,7 @@ function buildMessage(type: string, ctx: Record<string, string>): string {
     case 'welcome_client': return `Welcome to Spekto, ${ctx.recipientFirstName}! 👋 You're ready to book your first property inspection — find a Scout in just a few taps.`
     case 'welcome_scout': return `👋 Welcome to Spekto, ${ctx.recipientFirstName}! You're almost ready to start earning. Finish your onboarding steps below to unlock job access and get paid for every inspection you complete.`
     case 'inspection_declined': return `${ctx.scoutName ?? 'Your Scout'} is no longer able to complete your inspection at ${a} (${r}). It's been reposted for other Scouts to pick up — we'll notify you as soon as a new Scout accepts.`
-    case 'inspection_cancelled_refund': return `Your inspection at ${a} has been cancelled. A refund of $${ctx.amount ?? '0.00'} is on its way.`
+    case 'inspection_cancelled_refund': return `Your inspection at ${a} has been cancelled as requested. A refund of $${ctx.amount ?? '0.00'} is on its way and should appear in your account within 5–10 business days.`
     case 'dispute_received': return `Your dispute for ${a} (${r}) has been received and is under review.`
     case 'dispute_resolved_client': return `Your dispute for ${a} (${r}) has been resolved.`
     case 'dispute_resolved_scout': return `The dispute for ${a} (${r}) has been resolved.`
@@ -180,13 +180,16 @@ function buildEmail(type: string, ctx: Record<string, string>): { subject: strin
               <p style="margin-top:28px;color:#555">Thanks for your patience,<br><strong>The Spekto Team</strong></p>`
       return { subject, html: wrap(ctx.recipientFirstName, body) }
     }
-    case 'inspection_cancelled_refund':
-      subject = `Cancellation confirmed — refund processed (${ctx.inspectionRef})`
-      body = `<p>Your inspection has been cancelled as requested.</p>
-              ${table([['Reference', ctx.inspectionRef], ['Address', ctx.address], ['Amount refunded', `$${ctx.amount ?? '0.00'}`], ...(ctx.payment_method_last4 ? [['Payment method', `···· ${ctx.payment_method_last4}`] as [string, string]] : [])])}
-              <p style="color:#666;font-size:13px">Refunds typically appear within 5–10 business days.</p>
-              ${cta('View Inspection', ctx.inspectionLink)}`
-      break
+    case 'inspection_cancelled_refund': {
+      subject = `Cancellation confirmed — your refund is on its way (${ctx.inspectionRef})`
+      body = `<p>Your inspection has been cancelled as requested, and we've processed your refund.</p>
+              ${table([['Reference', ctx.inspectionRef], ['Address', ctx.address], ['Amount refunded', `\$${ctx.amount ?? '0.00'}`]])}
+              <p>Your refund has been sent back to your original payment method and typically takes 5–10 business days to appear, depending on your bank.</p>
+              <p>If you'd like to book another inspection in the future, we're always here whenever you're ready.</p>
+              ${cta('View Inspection', ctx.inspectionLink)}
+              <p style="margin-top:28px;color:#555">Thanks for using Spekto,<br><strong>The Spekto Team</strong></p>`
+      return { subject, html: wrap(ctx.recipientFirstName, body) }
+    }
     case 'dispute_received':
       subject = `We've received your dispute (${ctx.inspectionRef})`
       body = `<p>We've received your dispute and our team will review it within 48 hours.</p>
