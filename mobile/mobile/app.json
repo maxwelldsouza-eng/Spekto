@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "Spekto Scout",
+    "slug": "spekto-scout",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#560591"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.spekto.scout",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Spekto uses your camera to record property walkthroughs.",
+        "NSMicrophoneUsageDescription": "Spekto records audio during property walkthroughs.",
+        "NSLocationWhenInUseUsageDescription": "Spekto tags your recordings with GPS coordinates.",
+        "NSPhotoLibraryUsageDescription": "Spekto lets you upload identity documents from your photo library."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#560591"
+      },
+      "package": "com.spekto.scout",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Spekto uses your camera to record property walkthroughs.",
+          "microphonePermission": "Spekto records audio during walkthroughs."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Spekto tags your recordings with GPS coordinates."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Spekto lets you upload identity documents."
+        }
+      ]
+    ],
+    "scheme": "spekto-scout"
+  }
+}
