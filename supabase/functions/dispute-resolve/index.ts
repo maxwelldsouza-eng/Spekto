@@ -268,13 +268,11 @@ async function notifyDisputeParties(
   refundAmount?: number,
 ) {
   const clientDecision = (CLIENT_DECISION[resolution ?? ''] ?? 'Dispute resolved.') +
-    (refundAmount ? ` Refund: $${refundAmount.toFixed(2)}.` : '') +
-    (client_notes ? ` Admin note: ${client_notes}` : '')
-  const scoutDecision = (SCOUT_DECISION[resolution ?? ''] ?? 'Dispute resolved.') +
-    (scout_notes ? ` Admin note: ${scout_notes}` : '')
+    (refundAmount ? ` Refund: $${refundAmount.toFixed(2)}.` : '')
+  const scoutDecision = SCOUT_DECISION[resolution ?? ''] ?? 'Dispute resolved.'
 
   const promises: Promise<void>[] = []
-  if (client_id) promises.push(callNotify({ user_id: client_id, type: 'dispute_resolved_client', inspection_id, extra: { decision_text: clientDecision } }))
-  if (scout_id) promises.push(callNotify({ user_id: scout_id, type: 'dispute_resolved_scout', inspection_id, extra: { decision_text: scoutDecision } }))
+  if (client_id) promises.push(callNotify({ user_id: client_id, type: 'dispute_resolved_client', inspection_id, extra: { decision_text: clientDecision, ...(client_notes ? { admin_note: client_notes } : {}) } }))
+  if (scout_id) promises.push(callNotify({ user_id: scout_id, type: 'dispute_resolved_scout', inspection_id, extra: { decision_text: scoutDecision, ...(scout_notes ? { admin_note: scout_notes } : {}) } }))
   await Promise.all(promises)
 }

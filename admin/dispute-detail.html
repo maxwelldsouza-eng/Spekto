@@ -189,6 +189,7 @@
       <div class="nav">
         <a class="nav-item" href="inspections.html"><i class="ti ti-clipboard-list"></i> Inspections</a>
         <a class="nav-item active" href="disputes.html"><i class="ti ti-alert-triangle"></i> Disputes</a>
+        <a class="nav-item" href="fraud.html"><i class="ti ti-shield-alert"></i> Fraud</a>
         <a class="nav-item" href="payouts.html"><i class="ti ti-wallet"></i> Payouts</a>
         <a class="nav-item" href="verification.html"><i class="ti ti-id-badge"></i> Verification</a>
         <a class="nav-item" href="rights-to-work.html"><i class="ti ti-passport"></i> Rights to Work</a>
@@ -330,6 +331,21 @@
       inspection.scout = scoutData
     }
 
+    // Load open fraud flags for the users on this dispute
+    const orParts = []
+    if (inspection.client_id) orParts.push(`client_id.eq.${inspection.client_id}`)
+    if (inspection.scout_id) orParts.push(`scout_id.eq.${inspection.scout_id}`)
+    if (orParts.length) {
+      const { data: flagData } = await supabase
+        .from('fraud_flags')
+        .select('id, flag_type, signal_value, status, client_id, scout_id')
+        .or(orParts.join(','))
+        .eq('status', 'Open')
+      inspection.fraudFlags = flagData || []
+    } else {
+      inspection.fraudFlags = []
+    }
+
     render()
   }
 
@@ -405,6 +421,15 @@
                   </div>
                 </div>
               </div>
+              ${inspection.fraudFlags?.length > 0 ? `
+              <div style="margin-top:12px;display:flex;align-items:flex-start;gap:8px;background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:10px 12px">
+                <i class="ti ti-shield-alert" style="color:#EA580C;font-size:16px;flex-shrink:0;margin-top:1px"></i>
+                <div style="font-size:12px">
+                  <span style="font-weight:600;color:#9A3412">Fraud flags:</span>
+                  <span style="color:#7C2D12"> ${inspection.fraudFlags.length} open flag${inspection.fraudFlags.length !== 1 ? 's' : ''} on user${inspection.fraudFlags.length !== 1 ? 's' : ''} involved in this dispute.</span>
+                  <a href="fraud.html" style="color:#560591;font-weight:600;margin-left:6px">View &rarr;</a>
+                </div>
+              </div>` : ''}
               <div class="stat-row">
                 <div class="stat-chip"><div class="stat-chip-val">${captures.length}</div><div class="stat-chip-label">Videos</div></div>
                 <div class="stat-chip"><div class="stat-chip-val">${captures.filter(c=>c.gps_latitude).length}</div><div class="stat-chip-label">GPS verified</div></div>

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fraud Detection — Spekto Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #F7F5FA; color: #0D0D0D; display: flex; height: 100vh; overflow: hidden; }
+    a { text-decoration: none; color: inherit; }
+
+    /* Sidebar */
+    .sidebar { width: 230px; background: #1A0533; display: flex; flex-direction: column; height: 100vh; flex-shrink: 0; overflow-y: auto; }
+    .sidebar-logo { padding: 20px 20px 12px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .sidebar-logo span { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+    .admin-tag { font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+    .nav-section { padding: 16px 12px 4px; }
+    .nav-section-label { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px; margin-bottom: 4px; }
+    .nav { display: flex; flex-direction: column; gap: 1px; padding: 0 12px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 7px; cursor: pointer; font-size: 13px; color: rgba(255,255,255,0.55); font-weight: 500; text-decoration: none; transition: all 0.15s; }
+    .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-item.active { background: rgba(255,255,255,0.12); color: #fff; }
+    .nav-item i { font-size: 16px; flex-shrink: 0; }
+    .nav-badge { margin-left: auto; background: #DC2626; color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 5px; }
+
+    /* Main */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .topbar { background: #fff; border-bottom: 1px solid #EEEBF4; padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .topbar-title { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .content { flex: 1; overflow-y: auto; padding: 28px; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+    .btn-primary { background: #560591; color: #fff; }
+    .btn-primary:hover { background: #45047a; }
+    .btn-outline { background: transparent; border: 1px solid #DDD6F0; color: #560591; }
+    .btn-outline:hover { background: #F5EEFF; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-green { background: #22C55E; color: #fff; }
+    .btn-green:hover { background: #16a34a; }
+    .btn-danger { background: #DC2626; color: #fff; }
+    .btn-danger:hover { background: #b91c1c; }
+
+    /* Stats row */
+    .stats-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .stat-card { background: #fff; border: 1px solid #EEEBF4; border-radius: 10px; padding: 14px 18px; flex: 1; min-width: 100px; }
+    .stat-card-val { font-size: 24px; font-weight: 700; color: #0D0D0D; }
+    .stat-card-label { font-size: 11px; color: #888; margin-top: 2px; font-weight: 500; }
+    .stat-card.open .stat-card-val { color: #DC2626; }
+    .stat-card.actioned .stat-card-val { color: #D97706; }
+
+    /* Filter tabs */
+    .filter-tabs { display: flex; gap: 4px; background: #F0EBF8; border-radius: 9px; padding: 3px; margin-bottom: 20px; width: fit-content; }
+    .filter-tab { padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 600; color: #7C3AED; cursor: pointer; border: none; background: transparent; transition: all 0.15s; }
+    .filter-tab.active { background: #fff; color: #560591; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+    /* Table */
+    .table-wrap { background: #fff; border-radius: 12px; border: 1px solid #EEEBF4; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { padding: 10px 16px; font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.4px; background: #F9F7FD; border-bottom: 1px solid #EEEBF4; text-align: left; white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid #F3F0F9; transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #FDFBFF; }
+    td { padding: 13px 16px; font-size: 13px; vertical-align: middle; }
+
+    /* Badges */
+    .badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .badge-Open { background: #FEE2E2; color: #991B1B; }
+    .badge-Actioned { background: #FEF3C7; color: #92400E; }
+    .badge-Closed { background: #F3F4F6; color: #6B7280; }
+    .badge-type { background: #F0EBF8; color: #560591; font-size: 11px; }
+
+    /* User chip */
+    .user-chip { display: inline-flex; align-items: center; gap: 7px; }
+    .user-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .av-client { background: #560591; }
+    .av-scout { background: #0ea5e9; }
+    .user-name { font-size: 13px; font-weight: 500; color: #0D0D0D; }
+    .user-sub { font-size: 11px; color: #888; }
+
+    /* Signal bar */
+    .signal-val { font-size: 15px; font-weight: 700; }
+    .signal-val.high { color: #DC2626; }
+    .signal-val.medium { color: #D97706; }
+
+    /* Empty state */
+    .empty { text-align: center; padding: 48px 24px; color: #888; }
+    .empty i { font-size: 40px; display: block; margin-bottom: 8px; color: #D0C8E0; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; display: none; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: #fff; border-radius: 14px; padding: 28px; width: 480px; max-width: 95vw; }
+    .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .modal-sub { font-size: 13px; color: #666; margin-bottom: 20px; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: #444; margin-bottom: 5px; }
+    .field select, .field textarea { width: 100%; border: 1.5px solid #E0D9F0; border-radius: 8px; padding: 9px 12px; font-family: 'Inter', sans-serif; font-size: 13px; outline: none; transition: border-color 0.15s; }
+    .field select:focus, .field textarea:focus { border-color: #560591; }
+    .field textarea { resize: vertical; min-height: 80px; }
+    .modal-detail { background: #F7F5FA; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; }
+    .modal-detail-row { display: flex; gap: 8px; font-size: 12px; margin-bottom: 4px; }
+    .modal-detail-row:last-child { margin-bottom: 0; }
+    .modal-detail-label { color: #888; width: 80px; flex-shrink: 0; }
+    .modal-detail-val { font-weight: 600; color: #0D0D0D; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+
+    /* Run banner */
+    .run-result { background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; color: #166534; display: none; }
+    .run-result.error { background: #FEF2F2; border-color: #FECACA; color: #991B1B; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <span>Spekto</span>
+      <div class="admin-tag">Admin</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Overview</div>
+      <div class="nav">
+        <a class="nav-item" href="dashboard.html"><i class="ti ti-layout-dashboard"></i> Dashboard</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Operations</div>
+      <div class="nav">
+        <a class="nav-item" href="inspections.html"><i class="ti ti-clipboard-list"></i> Inspections</a>
+        <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> Disputes</a>
+        <a class="nav-item active" href="fraud.html"><i class="ti ti-shield-alert"></i> Fraud</a>
+        <a class="nav-item" href="payouts.html"><i class="ti ti-wallet"></i> Payouts</a>
+        <a class="nav-item" href="verification.html"><i class="ti ti-id-badge"></i> Verification</a>
+        <a class="nav-item" href="rights-to-work.html"><i class="ti ti-passport"></i> Rights to Work</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Users</div>
+      <div class="nav">
+        <a class="nav-item" href="users.html"><i class="ti ti-users"></i> All Users</a>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-label">Platform</div>
+      <div class="nav">
+        <a class="nav-item" href="marketplace.html"><i class="ti ti-shopping-bag"></i> Marketplace</a>
+        <a class="nav-item" href="settings.html"><i class="ti ti-settings"></i> Settings</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title"><i class="ti ti-shield-alert" style="font-size:18px;color:#560591"></i> Fraud Detection</div>
+      <div class="topbar-right">
+        <div id="notificationBell"></div>
+        <button class="btn btn-primary" id="runBtn" onclick="runDetection()">
+          <i class="ti ti-refresh"></i> Run Detection
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="run-result" id="runResult"></div>
+
+      <div class="stats-row">
+        <div class="stat-card open">
+          <div class="stat-card-val" id="countOpen">—</div>
+          <div class="stat-card-label">Open</div>
+        </div>
+        <div class="stat-card actioned">
+          <div class="stat-card-val" id="countActioned">—</div>
+          <div class="stat-card-label">Actioned</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val" id="countClosed">—</div>
+          <div class="stat-card-label">Closed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-val" id="countAll">—</div>
+          <div class="stat-card-label">Total</div>
+        </div>
+      </div>
+
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-status="Open" onclick="setFilter('Open', this)">Open</button>
+        <button class="filter-tab" data-status="Actioned" onclick="setFilter('Actioned', this)">Actioned</button>
+        <button class="filter-tab" data-status="Closed" onclick="setFilter('Closed', this)">Closed</button>
+        <button class="filter-tab" data-status="" onclick="setFilter('', this)">All</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Signal</th>
+              <th>User(s)</th>
+              <th>Rate</th>
+              <th>Details</th>
+              <th>Status</th>
+              <th>Detected</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="flagsBody">
+            <tr><td colspan="7"><div class="empty"><i class="ti ti-loader"></i>Loading…</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review modal -->
+  <div class="modal-overlay" id="reviewModal">
+    <div class="modal">
+      <div class="modal-title">Review Fraud Flag</div>
+      <div class="modal-sub" id="modalSub">Update the status of this fraud flag.</div>
+      <div class="modal-detail" id="modalDetail"></div>
+      <div class="field">
+        <label>Action</label>
+        <select id="modalStatus">
+          <option value="Actioned">Actioned — noted and being monitored</option>
+          <option value="Closed">Closed — false positive, no further action</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Review notes (optional)</label>
+        <textarea id="modalNotes" placeholder="Add context about this flag…"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="modalSubmit" onclick="submitReview()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { supabase } from '../config/supabase-config.js'
+    import { initNotificationBell } from '../config/notifications.js'
+
+    window.supabase = supabase
+
+    let allFlags = []
+    let currentFilter = 'Open'
+    let reviewFlagId = null
+
+    const FLAG_LABELS = {
+      HighClientRefundRate: 'High Refund Rate',
+      PairCollusion: 'Pair Collusion',
+      HighScoutDisputeRate: 'High Dispute Rate',
+    }
+
+    async function init() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { window.location.href = 'login.html'; return }
+
+      const { data: adminRow } = await supabase.from('admins').select('id').eq('email', session.user.email).maybeSingle()
+      if (!adminRow) { window.location.href = 'login.html'; return }
+
+      initNotificationBell(supabase, session.user.id)
+      await loadFlags()
+    }
+
+    async function loadFlags() {
+      const { data, error } = await supabase
+        .from('fraud_flags')
+        .select('*, client:client_id(first_name, last_name, email), scout:scout_id(first_name, last_name, email), reviewer:reviewed_by(first_name, last_name)')
+        .order('created_at', { ascending: false })
+
+      if (error) { console.error(error); return }
+      allFlags = data || []
+      updateCounts()
+      renderTable()
+    }
+
+    function updateCounts() {
+      document.getElementById('countOpen').textContent = allFlags.filter(f => f.status === 'Open').length
+      document.getElementById('countActioned').textContent = allFlags.filter(f => f.status === 'Actioned').length
+      document.getElementById('countClosed').textContent = allFlags.filter(f => f.status === 'Closed').length
+      document.getElementById('countAll').textContent = allFlags.length
+    }
+
+    function renderTable() {
+      const filtered = currentFilter ? allFlags.filter(f => f.status === currentFilter) : allFlags
+      const tbody = document.getElementById('flagsBody')
+
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><i class="ti ti-shield-check"></i>No ${currentFilter ? currentFilter.toLowerCase() + ' ' : ''}flags</div></td></tr>`
+        return
+      }
+
+      tbody.innerHTML = filtered.map(flag => {
+        const typeLabel = FLAG_LABELS[flag.flag_type] || flag.flag_type
+        const isPair = flag.flag_type === 'PairCollusion'
+        const isClientFlag = flag.flag_type === 'HighClientRefundRate'
+        const signalClass = flag.signal_value >= 75 ? 'high' : 'medium'
+        const date = new Date(flag.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+
+        let usersHtml = ''
+        if (isClientFlag && flag.client) {
+          const initials = `${flag.client.first_name?.[0] ?? ''}${flag.client.last_name?.[0] ?? ''}`.toUpperCase()
+          usersHtml = `<div class="user-chip"><div class="user-avatar av-client">${initials}</div><div><div class="user-name">${flag.client.first_name} ${flag.client.last_name}</div><div class="user-sub">Client</div></div></div>`
+        } else if (flag.flag_type === 'HighScoutDisputeRate' && flag.scout) {
+          const initials = `${flag.scout.first_name?.[0] ?? ''}${flag.scout.last_name?.[0] ?? ''}`.toUpperCase()
+          usersHtml = `<div class="user-chip"><div class="user-avatar av-scout">${initials}</div><div><div class="user-name">${flag.scout.first_name} ${flag.scout.last_name}</div><div class="user-sub">Scout</div></div></div>`
+        } else if (isPair) {
+          const ci = flag.client ? `${flag.client.first_name?.[0] ?? ''}${flag.client.last_name?.[0] ?? ''}`.toUpperCase() : '?'
+          const si = flag.scout ? `${flag.scout.first_name?.[0] ?? ''}${flag.scout.last_name?.[0] ?? ''}`.toUpperCase() : '?'
+          usersHtml = `<div style="display:flex;flex-direction:column;gap:5px">
+            <div class="user-chip"><div class="user-avatar av-client">${ci}</div><div><div class="user-name">${flag.client ? flag.client.first_name + ' ' + flag.client.last_name : '—'}</div><div class="user-sub">Client</div></div></div>
+            <div class="user-chip"><div class="user-avatar av-scout">${si}</div><div><div class="user-name">${flag.scout ? flag.scout.first_name + ' ' + flag.scout.last_name : '—'}</div><div class="user-sub">Scout</div></div></div>
+          </div>`
+        }
+
+        const details = flag.signal_details || {}
+        let detailText = ''
+        if (isClientFlag) detailText = `${details.refunded_inspections} of ${details.total_inspections} inspections refunded`
+        else if (isPair) detailText = `${details.problem_count} of ${details.total_together} joint inspections flagged`
+        else detailText = `${details.disputed_inspections} of ${details.total_inspections} inspections disputed`
+
+        const reviewNote = flag.review_notes ? `<div style="font-size:11px;color:#666;margin-top:3px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${flag.review_notes}</div>` : ''
+
+        const actionBtn = flag.status === 'Open'
+          ? `<button class="btn btn-outline btn-sm" onclick="openReview('${flag.id}')">Review</button>`
+          : `<button class="btn btn-outline btn-sm" style="color:#888" onclick="openReview('${flag.id}')">Edit</button>`
+
+        return `<tr>
+          <td><span class="badge badge-type">${typeLabel}</span></td>
+          <td>${usersHtml}</td>
+          <td><span class="signal-val ${signalClass}">${flag.signal_value}%</span></td>
+          <td style="color:#555;font-size:12px">${detailText}</td>
+          <td><span class="badge badge-${flag.status}">${flag.status}</span>${reviewNote}</td>
+          <td style="color:#888;font-size:12px;white-space:nowrap">${date}</td>
+          <td>${actionBtn}</td>
+        </tr>`
+      }).join('')
+    }
+
+    window.setFilter = function(status, el) {
+      currentFilter = status
+      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'))
+      el.classList.add('active')
+      renderTable()
+    }
+
+    window.openReview = function(flagId) {
+      reviewFlagId = flagId
+      const flag = allFlags.find(f => f.id === flagId)
+      if (!flag) return
+
+      const typeLabel = FLAG_LABELS[flag.flag_type] || flag.flag_type
+      const details = flag.signal_details || {}
+      let usersText = ''
+      if (flag.client) usersText += `Client: ${flag.client.first_name} ${flag.client.last_name}`
+      if (flag.scout) usersText += (usersText ? ' · ' : '') + `Scout: ${flag.scout.first_name} ${flag.scout.last_name}`
+
+      document.getElementById('modalDetail').innerHTML = `
+        <div class="modal-detail-row"><span class="modal-detail-label">Signal</span><span class="modal-detail-val">${typeLabel}</span></div>
+        <div class="modal-detail-row"><span class="modal-detail-label">Rate</span><span class="modal-detail-val">${flag.signal_value}%</span></div>
+        <div class="modal-detail-row"><span class="modal-detail-label">Users</span><span class="modal-detail-val">${usersText || '—'}</span></div>
+      `
+      document.getElementById('modalStatus').value = flag.status === 'Open' ? 'Actioned' : flag.status
+      document.getElementById('modalNotes').value = flag.review_notes || ''
+      document.getElementById('reviewModal').classList.add('open')
+    }
+
+    window.closeModal = function() {
+      document.getElementById('reviewModal').classList.remove('open')
+      reviewFlagId = null
+    }
+
+    window.submitReview = async function() {
+      if (!reviewFlagId) return
+      const status = document.getElementById('modalStatus').value
+      const notes = document.getElementById('modalNotes').value.trim() || null
+      const btn = document.getElementById('modalSubmit')
+      btn.disabled = true
+      btn.textContent = 'Saving…'
+
+      const { error } = await supabase.rpc('review_fraud_flag', {
+        p_flag_id: reviewFlagId,
+        p_status: status,
+        p_review_notes: notes,
+      })
+
+      btn.disabled = false
+      btn.textContent = 'Save'
+
+      if (error) { alert('Failed to save: ' + error.message); return }
+      closeModal()
+      await loadFlags()
+    }
+
+    window.runDetection = async function() {
+      const btn = document.getElementById('runBtn')
+      const result = document.getElementById('runResult')
+      btn.disabled = true
+      btn.innerHTML = '<i class="ti ti-loader"></i> Running…'
+      result.style.display = 'none'
+
+      const { data: { session } } = await supabase.auth.getSession()
+      try {
+        const res = await fetch(`https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/detect-fraud`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+          body: '{}',
+        })
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error || 'Unknown error')
+        const r = json.results
+        result.className = 'run-result'
+        result.style.display = 'block'
+        result.innerHTML = `<i class="ti ti-check" style="margin-right:6px"></i>Detection complete — ${r.total_new_flags} new flag${r.total_new_flags !== 1 ? 's' : ''} added (${r.new_client_refund_flags} refund rate, ${r.new_pair_collusion_flags} pair collusion, ${r.new_scout_dispute_flags} dispute rate).`
+        await loadFlags()
+      } catch (e) {
+        result.className = 'run-result error'
+        result.style.display = 'block'
+        result.textContent = 'Detection failed: ' + e.message
+      }
+
+      btn.disabled = false
+      btn.innerHTML = '<i class="ti ti-refresh"></i> Run Detection'
+    }
+
+    document.getElementById('reviewModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal()
+    })
+
+    init()
+  </script>
+</body>
+</html>
