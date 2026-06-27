@@ -552,11 +552,10 @@
                 </div>
                 <div class="resolution-body">
                   ${[
-                    { val: 'FullRefundToClient', label: 'Full refund to Client', sub: `Full ${amount} refunded to client via Stripe — Scout not paid` },
-                    { val: 'PartialRefundToClient', label: 'Partial refund to Client', sub: 'Specify amount below — Stripe refund issued immediately' },
+                    { val: 'FullRefundToClient', label: 'Full refund to Client', sub: `Full ${amount} refunded to client via Stripe — Scout still paid` },
+                    { val: 'PartialRefundToClient', label: 'Partial refund to Client', sub: 'Specify amount below — Stripe refund issued immediately, Scout still paid' },
                     { val: 'PaymentReleasedToScout', label: 'Release payment to Scout', sub: `${scoutPayout} queued for next payout batch — no refund to Client` },
                     { val: 'WithheldFraud', label: 'Withhold — suspected fraud', sub: 'Full refund to Client, Scout payment withheld permanently, account flagged' },
-                    { val: 'Dismissed', label: 'Dismiss dispute', sub: 'Dismiss without action — no refund, no payout change' }
                   ].map(opt => `
                     <div class="resolution-option ${selectedResolution===opt.val?'selected':''}" onclick="selectResolution('${opt.val}')">
                       <input type="radio" name="resolution" value="${opt.val}" ${selectedResolution===opt.val?'checked':''}>

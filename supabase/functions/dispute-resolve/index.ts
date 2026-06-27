@@ -1,4 +1,4 @@
-import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
+﻿import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { xeroPost, xeroGet } from '../_shared/xero-client.ts'
 
@@ -84,7 +84,7 @@ Deno.serve(async (req: Request) => {
   const { error: updateErr } = await supabase
     .from('disputes')
     .update({
-      status: resolution === 'Dismissed' ? 'Dismissed' : 'Resolved',
+      status: 'Resolved',
       resolution,
       resolution_notes: notes || null,
       resolved_by: adminRow.id,
@@ -114,7 +114,7 @@ Deno.serve(async (req: Request) => {
   if (isFullRefund || isPartialRefund || isFraud) {
     if (!originalPayment?.stripe_payment_intent_id) {
       // No payment on record (draft inspection) — just cancel
-      await supabase.from('inspections').update({ status: 'Cancelled', updated_at: now }).eq('id', dispute.inspection_id)
+      await supabase.from('inspections').update({ status: isFraud ? 'Cancelled' : 'PendingPayment', updated_at: now }).eq('id', dispute.inspection_id)
       await notifyDisputeParties(dispute.inspection_id, inspection?.client_id, inspection?.scout_id, resolution, notes)
       return ok({ success: true, refunded: false, note: 'No Stripe payment found — inspection cancelled without charge reversal' })
     }
@@ -163,7 +163,7 @@ Deno.serve(async (req: Request) => {
       .single()
 
     // Update inspection status
-    await supabase.from('inspections').update({ status: 'Cancelled', updated_at: now }).eq('id', dispute.inspection_id)
+    await supabase.from('inspections').update({ status: isFraud ? 'Cancelled' : 'PendingPayment', updated_at: now }).eq('id', dispute.inspection_id)
 
     // Flag scout account on fraud
     if (isFraud && inspection?.scout_id) {
@@ -232,7 +232,6 @@ Deno.serve(async (req: Request) => {
     return ok({ success: true })
   }
 
-  // Dismissed
   await notifyDisputeParties(dispute.inspection_id, inspection?.client_id, inspection?.scout_id, resolution, notes)
   return ok({ success: true })
 })
@@ -242,14 +241,12 @@ const CLIENT_DECISION: Record<string, string> = {
   PartialRefundToClient: 'Partial refund issued — amount will appear within 5–10 business days.',
   PaymentReleasedToScout: 'Payment has been released to the Scout.',
   WithheldFraud: 'Full refund issued — amount will appear within 5–10 business days.',
-  Dismissed: 'Dispute dismissed — no action taken.',
 }
 const SCOUT_DECISION: Record<string, string> = {
-  FullRefundToClient: 'Full refund issued to client. Your payout for this job has been withheld.',
-  PartialRefundToClient: 'Partial refund issued to client.',
+  FullRefundToClient: 'A full refund was issued to the client. Your payout for this job is included in the next payout batch.',
+  PartialRefundToClient: 'A partial refund was issued to the client. Your payout for this job is included in the next payout batch.',
   PaymentReleasedToScout: 'Resolved in your favour — payment included in the next payout batch.',
   WithheldFraud: 'Account suspended due to fraud determination. Contact support if you believe this is an error.',
-  Dismissed: 'Dispute dismissed — no action taken.',
 }
 
 async function callNotify(params: { user_id: string; type: string; inspection_id?: string; extra?: Record<string, string> }): Promise<void> {
