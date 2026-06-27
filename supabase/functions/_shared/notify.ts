@@ -105,15 +105,15 @@ function buildMessage(type: string, ctx: Record<string, string>): string {
   const a = ctx.address, r = ctx.inspectionRef
   switch (type) {
     case 'welcome_client': return `Welcome to Spekto, ${ctx.recipientFirstName}! 👋 You're ready to book your first property inspection — find a Scout in just a few taps.`
-    case 'welcome_scout': return `Welcome to Spekto, ${ctx.recipientName}! Complete your onboarding to start accepting jobs.`
-    case 'inspection_declined': return `${ctx.scoutName ?? 'Your Scout'} is no longer able to complete your inspection at ${a}. We're finding you a new Scout.`
+    case 'welcome_scout': return `👋 Welcome to Spekto, ${ctx.recipientFirstName}! You're almost ready to start earning. Finish your onboarding steps below to unlock job access and get paid for every inspection you complete.`
+    case 'inspection_declined': return `${ctx.scoutName ?? 'Your Scout'} is no longer able to complete your inspection at ${a} (${r}). It's been reposted for other Scouts to pick up — we'll notify you as soon as a new Scout accepts.`
     case 'inspection_cancelled_refund': return `Your inspection at ${a} has been cancelled. A refund of $${ctx.amount ?? '0.00'} is on its way.`
     case 'dispute_received': return `Your dispute for ${a} (${r}) has been received and is under review.`
     case 'dispute_resolved_client': return `Your dispute for ${a} (${r}) has been resolved.`
     case 'dispute_resolved_scout': return `The dispute for ${a} (${r}) has been resolved.`
     case 'admin_message': return `You have a new message from Spekto Admin${r ? ` regarding inspection ${r}` : ''}.`
-    case 'inspection_accepted': return `Your inspection at ${a} (${r}) has been accepted by ${ctx.scoutName ?? 'a Scout'}.`
-    case 'payment_receipt': return `Payment of $${ctx.amount ?? '0.00'} confirmed for your inspection at ${a} (${r}).`
+    case 'inspection_accepted': return `🎉 Great news! ${ctx.scoutName ?? 'A Scout'} has accepted your inspection at ${a} (${r}). It's officially on its way to being done!`
+    case 'payment_receipt': return `✅ Payment confirmed! Your inspection at ${a} has been booked — $${ctx.amount ?? '0.00'} paid (${r}). We'll notify you as soon as a Scout picks it up.`
     case 'inspection_completed': return `Your inspection at ${a} (${r}) has been completed and is ready to view.`
     case 'payment_released': return `Payment released for your inspection at ${a} (${r}). Expect payout by Tuesday.`
     case 'dispute_raised': return `A dispute has been raised on your inspection at ${a}. Spekto support will be in touch.`
@@ -147,19 +147,39 @@ function buildEmail(type: string, ctx: Record<string, string>): { subject: strin
               <p style="margin-top:28px;color:#555">Welcome aboard,<br><strong>The Spekto Team</strong></p>`
       return { subject, html: wrap(ctx.recipientFirstName, body) }
     }
-    case 'welcome_scout':
-      subject = `Welcome to Spekto — complete your onboarding to start earning`
-      body = `<p>Thanks for joining Spekto as a Scout. You'll earn a payout for every inspection you complete.</p>
-              <p>Before accepting jobs, finish these 4 steps:</p>
-              <ol style="padding-left:20px;line-height:2"><li>Identity verification</li><li>Right to work verification</li><li>Home address</li><li>Connect your bank account via Stripe</li></ol>
-              ${cta('Complete Onboarding', ctx.onboardingLink)}`
-      break
-    case 'inspection_declined':
-      subject = `Update on your inspection (${ctx.inspectionRef}) — reassigning your Scout`
-      body = `<p>${ctx.scoutName ?? 'Your Scout'} is no longer able to complete your inspection. We're finding you another Scout — no action needed.</p>
-              ${table([['Reference', ctx.inspectionRef], ['Address', ctx.address], ['Date', ctx.inspectionDate]])}
-              ${cta('View Inspection', ctx.inspectionLink)}`
-      break
+    case 'welcome_scout': {
+      subject = `Welcome to Spekto, ${ctx.recipientFirstName} — here's how to get started 👋`
+      body = `<p>Welcome to Spekto! We're excited to have you on board as a Scout.</p>
+              <p>As a Scout, you'll get paid for every inspection you complete — simply head to a property, capture a video walkthrough, and earn a payout once it's done.</p>
+              <p>Before you can start accepting jobs, there are 4 quick steps to complete:</p>
+              <ol style="padding-left:20px;line-height:2">
+                <li><strong>Identity verification</strong> — upload your passport or driver's licence for review</li>
+                <li><strong>Right to work check</strong> — verify your right to work in Australia</li>
+                <li><strong>Stripe payout setup</strong> — connect your bank account to receive weekly payouts</li>
+                <li><strong>Home address</strong> — set your address so we can show you nearby jobs</li>
+              </ol>
+              <p>Once these are done, you're all set — jobs in your area will start showing up, and you can begin earning straight away.</p>
+              ${cta('Complete Onboarding', ctx.onboardingLink)}
+              <p style="margin-top:28px;color:#555">Welcome aboard,<br><strong>The Spekto Team</strong></p>`
+      return { subject, html: wrap(ctx.recipientFirstName, body) }
+    }
+    case 'inspection_declined': {
+      const formattedDate = ctx.inspectionDate ? ctx.inspectionDate.split('-').reverse().join('/') : ''
+      subject = `Update on your inspection (${ctx.inspectionRef}) — finding you a new Scout`
+      body = `<p>We wanted to let you know that ${ctx.scoutName ?? 'your Scout'} is no longer able to complete your inspection.</p>
+              <p>Don't worry — this happens occasionally, and we've already taken care of it. Your inspection has been reposted and is now visible to other available Scouts in the area.</p>
+              <p><strong>Here's what happens next:</strong></p>
+              <ul style="padding-left:20px;line-height:2">
+                <li>Your inspection is back on the board — other Scouts nearby can now accept it</li>
+                <li>You'll be notified the moment someone accepts — just like before</li>
+                <li>The rest of the process continues as normal — once accepted, your Scout will head to the property and capture your video walkthrough</li>
+              </ul>
+              <p>There's nothing you need to do right now — we're on it.</p>
+              ${table([['Reference', ctx.inspectionRef], ['Address', ctx.address], ['Date', formattedDate]])}
+              ${cta('View Inspection', ctx.inspectionLink)}
+              <p style="margin-top:28px;color:#555">Thanks for your patience,<br><strong>The Spekto Team</strong></p>`
+      return { subject, html: wrap(ctx.recipientFirstName, body) }
+    }
     case 'inspection_cancelled_refund':
       subject = `Cancellation confirmed — refund processed (${ctx.inspectionRef})`
       body = `<p>Your inspection has been cancelled as requested.</p>
@@ -191,19 +211,38 @@ function buildEmail(type: string, ctx: Record<string, string>): { subject: strin
               ${ctx.message_text ? `<div style="background:#F5EEFF;border-left:3px solid #560591;border-radius:0 8px 8px 0;padding:12px 16px;margin:16px 0;font-size:14px;color:#333;line-height:1.6">${ctx.message_text}</div>` : ''}
               ${cta('View Message', ctx.inspectionLink || ctx.disputeLink)}`
       break
-    case 'inspection_accepted':
-      subject = `Your inspection has been accepted (${ctx.inspectionRef})`
-      body = `<p>Good news — ${ctx.scoutName ?? 'a Scout'} has accepted your inspection.</p>
-              ${table([['Reference', ctx.inspectionRef], ['Address', ctx.address], ['Date', ctx.inspectionDate], ['Time', ctx.inspectionTime]])}
-              ${cta('View Inspection', ctx.inspectionLink)}`
-      break
-    case 'payment_receipt':
-      subject = `Receipt — Spekto Inspection Payment (${ctx.inspectionRef})`
-      body = `<p>This confirms your payment for the following inspection:</p>
-              ${table([['Reference', ctx.inspectionRef], ['Address', ctx.address], ['Date', ctx.inspectionDate], ['Amount paid', `$${ctx.amount ?? '0.00'}`], ...(ctx.payment_method_last4 ? [['Payment method', `···· ${ctx.payment_method_last4}`] as [string, string]] : []), ...(ctx.receipt_number ? [['Receipt no.', ctx.receipt_number] as [string, string]] : [])])}
+    case 'inspection_accepted': {
+      const scoutFirst = ctx.scoutName?.split(' ')[0] ?? 'Your Scout'
+      const formattedDate = ctx.inspectionDate ? ctx.inspectionDate.split('-').reverse().join('/') : ''
+      subject = `Your inspection has been accepted — here's what happens next 🎉`
+      body = `<p>Good news — ${ctx.scoutName ?? 'a Scout'} has accepted your inspection request!</p>
+              <p><strong>Here's what happens next:</strong></p>
+              <ol style="padding-left:20px;line-height:2">
+                <li><strong>${scoutFirst} heads to the property</strong> — at the scheduled date and time below</li>
+                <li><strong>They capture a full video walkthrough</strong> — covering everything you need to see</li>
+                <li><strong>Your video lands in your dashboard</strong> — and we'll let you know the moment it's ready</li>
+              </ol>
+              <p>You don't need to do anything else for now — just sit back, and we'll keep you posted every step of the way.</p>
+              ${table([['Reference', ctx.inspectionRef], ['Address', ctx.address], ['Date', formattedDate], ['Time', ctx.inspectionTime]])}
+              ${cta('View Inspection', ctx.inspectionLink)}
+              <p style="margin-top:28px;color:#555">Thanks for using Spekto,<br><strong>The Spekto Team</strong></p>`
+      return { subject, html: wrap(ctx.recipientFirstName, body) }
+    }
+    case 'payment_receipt': {
+      subject = `Your inspection is booked — here's what happens next 🎉`
+      body = `<p>Great news — we've received your inspection request and your payment has gone through successfully.</p>
+              <p><strong>Here's what happens next:</strong></p>
+              <ol style="padding-left:20px;line-height:2">
+                <li><strong>A Scout picks it up</strong> — usually a local Scout in the area will accept your job</li>
+                <li><strong>They head to the property</strong> — and capture a full video walkthrough</li>
+                <li><strong>You get notified</strong> — as soon as your video is ready, we'll let you know</li>
+              </ol>
+              <p>You don't need to do anything else for now — we'll keep you posted every step of the way.</p>
+              ${table([['Reference', ctx.inspectionRef], ['Address', ctx.address], ['Date', ctx.inspectionDate], ['Amount paid', `$${ctx.amount ?? '0.00'}`], ...(ctx.receipt_number ? [['Receipt no.', ctx.receipt_number] as [string, string]] : [])])}
               <p style="color:#666;font-size:13px">Thank you for using Spekto.</p>
               ${cta('View Inspection', ctx.inspectionLink)}`
-      break
+      return { subject, html: wrap(ctx.recipientFirstName, body) }
+    }
     case 'inspection_completed':
       subject = `Your inspection is complete (${ctx.inspectionRef})`
       body = `<p>${ctx.scoutName ?? 'Your Scout'} has completed your inspection. The video and report are ready to view.</p>
@@ -242,8 +281,6 @@ function wrap(name: string, content: string): string {
 <tr><td style="background:#fff;padding:28px 32px;border-radius:0 0 12px 12px">
   <p style="margin:0 0 16px;font-size:15px;color:#0D0D0D;font-weight:600">Hi ${name},</p>
   <div style="font-size:14px;color:#444;line-height:1.7">${content}</div>
-  <hr style="border:none;border-top:1px solid #F3F3F3;margin:28px 0 16px">
-  <p style="margin:0;font-size:12px;color:#aaa">You're receiving this from Spekto. For help, reply to this email or contact support.</p>
 </td></tr>
 </table></td></tr>
 </table></body></html>`

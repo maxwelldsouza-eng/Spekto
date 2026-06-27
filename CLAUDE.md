@@ -20,6 +20,8 @@ Spekto is a real-time property inspection SaaS. Clients (buyers/investors) post 
 
 ```
 config/supabase-config.js      — Supabase client singleton (imported by everything)
+config/notifications.js        — Shared notification bell component (initNotificationBell)
+config/rating-attributes.js    — RATING_ATTRIBUTES array used by rating screens
 database/database.js           — All DB functions (~1,337 lines, 30+ named exports)
 auth/                          — Login, register, role selection, verify-email, password reset
 client/                        — dashboard, new-inspection, inspection-detail, marketplace,
@@ -31,6 +33,8 @@ admin/                         — dashboard, inspections, inspection-detail, di
                                   user-detail, payouts, marketplace, settings, login
 supabase/functions/            — Edge Functions (see list below)
 ```
+
+**Notification bell:** Call `initNotificationBell(supabase, userId)` after the topbar renders. It injects the bell button and dropdown into `.topbar`, polls the `notifications` table every 60 s, and handles mark-as-read. Import from `../config/notifications.js`.
 
 Each `.html` file is fully self-contained: inline `<style>`, `<script type="module">`, its own auth check, and direct imports from `database.js`. No SPA router — navigation is plain `<a>` redirects.
 
@@ -69,10 +73,13 @@ import { someFunction } from '../database/database.js'
 | `stripe-webhook` | Handles Stripe webhook events (transfer.created, etc.) |
 | `marketplace-purchase` | Handles marketplace listing purchases |
 | `dispute-resolve` | Admin-triggered dispute resolution + refund/payout logic |
+| `cancel-inspection` | Client-triggered inspection cancellation |
+| `decline-inspection` | Scout declines an accepted inspection |
+| `notify` | Creates a row in the `notifications` table for in-app alerts |
+| `xero-connect` | Redirects to Xero OAuth authorization page |
 | `check-work-rights` | Validates Scout right-to-work documents |
 | `create-inspection` | Direct DB inspection creation (fallback) |
 | `send-auth-email` | Resend API email hook (bypasses Supabase SMTP) |
-| `xero-connect` | Redirects to Xero OAuth authorization page |
 | `xero-oauth-callback` | Xero OAuth callback — exchanges code for tokens, stores in `xero_tokens` |
 | `backfill-coords` | Backfills lat/lng on existing inspections |
 | `_shared` | Shared utilities (CORS headers, etc.) |

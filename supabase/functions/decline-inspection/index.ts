@@ -1,5 +1,4 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { sendNotification } from '../_shared/notify.ts'
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
@@ -21,6 +20,16 @@ function ok(payload: unknown) {
   return new Response(JSON.stringify(payload), {
     status: 200, headers: { 'Content-Type': 'application/json', ...CORS },
   })
+}
+
+async function callNotify(params: { user_id: string; type: string; inspection_id?: string; extra?: Record<string, string> }): Promise<void> {
+  try {
+    await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notify`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    })
+  } catch (e: unknown) { console.error('[callNotify] error:', e instanceof Error ? e.message : String(e)) }
 }
 
 Deno.serve(async (req: Request) => {
@@ -65,12 +74,7 @@ Deno.serve(async (req: Request) => {
 
   // Notify the client (non-fatal)
   if (inspection.client_id) {
-    await sendNotification(supabase, {
-      user_id: inspection.client_id,
-      type: 'inspection_declined',
-      inspection_id,
-      extra: { scoutName },
-    })
+    await callNotify({ user_id: inspection.client_id, type: 'inspection_declined', inspection_id, extra: { scoutName } })
   }
 
   return ok({ success: true })

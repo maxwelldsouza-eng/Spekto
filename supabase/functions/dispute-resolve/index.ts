@@ -1,7 +1,6 @@
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { xeroPost, xeroGet } from '../_shared/xero-client.ts'
-import { sendNotification } from '../_shared/notify.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2024-06-20',
@@ -253,6 +252,16 @@ const SCOUT_DECISION: Record<string, string> = {
   Dismissed: 'Dispute dismissed — no action taken.',
 }
 
+async function callNotify(params: { user_id: string; type: string; inspection_id?: string; extra?: Record<string, string> }): Promise<void> {
+  try {
+    await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notify`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    })
+  } catch (e: unknown) { console.error('[callNotify] error:', e instanceof Error ? e.message : String(e)) }
+}
+
 async function notifyDisputeParties(
   inspection_id: string,
   client_id?: string,
@@ -261,9 +270,6 @@ async function notifyDisputeParties(
   notes?: string | null,
   refundAmount?: number,
 ) {
-  const extra: Record<string, string> = {}
-  if (notes) extra.admin_note = notes
-
   const clientDecision = (CLIENT_DECISION[resolution ?? ''] ?? 'Dispute resolved.') +
     (refundAmount ? ` Refund: $${refundAmount.toFixed(2)}.` : '') +
     (notes ? ` Admin note: ${notes}` : '')
@@ -271,23 +277,7 @@ async function notifyDisputeParties(
     (notes ? ` Admin note: ${notes}` : '')
 
   const promises: Promise<void>[] = []
-
-  if (client_id) {
-    promises.push(sendNotification(supabase, {
-      user_id: client_id,
-      type: 'dispute_resolved_client',
-      inspection_id,
-      extra: { decision_text: clientDecision },
-    }))
-  }
-  if (scout_id) {
-    promises.push(sendNotification(supabase, {
-      user_id: scout_id,
-      type: 'dispute_resolved_scout',
-      inspection_id,
-      extra: { decision_text: scoutDecision },
-    }))
-  }
-
+  if (client_id) promises.push(callNotify({ user_id: client_id, type: 'dispute_resolved_client', inspection_id, extra: { decision_text: clientDecision } }))
+  if (scout_id) promises.push(callNotify({ user_id: scout_id, type: 'dispute_resolved_scout', inspection_id, extra: { decision_text: scoutDecision } }))
   await Promise.all(promises)
 }
