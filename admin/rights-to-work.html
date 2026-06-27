@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -151,10 +151,10 @@
       <div class="nav">
         <a class="nav-item" href="inspections.html"><i class="ti ti-clipboard-list"></i> Inspections</a>
         <a class="nav-item" href="disputes.html"><i class="ti ti-alert-triangle"></i> Disputes</a>
-        <a class="nav-item" href="fraud.html"><i class="ti ti-shield-alert"></i> Fraud</a>
+        <a class="nav-item" href="fraud.html"><i class="ti ti-alert-octagon"></i> Fraud</a>
         <a class="nav-item" href="payouts.html"><i class="ti ti-wallet"></i> Payouts</a>
         <a class="nav-item" href="verification.html"><i class="ti ti-id-badge"></i> Verification</a>
-        <a class="nav-item active" href="rights-to-work.html"><i class="ti ti-passport"></i> Rights to Work</a>
+        <a class="nav-item active" href="rights-to-work.html"><i class="ti ti-file-text"></i> Rights to Work</a>
       </div>
     </div>
     <div class="nav-section">
@@ -214,7 +214,7 @@
           <div id="listBody"></div>
         </div>
         <div class="detail-panel" id="detailPanel">
-          <div class="detail-empty"><i class="ti ti-passport"></i><p>Select a check to view details and take action</p></div>
+          <div class="detail-empty"><i class="ti ti-file-text"></i><p>Select a check to view details and take action</p></div>
         </div>
       </div>
     </div>
@@ -471,7 +471,7 @@
     currentTab = tab.dataset.tab
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === currentTab))
     selectedId = null
-    document.getElementById('detailPanel').innerHTML = '<div class="detail-empty"><i class="ti ti-passport"></i><p>Select a check to view details and take action</p></div>'
+    document.getElementById('detailPanel').innerHTML = '<div class="detail-empty"><i class="ti ti-file-text"></i><p>Select a check to view details and take action</p></div>'
     renderList()
   })
 

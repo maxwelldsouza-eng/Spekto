@@ -189,10 +189,10 @@
       <div class="nav">
         <a class="nav-item" href="inspections.html"><i class="ti ti-clipboard-list"></i> Inspections</a>
         <a class="nav-item active" href="disputes.html"><i class="ti ti-alert-triangle"></i> Disputes</a>
-        <a class="nav-item" href="fraud.html"><i class="ti ti-shield-alert"></i> Fraud</a>
+        <a class="nav-item" href="fraud.html"><i class="ti ti-alert-octagon"></i> Fraud</a>
         <a class="nav-item" href="payouts.html"><i class="ti ti-wallet"></i> Payouts</a>
         <a class="nav-item" href="verification.html"><i class="ti ti-id-badge"></i> Verification</a>
-        <a class="nav-item" href="rights-to-work.html"><i class="ti ti-passport"></i> Rights to Work</a>
+        <a class="nav-item" href="rights-to-work.html"><i class="ti ti-file-text"></i> Rights to Work</a>
       </div>
     </div>
     <div class="nav-section">
@@ -423,7 +423,7 @@
               </div>
               ${inspection.fraudFlags?.length > 0 ? `
               <div style="margin-top:12px;display:flex;align-items:flex-start;gap:8px;background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:10px 12px">
-                <i class="ti ti-shield-alert" style="color:#EA580C;font-size:16px;flex-shrink:0;margin-top:1px"></i>
+                <i class="ti ti-alert-octagon" style="color:#EA580C;font-size:16px;flex-shrink:0;margin-top:1px"></i>
                 <div style="font-size:12px">
                   <span style="font-weight:600;color:#9A3412">Fraud flags:</span>
                   <span style="color:#7C2D12"> ${inspection.fraudFlags.length} open flag${inspection.fraudFlags.length !== 1 ? 's' : ''} on user${inspection.fraudFlags.length !== 1 ? 's' : ''} involved in this dispute.</span>
