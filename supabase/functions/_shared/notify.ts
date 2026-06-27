@@ -199,10 +199,10 @@ function buildEmail(type: string, ctx: Record<string, string>): { subject: strin
                 <li><strong>We may message you with questions</strong> — if we need more information, we'll send you a message directly on your inspection. You'll get an email notification letting you know a new message is waiting, so keep an eye on your inbox</li>
                 <li><strong>We'll let you know the outcome</strong> — once our review is complete, we'll follow up with next steps</li>
               </ul>
-              <p>To reply or view any messages, just head to your inspection in the app — that's where all communication about your dispute will happen.</p>
+              <p>To reply or view any messages, just log in to Spekto and open this inspection — that's where all communication about your dispute will happen.</p>
               ${table([['Reference', ctx.inspectionRef], ['Address', ctx.address]])}
               ${cta('View Dispute', ctx.disputeLink)}
-              <p style="margin-top:28px;color:#555">Thanks for your patience while we look into this,<br><strong>The Spekto Team</strong></p>`
+              <p style="margin-top:28px;color:#555">Thanks for your patience while we look into this.<br><strong>The Spekto Team</strong></p>`
       return { subject, html: wrap(ctx.recipientFirstName, body) }
     }
     case 'dispute_resolved_client':
