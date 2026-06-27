@@ -239,16 +239,15 @@ Deno.serve(async (req: Request) => {
 const CLIENT_DECISION: Record<string, string> = {
   FullRefundToClient: 'Full refund issued — amount will appear within 5–10 business days.',
   PartialRefundToClient: 'Partial refund issued — amount will appear within 5–10 business days.',
-  PaymentReleasedToScout: 'Payment has been released to the Scout.',
+  PaymentReleasedToScout: 'No refund will be issued.',
   WithheldFraud: 'Full refund issued — amount will appear within 5–10 business days.',
 }
 const SCOUT_DECISION: Record<string, string> = {
-  FullRefundToClient: 'A full refund was issued to the client. Your payout for this job is included in the next payout batch.',
-  PartialRefundToClient: 'A partial refund was issued to the client. Your payout for this job is included in the next payout batch.',
+  FullRefundToClient: 'Your payout for this job is included in the next payout batch.',
+  PartialRefundToClient: 'Your payout for this job is included in the next payout batch.',
   PaymentReleasedToScout: 'Resolved in your favour — payment included in the next payout batch.',
-  WithheldFraud: 'Account suspended due to fraud determination. Contact support if you believe this is an error.',
+  WithheldFraud: 'Account suspended. Contact support if you believe this is an error.',
 }
-
 async function callNotify(params: { user_id: string; type: string; inspection_id?: string; extra?: Record<string, string> }): Promise<void> {
   try {
     await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notify`, {
