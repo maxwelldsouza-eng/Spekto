@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -667,7 +667,7 @@
               user_id: recipientUserId,
               type: 'admin_message',
               inspection_id: dispute?.inspection_id ?? null,
-              extra: { message_text: text },
+              extra: { message_text: text, recipient_role: currentMsgTab },
             }),
           }).catch(() => {})
         }

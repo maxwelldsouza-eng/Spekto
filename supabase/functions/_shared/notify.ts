@@ -111,7 +111,7 @@ function buildMessage(type: string, ctx: Record<string, string>): string {
     case 'dispute_received': return `Your dispute for ${a} (${r}) has been received and is now under review. We'll be in touch if we need any more information from you.`
     case 'dispute_resolved_client': return `Your dispute for ${a} (${r}) has been resolved.`
     case 'dispute_resolved_scout': return `The dispute for ${a} (${r}) has been resolved.`
-    case 'admin_message': return `You have a new message from Spekto Admin${r ? ` regarding inspection ${r}` : ''}.`
+    case 'admin_message': return `You have a new message from Spekto Admin${r ? ` regarding inspection ${r} — ${a}` : ''}. Click here to view and reply.`
     case 'inspection_accepted': return `🎉 Great news! ${ctx.scoutName ?? 'A Scout'} has accepted your inspection at ${a} (${r}). It's officially on its way to being done!`
     case 'payment_receipt': return `✅ Payment confirmed! Your inspection at ${a} has been booked — $${ctx.amount ?? '0.00'} paid (${r}). We'll notify you as soon as a Scout picks it up.`
     case 'inspection_completed': return `Your inspection at ${a} (${r}) has been completed and is ready to view.`
@@ -217,12 +217,17 @@ function buildEmail(type: string, ctx: Record<string, string>): { subject: strin
               ${table([['Reference', ctx.inspectionRef], ['Address', ctx.address], ...(ctx.decision_text ? [['Decision', ctx.decision_text] as [string, string]] : [])])}
               ${cta('View Details', ctx.scoutInspectionLink)}`
       break
-    case 'admin_message':
+    case 'admin_message': {
+      const isScout = ctx.recipient_role === 'scout'
       subject = `New message from Spekto Admin${ctx.inspectionRef ? ` (${ctx.inspectionRef})` : ''}`
-      body = `<p>Spekto Admin has sent you a message${ctx.inspectionRef ? ` regarding inspection ${ctx.inspectionRef} — ${ctx.address}` : ''}.</p>
-              ${ctx.message_text ? `<div style="background:#F5EEFF;border-left:3px solid #560591;border-radius:0 8px 8px 0;padding:12px 16px;margin:16px 0;font-size:14px;color:#333;line-height:1.6">${ctx.message_text}</div>` : ''}
-              ${cta('View Message', ctx.inspectionLink || ctx.disputeLink)}`
-      break
+      body = `<p>Spekto Admin has sent you a message regarding ${isScout ? '' : 'your '}inspection:</p>
+              ${table([['Reference', ctx.inspectionRef], ['Address', ctx.address]])}
+              ${ctx.message_text ? `<p>${ctx.message_text}</p>` : ''}
+              <p>To reply or continue the conversation, simply log in to Spekto and open this inspection — that's where you can view the full message and send a reply.</p>
+              ${cta('View Message', isScout ? ctx.scoutInspectionLink : ctx.inspectionLink)}
+              <p style="margin-top:28px;color:#555"><strong>The Spekto Team</strong></p>`
+      return { subject, html: wrap(ctx.recipientFirstName, body) }
+    }
     case 'inspection_accepted': {
       const scoutFirst = ctx.scoutName?.split(' ')[0] ?? 'Your Scout'
       const formattedDate = ctx.inspectionDate ? ctx.inspectionDate.split('-').reverse().join('/') : ''
