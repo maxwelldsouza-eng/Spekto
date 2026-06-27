@@ -49,7 +49,7 @@ Deno.serve(async (req: Request) => {
   if (!adminRow) return err('Forbidden', 403)
 
   const body = await req.json()
-  const { dispute_id, resolution, notes, partial_refund_amount } = body
+  const { dispute_id, resolution, client_notes, scout_notes, partial_refund_amount } = body
 
   if (!dispute_id || !resolution) return err('Missing dispute_id or resolution')
 
@@ -86,7 +86,7 @@ Deno.serve(async (req: Request) => {
     .update({
       status: 'Resolved',
       resolution,
-      resolution_notes: notes || null,
+      resolution_notes: client_notes || scout_notes || null,
       resolved_by: adminRow.id,
       resolved_at: now,
       updated_at: now,
@@ -102,7 +102,7 @@ Deno.serve(async (req: Request) => {
     target_table: 'disputes',
     target_id: dispute_id,
     new_value: resolution,
-    notes: notes || null,
+    notes: client_notes || scout_notes || null,
   })
 
   // ── Handle each resolution type ─────────────────────────────────────────────
@@ -115,7 +115,7 @@ Deno.serve(async (req: Request) => {
     if (!originalPayment?.stripe_payment_intent_id) {
       // No payment on record (draft inspection) — just cancel
       await supabase.from('inspections').update({ status: isFraud ? 'Cancelled' : 'PendingPayment', updated_at: now }).eq('id', dispute.inspection_id)
-      await notifyDisputeParties(dispute.inspection_id, inspection?.client_id, inspection?.scout_id, resolution, notes)
+      await notifyDisputeParties(dispute.inspection_id, inspection?.client_id, inspection?.scout_id, resolution, client_notes, scout_notes)
       return ok({ success: true, refunded: false, note: 'No Stripe payment found — inspection cancelled without charge reversal' })
     }
 
@@ -222,17 +222,17 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    await notifyDisputeParties(dispute.inspection_id, inspection?.client_id, inspection?.scout_id, resolution, notes, refundAmount)
+    await notifyDisputeParties(dispute.inspection_id, inspection?.client_id, inspection?.scout_id, resolution, client_notes, scout_notes, refundAmount)
     return ok({ success: true, refunded: true, stripe_refund_id: stripeRefundId, amount: refundAmount })
   }
 
   if (isRelease) {
     await supabase.from('inspections').update({ status: 'PendingPayment', updated_at: now }).eq('id', dispute.inspection_id)
-    await notifyDisputeParties(dispute.inspection_id, inspection?.client_id, inspection?.scout_id, resolution, notes)
+    await notifyDisputeParties(dispute.inspection_id, inspection?.client_id, inspection?.scout_id, resolution, client_notes, scout_notes)
     return ok({ success: true })
   }
 
-  await notifyDisputeParties(dispute.inspection_id, inspection?.client_id, inspection?.scout_id, resolution, notes)
+  await notifyDisputeParties(dispute.inspection_id, inspection?.client_id, inspection?.scout_id, resolution, client_notes, scout_notes)
   return ok({ success: true })
 })
 
@@ -264,14 +264,15 @@ async function notifyDisputeParties(
   client_id?: string,
   scout_id?: string,
   resolution?: string,
-  notes?: string | null,
+  client_notes?: string | null,
+  scout_notes?: string | null,
   refundAmount?: number,
 ) {
   const clientDecision = (CLIENT_DECISION[resolution ?? ''] ?? 'Dispute resolved.') +
     (refundAmount ? ` Refund: $${refundAmount.toFixed(2)}.` : '') +
-    (notes ? ` Admin note: ${notes}` : '')
+    (client_notes ? ` Admin note: ${client_notes}` : '')
   const scoutDecision = (SCOUT_DECISION[resolution ?? ''] ?? 'Dispute resolved.') +
-    (notes ? ` Admin note: ${notes}` : '')
+    (scout_notes ? ` Admin note: ${scout_notes}` : '')
 
   const promises: Promise<void>[] = []
   if (client_id) promises.push(callNotify({ user_id: client_id, type: 'dispute_resolved_client', inspection_id, extra: { decision_text: clientDecision } }))

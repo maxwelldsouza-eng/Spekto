@@ -568,7 +568,16 @@
                     <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px">Refund amount (AUD incl. GST)</label>
                     <input type="number" id="partialRefundAmount" min="0.01" step="0.01" style="width:100%;border:1.5px solid #E0E0E0;border-radius:8px;padding:10px 12px;font-size:13px;font-family:Inter,sans-serif;outline:none;color:#0D0D0D;height:42px" placeholder="e.g. 49.50">
                   </div>
-                  <textarea class="resolution-notes" id="resolutionNotes" placeholder="Add resolution notes (shown to both parties)..."></textarea>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
+                    <div>
+                      <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px">Resolution message to Client</label>
+                      <textarea class="resolution-notes" id="clientNotes" placeholder="Optional — shown only to the client..." style="min-height:80px;margin-top:0"></textarea>
+                    </div>
+                    <div>
+                      <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px">Resolution message to Scout</label>
+                      <textarea class="resolution-notes" id="scoutNotes" placeholder="Optional — shown only to the Scout..." style="min-height:80px;margin-top:0"></textarea>
+                    </div>
+                  </div>
                   <div class="resolution-actions">
                     <button class="btn-save-draft" onclick="saveDraft()">Save draft</button>
                     <button class="btn-confirm-res" id="confirmResBtn" onclick="confirmResolution()" ${!selectedResolution?'disabled':''}>Confirm resolution</button>
@@ -695,7 +704,8 @@
 
   window.confirmResolution = async () => {
     if (!selectedResolution) return
-    const notes = document.getElementById('resolutionNotes')?.value?.trim()
+    const clientNotes = document.getElementById('clientNotes')?.value?.trim()
+    const scoutNotes = document.getElementById('scoutNotes')?.value?.trim()
     const partialAmount = document.getElementById('partialRefundAmount')?.value?.trim()
     const confirmBtn = document.getElementById('confirmResBtn')
 
@@ -720,7 +730,8 @@
         body: JSON.stringify({
           dispute_id: disputeId,
           resolution: selectedResolution,
-          notes: notes || null,
+          client_notes: clientNotes || null,
+          scout_notes: scoutNotes || null,
           partial_refund_amount: partialAmount ? parseFloat(partialAmount) : undefined
         })
       })
