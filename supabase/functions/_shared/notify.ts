@@ -108,7 +108,7 @@ function buildMessage(type: string, ctx: Record<string, string>): string {
     case 'welcome_scout': return `👋 Welcome to Spekto, ${ctx.recipientFirstName}! You're almost ready to start earning. Finish your onboarding steps below to unlock job access and get paid for every inspection you complete.`
     case 'inspection_declined': return `${ctx.scoutName ?? 'Your Scout'} is no longer able to complete your inspection at ${a} (${r}). It's been reposted for other Scouts to pick up — we'll notify you as soon as a new Scout accepts.`
     case 'inspection_cancelled_refund': return `Your inspection at ${a} has been cancelled as requested. A refund of $${ctx.amount ?? '0.00'} is on its way and should appear in your account within 5–10 business days.`
-    case 'dispute_received': return `Your dispute for ${a} (${r}) has been received and is under review.`
+    case 'dispute_received': return `Your dispute for ${a} (${r}) has been received and is now under review. We'll be in touch if we need any more information from you.`
     case 'dispute_resolved_client': return `Your dispute for ${a} (${r}) has been resolved.`
     case 'dispute_resolved_scout': return `The dispute for ${a} (${r}) has been resolved.`
     case 'admin_message': return `You have a new message from Spekto Admin${r ? ` regarding inspection ${r}` : ''}.`
@@ -116,7 +116,7 @@ function buildMessage(type: string, ctx: Record<string, string>): string {
     case 'payment_receipt': return `✅ Payment confirmed! Your inspection at ${a} has been booked — $${ctx.amount ?? '0.00'} paid (${r}). We'll notify you as soon as a Scout picks it up.`
     case 'inspection_completed': return `Your inspection at ${a} (${r}) has been completed and is ready to view.`
     case 'payment_released': return `Payment released for your inspection at ${a} (${r}). Expect payout by Tuesday.`
-    case 'dispute_raised': return `A dispute has been raised on your inspection at ${a}. Spekto support will be in touch.`
+    case 'dispute_raised': return `A dispute has been raised on your inspection at ${a} (${r}). Spekto support is reviewing it and will be in touch — no action needed from you right now.`
     default: return 'You have a new notification from Spekto.'
   }
 }
@@ -190,12 +190,21 @@ function buildEmail(type: string, ctx: Record<string, string>): { subject: strin
               <p style="margin-top:28px;color:#555">Thanks for using Spekto,<br><strong>The Spekto Team</strong></p>`
       return { subject, html: wrap(ctx.recipientFirstName, body) }
     }
-    case 'dispute_received':
+    case 'dispute_received': {
       subject = `We've received your dispute (${ctx.inspectionRef})`
-      body = `<p>We've received your dispute and our team will review it within 48 hours.</p>
-              ${table([['Reference', ctx.inspectionRef], ['Address', ctx.address], ...(ctx.dispute_reason ? [['Reason', ctx.dispute_reason] as [string, string]] : [])])}
-              ${cta('View Dispute', ctx.disputeLink)}`
-      break
+      body = `<p>Thanks for letting us know — we've received your dispute and our team is now reviewing it.</p>
+              <p><strong>Here's what happens next:</strong></p>
+              <ul style="padding-left:20px;line-height:2">
+                <li><strong>Our team reviews the inspection</strong> — we'll take a close look at the video walkthrough and the details of your dispute</li>
+                <li><strong>We may message you with questions</strong> — if we need more information, we'll send you a message directly on your inspection. You'll get an email notification letting you know a new message is waiting, so keep an eye on your inbox</li>
+                <li><strong>We'll let you know the outcome</strong> — once our review is complete, we'll follow up with next steps</li>
+              </ul>
+              <p>To reply or view any messages, just head to your inspection in the app — that's where all communication about your dispute will happen.</p>
+              ${table([['Reference', ctx.inspectionRef], ['Address', ctx.address]])}
+              ${cta('View Dispute', ctx.disputeLink)}
+              <p style="margin-top:28px;color:#555">Thanks for your patience while we look into this,<br><strong>The Spekto Team</strong></p>`
+      return { subject, html: wrap(ctx.recipientFirstName, body) }
+    }
     case 'dispute_resolved_client':
       subject = `Your dispute has been resolved (${ctx.inspectionRef})`
       body = `<p>Your dispute has been reviewed and resolved.</p>
@@ -259,12 +268,22 @@ function buildEmail(type: string, ctx: Record<string, string>): { subject: strin
               <p style="color:#666;font-size:13px">Payouts are processed each Tuesday.</p>
               ${cta('View Inspection', ctx.scoutInspectionLink)}`
       break
-    case 'dispute_raised':
+    case 'dispute_raised': {
       subject = `A dispute has been raised on your inspection (${ctx.inspectionRef})`
-      body = `<p>A client has raised a dispute on your inspection. Spekto support will review it and be in touch.</p>
+      body = `<p>A client has raised a dispute on one of your inspections. We wanted to let you know straight away.</p>
+              <p>This is a normal part of the process, and our team will take it from here.</p>
+              <p><strong>Here's what happens next:</strong></p>
+              <ul style="padding-left:20px;line-height:2">
+                <li><strong>Our team reviews the inspection</strong> — we'll take a close look at the video walkthrough and the details of the dispute</li>
+                <li><strong>We may message you with questions</strong> — if we need more information from you, we'll send you a message directly on your inspection. You'll get an email notification letting you know a new message is waiting, so keep an eye on your inbox</li>
+                <li><strong>We'll let you know the outcome</strong> — once our review is complete, we'll follow up with next steps</li>
+              </ul>
+              <p>To view any messages or check on your inspection, just log in to Spekto and open this inspection — that's where all communication about this dispute will happen.</p>
               ${table([['Reference', ctx.inspectionRef], ['Address', ctx.address]])}
-              ${cta('View Inspection', ctx.scoutInspectionLink)}`
-      break
+              ${cta('View Inspection', ctx.scoutInspectionLink)}
+              <p style="margin-top:28px;color:#555">Thanks for your patience while we look into this,<br><strong>The Spekto Team</strong></p>`
+      return { subject, html: wrap(ctx.recipientFirstName, body) }
+    }
     default:
       subject = 'A new notification from Spekto'
       body = '<p>You have a new notification from Spekto.</p>'
