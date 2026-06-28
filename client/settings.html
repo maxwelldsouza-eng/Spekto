@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -157,6 +157,7 @@
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
   import { initNotificationBell } from '../config/notifications.js'
+  import { resetTour } from '../config/tour.js'
   const supabase = createClient(
     'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
     'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
@@ -407,6 +408,10 @@
     document.getElementById('resetPasswordBtn').addEventListener('click', sendPasswordReset)
     document.getElementById('switchToScoutBtn').addEventListener('click', switchToScout)
     document.getElementById('logoutBtn').addEventListener('click', handleLogout)
+    document.getElementById('retakeTourBtn').addEventListener('click', () => {
+      resetTour('client')
+      window.location.href = 'dashboard.html?tour=1'
+    })
     document.getElementById('sidebarLogoutBtn').addEventListener('click', handleLogout)
     document.getElementById('avatarInput').addEventListener('change', handleAvatarUpload)
     setupBillingAddressAutocomplete()

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -282,6 +282,40 @@
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
   import { initNotificationBell } from '../config/notifications.js'
+  import { startTour, hasSeen } from '../config/tour.js'
+
+  const CLIENT_TOUR_STEPS = [
+    {
+      element: [href='new-inspection.html'],
+      title: 'Post an Inspection',
+      text: 'Start here. Describe the property, set a date and time, and a verified Scout will be assigned to carry out the walkthrough.'
+    },
+    {
+      element: [href='dashboard.html'],
+      title: 'My Inspections',
+      text: 'Track every inspection you have posted — see its current status, which Scout accepted it, and access completed footage when done.'
+    },
+    {
+      element: [href='marketplace.html'],
+      title: 'Marketplace',
+      text: 'Browse and purchase footage from completed external inspections on other properties — no need to commission a new inspection.'
+    },
+    {
+      element: [href='disputes.html'],
+      title: 'Disputes',
+      text: 'If you are unhappy with a completed inspection, raise a dispute here. Our team reviews all cases and mediates a resolution.'
+    },
+    {
+      element: [href='billing.html'],
+      title: 'Billing',
+      text: 'View your full payment history and manage your saved payment methods for quick checkout when posting new inspections.'
+    },
+    {
+      element: [href='settings.html'],
+      title: 'Settings',
+      text: 'Update your profile and company details, manage your billing address, and configure notification preferences.'
+    }
+  ]
   const supabase = createClient(
     'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
     'sb_publishable_AZSoskR9Ou8e-rl0QlPWUg_vOehXCRL'
@@ -439,7 +473,12 @@
     window.location.href = '../auth/login.html'
   })
 
-  init()
+  init().then(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (!hasSeen('client') || params.get('tour') === '1') {
+      startTour(CLIENT_TOUR_STEPS, 'client')
+    }
+  })
 
   document.getElementById('menuToggle').addEventListener('click', () => {
     document.querySelector('.sidebar').classList.toggle('open')

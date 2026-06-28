@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -242,6 +242,45 @@
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
   import { initNotificationBell } from '../config/notifications.js'
+  import { startTour, hasSeen } from '../config/tour.js'
+
+  const SCOUT_TOUR_STEPS = [
+    {
+      element: [href='dashboard.html'],
+      title: 'Your Jobs',
+      text: 'This is your home screen. Switch between Available jobs near you, your Active jobs in progress, and your Completed history.'
+    },
+    {
+      element: .tab[data-tab='available'],
+      title: 'Available Jobs',
+      text: 'Browse inspections posted by clients. Jobs are filtered by distance from your home address — set that in Settings to get the best matches.'
+    },
+    {
+      element: .tab[data-tab='active'],
+      title: 'Active Jobs',
+      text: 'Once you accept a job it appears here. Tap it to view the full details, start recording, or decline if something comes up.'
+    },
+    {
+      element: .tab[data-tab='completed'],
+      title: 'Completed Jobs',
+      text: 'Jobs you have submitted appear here. Payment is released in the weekly Tuesday payout batch once the client approves.'
+    },
+    {
+      element: [href='earnings.html'],
+      title: 'Earnings',
+      text: 'See exactly what you have earned, what is pending release, and when the next payout batch runs.'
+    },
+    {
+      element: [href='disputes.html'],
+      title: 'Disputes',
+      text: 'If a client raises a quality dispute on your work, you will need to respond here within the deadline shown. Act quickly — SLAs apply.'
+    },
+    {
+      element: [href='settings.html'],
+      title: 'Settings',
+      text: 'Complete your profile here: verify your identity, confirm your right to work, connect your Stripe payout account, and set your home address.'
+    }
+  ]
   import { RATING_ATTRIBUTES } from '../config/rating-attributes.js'
   const supabase = createClient(
     'https://nyvnvtxhlnjvfhcmnihh.supabase.co',
@@ -834,6 +873,11 @@
       window.location.href = '../client/dashboard.html'
     })
     document.getElementById('switchToScout').addEventListener('click', () => {})
+  }
+
+  const _tourParams = new URLSearchParams(window.location.search)
+  if (!hasSeen('scout') || _tourParams.get('tour') === '1') {
+    setTimeout(() => startTour(SCOUT_TOUR_STEPS, 'scout'), 600)
   }
 
   document.getElementById('logoutBtn').addEventListener('click', async () => {
