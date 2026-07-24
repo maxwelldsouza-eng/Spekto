@@ -11,7 +11,7 @@
 | 7 | Build `admin/marketplace.html` — admin view of marketplace listings (file exists but needs full implementation review) | Medium | Pending | — |
 | 8 | Verify Scout dispute response writes to `dispute_messages` table (may bypass the real table — same pattern as the old client bug) | High | Pending | — |
 | 9 | Wire up `scout/ratings.html` — display only right now, no "leave review" flow exists | Medium | Pending | — |
-| 10 | Stripe integration — entirely unbuilt: client payment (Payment Intent), Scout payouts (Connect), refunds, webhooks | Critical | Pending | — |
+| 10 | Stripe integration — client payment (Payment Intent), Scout payouts (Connect), refunds, webhooks | Critical | Completed | 2026-07-24 |
 | 11 | Add Marketplace sidebar link to 6 missing client screens: `dashboard.html`, `new-inspection.html`, `inspection-detail.html`, `billing.html`, `disputes.html`, `settings.html` | Low | Pending | — |
 | 12 | Clean up dirty test data — inspections with `status = 'Disputed'` but no matching row in `disputes` table | Low | Pending | — |
 | 13 | Create a marketing website that integrates with Spekto | Medium | Pending | — |
