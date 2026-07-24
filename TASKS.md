@@ -15,6 +15,9 @@
 | 11 | Add Marketplace sidebar link to 6 missing client screens: `dashboard.html`, `new-inspection.html`, `inspection-detail.html`, `billing.html`, `disputes.html`, `settings.html` | Low | Pending | — |
 | 12 | Clean up dirty test data — inspections with `status = 'Disputed'` but no matching row in `disputes` table | Low | Pending | — |
 | 13 | Create a marketing website that integrates with Spekto | Medium | Pending | — |
+| 14 | Rental inspections — change the workflow to cater to rental inspections (new inspection type, status flow, pricing, and UI) | High | Pending | — |
+| 15 | Ensure the rental inspection flow integrates with 2Apply and REA Ignite | High | Pending | — |
+| 16 | Create a training guide for Scouts | Medium | Pending | — |
 
 ---
 
