@@ -14,6 +14,7 @@
 | 10 | Stripe integration — entirely unbuilt: client payment (Payment Intent), Scout payouts (Connect), refunds, webhooks | Critical | Pending | — |
 | 11 | Add Marketplace sidebar link to 6 missing client screens: `dashboard.html`, `new-inspection.html`, `inspection-detail.html`, `billing.html`, `disputes.html`, `settings.html` | Low | Pending | — |
 | 12 | Clean up dirty test data — inspections with `status = 'Disputed'` but no matching row in `disputes` table | Low | Pending | — |
+| 13 | Create a marketing website that integrates with Spekto | Medium | Pending | — |
 
 ---
 
