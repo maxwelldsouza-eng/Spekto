@@ -257,7 +257,7 @@
   async function loadInspection() {
     const { data, error } = await supabase
       .from('inspections')
-      .select('*, instructions(*)')
+      .select('*, instructions(*), client:client_id(first_name, last_name)')
       .eq('id', inspectionId)
       .single()
 
@@ -533,6 +533,11 @@
       ? '$' + parseFloat(inspection.pricing_snapshot.pay_to_scout).toFixed(2)
       : null
 
+    // Client identity, listing type, and agent details are only shown once the job has
+    // moved past the open "Posted" pool — not to Scouts still deciding whether to accept.
+    const showPrivilegedDetails = inspection.status !== 'Posted'
+    const clientName = `${inspection.client?.first_name || ''} ${inspection.client?.last_name || ''}`.trim() || '—'
+
     let html = `
       <div class="card">
         <div class="section-label">Job Details</div>
@@ -542,8 +547,10 @@
           <div><div class="det-label">Date</div><div class="det-val">${new Date(inspection.date).toLocaleDateString('en-AU', { day:'numeric', month:'long', year:'numeric' })}</div></div>
           <div><div class="det-label">Time</div><div class="det-val">${inspection.time?.slice(0,5) || '—'}</div></div>
           <div><div class="det-label">Type</div><div class="det-val">${typeLabel}</div></div>
-          <div><div class="det-label">Listing</div><div class="det-val">${inspection.listing_type === 'Rent' ? 'For Rent' : 'For Sale'}</div></div>
           <div><div class="det-label">Status</div><div class="det-val">${inspection.status.replace('PendingPayment','Pending Payment').replace('InProgress','In Progress')}</div></div>
+          ${showPrivilegedDetails ? `
+          <div><div class="det-label">Client</div><div class="det-val">${clientName}</div></div>
+          <div><div class="det-label">Listing</div><div class="det-val">${inspection.listing_type === 'Rent' ? 'For Rent' : 'For Sale'}</div></div>` : ''}
           ${inspection.property_link ? `<div><div class="det-label">Property link</div><a class="det-val link" href="${inspection.property_link}" target="_blank">View listing ↗</a></div>` : '<div></div>'}
         </div>
         ${payout ? `
@@ -554,7 +561,7 @@
       </div>`
 
     const hasAgentDetails = inspection.agent_first_name || inspection.agent_last_name || inspection.agent_phone || inspection.agent_email
-    if (hasAgentDetails) {
+    if (hasAgentDetails && showPrivilegedDetails) {
       const agentName = `${inspection.agent_first_name || ''} ${inspection.agent_last_name || ''}`.trim() || '—'
       html += `
       <div class="card">
