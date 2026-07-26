@@ -368,12 +368,25 @@
                 <div><div class="det-label">Address</div><div class="det-val">${inspection.address}</div></div>
                 <div><div class="det-label">Date & Time</div><div class="det-val">${date} at ${inspection.time?.slice(0,5) || '—'}</div></div>
                 <div><div class="det-label">Type</div><div class="det-val">${typeLabel}</div></div>
+                <div><div class="det-label">Listing</div><div class="det-val">${inspection.listing_type === 'Rent' ? 'For Rent' : 'For Sale'}</div></div>
                 <div><div class="det-label">Status</div><div class="det-val">${inspection.status.replace('PendingPayment','Pending Payment').replace('InProgress','In Progress')}</div></div>
                 <div><div class="det-label">Created</div><div class="det-val">${createdAt}</div></div>
                 ${inspection.property_link ? `<div><div class="det-label">Property link</div><div class="det-val"><a href="${inspection.property_link}" target="_blank">View listing ↗</a></div></div>` : '<div></div>'}
               </div>
             </div>
           </div>
+
+          ${(inspection.agent_first_name || inspection.agent_last_name || inspection.agent_phone || inspection.agent_email) ? `
+          <div class="card">
+            <div class="card-header"><div class="card-title"><i class="ti ti-id-badge-2"></i> Agent Details</div></div>
+            <div class="card-body">
+              <div class="detail-grid">
+                <div><div class="det-label">Name</div><div class="det-val">${`${inspection.agent_first_name || ''} ${inspection.agent_last_name || ''}`.trim() || '—'}</div></div>
+                <div><div class="det-label">Phone</div><div class="det-val">${inspection.agent_phone || '—'}</div></div>
+                <div><div class="det-label">Email</div><div class="det-val">${inspection.agent_email || '—'}</div></div>
+              </div>
+            </div>
+          </div>` : ''}
 
           <div class="card">
             <div class="card-header"><div class="card-title"><i class="ti ti-users"></i> Parties</div></div>

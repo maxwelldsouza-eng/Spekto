@@ -813,7 +813,7 @@
       .eq('status', 'Posted')
 
     if (!error) {
-      // Notify the client (non-fatal)
+      // Notify the client and the listing agent (both non-fatal)
       if (insp?.client_id) {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
@@ -821,6 +821,11 @@
             method: 'POST',
             headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: insp.client_id, type: 'inspection_accepted', inspection_id: inspectionId }),
+          }).catch(() => {})
+          fetch('https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/notify-agent', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inspection_id: inspectionId }),
           }).catch(() => {})
         }
       }

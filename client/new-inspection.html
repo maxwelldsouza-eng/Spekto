@@ -281,6 +281,26 @@
       </div>
 
       <div class="card">
+        <div class="card-title">Listing type <span class="req" style="font-size:13px">*</span></div>
+        <div class="insp-options" id="listingTypeOptions">
+          <label class="insp-option selected" data-type="Sale">
+            <input type="radio" name="listingType" value="Sale" checked>
+            <div>
+              <div class="insp-label">For Sale</div>
+              <div class="insp-desc">Property is listed for sale</div>
+            </div>
+          </label>
+          <label class="insp-option" data-type="Rent">
+            <input type="radio" name="listingType" value="Rent">
+            <div>
+              <div class="insp-label">For Rent</div>
+              <div class="insp-desc">Property is listed for rent</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="card-title">Property</div>
         <div class="field">
           <label>Address <span class="req">*</span></label>
@@ -298,8 +318,33 @@
       </div>
 
       <div class="card">
+        <div class="card-title">Agent details <span class="optional-tag">Optional</span></div>
+        <div class="row2">
+          <div class="field">
+            <label>Agent first name <span class="optional-tag">Optional</span></label>
+            <input type="text" id="agentFirstName" placeholder="Jane">
+          </div>
+          <div class="field">
+            <label>Agent last name <span class="optional-tag">Optional</span></label>
+            <input type="text" id="agentLastName" placeholder="Smith">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Agent phone <span class="optional-tag">Optional</span></label>
+            <input type="tel" id="agentPhone" placeholder="0400 000 000">
+          </div>
+          <div class="field">
+            <label>Agent email <span class="optional-tag">Optional</span></label>
+            <input type="email" id="agentEmail" placeholder="agent@agency.com.au">
+          </div>
+        </div>
+        <div class="hint-text">If provided, we'll let the agent know a Scout is coming to inspect the property on your behalf.</div>
+      </div>
+
+      <div class="card">
         <div class="card-title">Inspection type <span class="req" style="font-size:13px">*</span></div>
-        <div class="insp-options">
+        <div class="insp-options" id="inspTypeOptions">
           <label class="insp-option selected" data-type="external">
             <input type="radio" name="inspType" value="external" checked>
             <div>
@@ -443,12 +488,26 @@
     _lat = insp.latitude || null
     _lng = insp.longitude || null
 
+    // Pre-populate listing type
+    const listingRadio = document.querySelector(`input[name="listingType"][value="${insp.listing_type || 'Sale'}"]`)
+    if (listingRadio) {
+      listingRadio.checked = true
+      document.querySelectorAll('#listingTypeOptions .insp-option').forEach(o => o.classList.remove('selected'))
+      listingRadio.closest('.insp-option').classList.add('selected')
+    }
+
+    // Pre-populate agent details
+    document.getElementById('agentFirstName').value = insp.agent_first_name || ''
+    document.getElementById('agentLastName').value = insp.agent_last_name || ''
+    document.getElementById('agentPhone').value = insp.agent_phone || ''
+    document.getElementById('agentEmail').value = insp.agent_email || ''
+
     // Pre-populate inspection type
     if (insp.inspection_type) {
       const radio = document.querySelector(`input[name="inspType"][value="${insp.inspection_type}"]`)
       if (radio) {
         radio.checked = true
-        document.querySelectorAll('.insp-option').forEach(o => o.classList.remove('selected'))
+        document.querySelectorAll('#inspTypeOptions .insp-option').forEach(o => o.classList.remove('selected'))
         radio.closest('.insp-option').classList.add('selected')
         updatePricing()
       }
@@ -485,9 +544,10 @@
 
   document.querySelectorAll('.insp-option').forEach(opt => {
     opt.addEventListener('click', () => {
-      document.querySelectorAll('.insp-option').forEach(o => o.classList.remove('selected'))
+      const group = opt.closest('.insp-options')
+      group.querySelectorAll('.insp-option').forEach(o => o.classList.remove('selected'))
       opt.classList.add('selected')
-      updatePricing()
+      if (group.id === 'inspTypeOptions') updatePricing()
     })
   })
 
@@ -579,6 +639,11 @@
     submitBtn.textContent = editId ? 'Updating...' : 'Submitting...'
 
     const inspectionType = document.querySelector('input[name="inspType"]:checked').value
+    const listingType = document.querySelector('input[name="listingType"]:checked').value
+    const agentFirstName = document.getElementById('agentFirstName').value.trim() || null
+    const agentLastName = document.getElementById('agentLastName').value.trim() || null
+    const agentPhone = document.getElementById('agentPhone').value.trim() || null
+    const agentEmail = document.getElementById('agentEmail').value.trim() || null
     const pricingSnapshot = pricing[inspectionType] || null
 
     const instructions = []
@@ -608,7 +673,12 @@
           property_link: document.getElementById('propertyLink').value.trim() || null,
           pricing_snapshot: pricingPayload,
           latitude: _lat,
-          longitude: _lng
+          longitude: _lng,
+          listing_type: listingType,
+          agent_first_name: agentFirstName,
+          agent_last_name: agentLastName,
+          agent_phone: agentPhone,
+          agent_email: agentEmail
         })
         .eq('id', editId)
 
@@ -651,7 +721,12 @@
             pricing_snapshot: pricingPayload,
             instructions,
             latitude: _lat,
-            longitude: _lng
+            longitude: _lng,
+            listing_type: listingType,
+            agent_first_name: agentFirstName,
+            agent_last_name: agentLastName,
+            agent_phone: agentPhone,
+            agent_email: agentEmail
           })
         })
 
