@@ -64,13 +64,13 @@ Deno.serve(async (req: Request) => {
     supabase.from('users').select('first_name, last_name').eq('id', inspection.scout_id).single(),
   ])
 
-  const agentFirstName = inspection.agent_first_name || 'Agent'
   const clientName = `${client?.first_name ?? ''} ${client?.last_name ?? ''}`.trim() || 'A Spekto client'
   const scoutName = `${scout?.first_name ?? ''} ${scout?.last_name ?? ''}`.trim() || 'A Spekto Scout'
   const formattedDate = inspection.date ? inspection.date.split('-').reverse().join('/') : ''
   const formattedTime = inspection.time ? String(inspection.time).slice(0, 5) : ''
+  const inspectionDateTime = [formattedDate, formattedTime].filter(Boolean).join(' at ')
 
-  const subject = `Inspection scheduled at ${inspection.address}`
+  const subject = `Upcoming Property Inspection – ${inspection.address}`
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#F7F5FA;font-family:Inter,Arial,sans-serif">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#F7F5FA;padding:32px 16px">
@@ -79,17 +79,12 @@ Deno.serve(async (req: Request) => {
   <span style="font-family:'DM Sans',Arial,sans-serif;font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px">Spekto</span>
 </td></tr>
 <tr><td style="background:#fff;padding:28px 32px;border-radius:0 0 12px 12px">
-  <p style="margin:0 0 16px;font-size:15px;color:#0D0D0D;font-weight:600">Dear ${agentFirstName},</p>
+  <p style="margin:0 0 16px;font-size:15px;color:#0D0D0D;font-weight:600">Hi,</p>
   <div style="font-size:14px;color:#444;line-height:1.7">
-    <p>${clientName} has requested ${scoutName} to inspect the property on their behalf.</p>
-    <table style="width:100%;border-collapse:collapse;margin:16px 0;background:#F7F5FA;border-radius:8px;overflow:hidden">
-      <tr><td style="padding:10px 14px;font-size:12px;color:#666;width:140px;border-bottom:1px solid #EEEBF4;white-space:nowrap">Property address</td><td style="padding:10px 14px;font-size:13px;color:#0D0D0D;font-weight:600;border-bottom:1px solid #EEEBF4">${inspection.address}</td></tr>
-      <tr><td style="padding:10px 14px;font-size:12px;color:#666;width:140px;border-bottom:1px solid #EEEBF4;white-space:nowrap">Inspection date</td><td style="padding:10px 14px;font-size:13px;color:#0D0D0D;font-weight:600;border-bottom:1px solid #EEEBF4">${formattedDate}</td></tr>
-      <tr><td style="padding:10px 14px;font-size:12px;color:#666;width:140px;white-space:nowrap">Inspection time</td><td style="padding:10px 14px;font-size:13px;color:#0D0D0D;font-weight:600">${formattedTime}</td></tr>
-    </table>
-    <p>Requested by: <strong>${clientName}</strong> (${client?.email ?? '—'})</p>
-    <p>Scout attending: <strong>${scoutName}</strong></p>
-    <p style="margin-top:28px;color:#555">Thanks,<br><strong>The Spekto Team</strong></p>
+    <p>This is a courtesy note to let you know that a video inspection has been booked for your listing at ${inspection.address} through Spekto, a remote property inspection platform.</p>
+    <p>${clientName} has requested the inspection, and ${scoutName}, one of our verified Spekto Scouts, will be attending on ${clientName}'s behalf on ${inspectionDateTime} to film a walkthrough of the property.</p>
+    <p>${scoutName} will arrive at the scheduled time, film the inspection, and leave promptly once complete. No further action is needed from you — this email is simply to make sure you're aware someone will be attending on the customer's behalf.</p>
+    <p style="margin-top:28px;color:#555">The Spekto Team</p>
   </div>
 </td></tr>
 </table></td></tr>
