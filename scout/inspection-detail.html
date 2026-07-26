@@ -547,10 +547,10 @@
           <div><div class="det-label">Date</div><div class="det-val">${new Date(inspection.date).toLocaleDateString('en-AU', { day:'numeric', month:'long', year:'numeric' })}</div></div>
           <div><div class="det-label">Time</div><div class="det-val">${inspection.time?.slice(0,5) || '—'}</div></div>
           <div><div class="det-label">Type</div><div class="det-val">${typeLabel}</div></div>
+          <div><div class="det-label">Listing</div><div class="det-val">${inspection.listing_type === 'Rent' ? 'For Rent' : 'For Sale'}</div></div>
           <div><div class="det-label">Status</div><div class="det-val">${inspection.status.replace('PendingPayment','Pending Payment').replace('InProgress','In Progress')}</div></div>
           ${showPrivilegedDetails ? `
-          <div><div class="det-label">Client</div><div class="det-val">${clientName}</div></div>
-          <div><div class="det-label">Listing</div><div class="det-val">${inspection.listing_type === 'Rent' ? 'For Rent' : 'For Sale'}</div></div>` : ''}
+          <div><div class="det-label">Client</div><div class="det-val">${clientName}</div></div>` : ''}
           ${inspection.property_link ? `<div><div class="det-label">Property link</div><a class="det-val link" href="${inspection.property_link}" target="_blank">View listing ↗</a></div>` : '<div></div>'}
         </div>
         ${payout ? `
