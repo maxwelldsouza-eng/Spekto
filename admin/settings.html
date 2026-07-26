@@ -181,6 +181,7 @@
   let mpData = null
   let xeroData = null
   let adminData = null
+  let companySettings = null
 
   async function init() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -216,15 +217,17 @@
   }
 
   async function loadData() {
-    const [{ data: pricing }, { data: mp }, { data: xero }] = await Promise.all([
+    const [{ data: pricing }, { data: mp }, { data: xero }, { data: company }] = await Promise.all([
       supabase.from('pricing').select('*').order('id'),
       supabase.from('marketplace_pricing').select('*').eq('id', 'standard').single(),
-      supabase.from('xero_tokens').select('tenant_name, updated_at').eq('id', 1).maybeSingle()
+      supabase.from('xero_tokens').select('tenant_name, updated_at').eq('id', 1).maybeSingle(),
+      supabase.from('company_settings').select('*').eq('id', 1).single()
     ])
 
     pricingData = pricing || []
     mpData = mp
     xeroData = xero
+    companySettings = company
 
     render()
   }
@@ -263,13 +266,13 @@
         <div class="field-wrap">
           <div class="field-input-wrap">
             <span class="field-prefix">$</span>
-            <input class="field-input" type="number" min="0" step="0.01" data-field="gst" value="${fmt(p.gst)}">
+            <input class="field-input readonly" type="number" data-field="gst" value="${fmt(p.gst)}" readonly>
           </div>
         </div>
         <div class="field-wrap">
           <div class="field-input-wrap">
             <span class="field-prefix">$</span>
-            <input class="field-input" type="number" min="0" step="0.01" data-field="total" value="${fmt(p.total)}">
+            <input class="field-input readonly" type="number" data-field="total" value="${fmt(p.total)}" readonly>
           </div>
         </div>
       </div>`).join('')
@@ -277,6 +280,59 @@
     const mpLastUpdated = mpData?.updated_at ? `Last updated ${fmtDate(mpData.updated_at)}` : ''
 
     document.getElementById('mainContent').innerHTML = `
+      <div class="section-card">
+        <div class="section-head">
+          <div>
+            <div class="section-title"><i class="ti ti-building-bank"></i> Company Settings</div>
+            <div class="section-desc">ABN, trading name, and GST registration status. Controls whether GST is actually charged on new bookings.</div>
+          </div>
+          ${companySettings?.updated_at ? `<div class="section-meta">Last updated ${fmtDate(companySettings.updated_at)}</div>` : ''}
+        </div>
+        <div class="mp-grid">
+          <div class="mp-field">
+            <div class="mp-label">Trading name</div>
+            <div class="field-input-wrap">
+              <input class="field-input" id="cs_trading_name" type="text" style="padding-left:10px" value="${companySettings?.trading_name ?? ''}">
+            </div>
+          </div>
+          <div class="mp-field">
+            <div class="mp-label">ABN</div>
+            <div class="field-input-wrap">
+              <input class="field-input" id="cs_abn" type="text" style="padding-left:10px" value="${companySettings?.abn ?? ''}">
+            </div>
+            <div class="mp-hint">Printed on every tax invoice and RCTI</div>
+          </div>
+          <div class="mp-field">
+            <div class="mp-label">GST effective from</div>
+            <div class="field-input-wrap">
+              <input class="field-input" id="cs_effective_from" type="date" style="padding-left:10px" value="${companySettings?.gst_effective_from ?? ''}">
+            </div>
+            <div class="mp-hint">Bookings before this date never charge GST, regardless of the toggle</div>
+          </div>
+          <div class="mp-field">
+            <div class="mp-label">GST registered</div>
+            <div style="display:flex;align-items:center;gap:10px;height:36px">
+              <label style="position:relative;display:inline-block;width:40px;height:22px;flex-shrink:0">
+                <input type="checkbox" id="cs_gst_registered" ${companySettings?.gst_registered ? 'checked' : ''} style="opacity:0;width:0;height:0">
+                <span id="cs_toggle_track" style="position:absolute;inset:0;background:${companySettings?.gst_registered ? '#22C55E' : '#E0E0E0'};border-radius:22px;transition:0.2s;cursor:pointer" onclick="document.getElementById('cs_gst_registered').checked=!document.getElementById('cs_gst_registered').checked;this.style.background=document.getElementById('cs_gst_registered').checked?'#22C55E':'#E0E0E0';this.querySelector('span').style.transform=document.getElementById('cs_gst_registered').checked?'translateX(18px)':'translateX(0)'">
+                  <span style="position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:0.2s;transform:${companySettings?.gst_registered ? 'translateX(18px)' : 'translateX(0)'}"></span>
+                </span>
+              </label>
+              <span style="font-size:12px;color:#666">${companySettings?.gst_registered ? 'GST is live' : 'GST is off (charging $0)'}</span>
+            </div>
+          </div>
+        </div>
+        <div class="warn-banner" style="margin-top:0">
+          <i class="ti ti-alert-triangle"></i>
+          <div class="warn-text">Turning this on charges real GST on every new booking from this moment. Confirm your ABN and effective date are correct first — this is a live production toggle, not a preview.</div>
+        </div>
+        <div class="section-footer">
+          <button class="btn-save" id="saveCompanyBtn" onclick="saveCompanySettings()">
+            <i class="ti ti-device-floppy"></i> Save company settings
+          </button>
+        </div>
+      </div>
+
       <div class="section-card">
         <div class="section-head">
           <div>
@@ -298,6 +354,7 @@
             <div class="col-head">Client total</div>
           </div>
           ${pricingRows}
+          <div class="calc-note" style="margin-top:10px">GST is calculated automatically at 10% of the full inspection value (Scout Pay + Fee), consistent with Spekto being the principal supplier — not on the fee alone. Whether it's actually charged to clients is controlled by the GST registration toggle in Company Settings below.</div>
         </div>
         <div class="section-footer">
           <button class="btn-save" id="savePricingBtn" onclick="savePricing()">
@@ -421,6 +478,23 @@
       </div>`
 
     document.getElementById('mp_price').addEventListener('input', recalcGst)
+
+    document.querySelectorAll('.pricing-row[data-id]').forEach(row => {
+      const recalc = () => recalcPricingRow(row)
+      row.querySelector('[data-field="pay_to_scout"]').addEventListener('input', recalc)
+      row.querySelector('[data-field="fee_excluding_gst"]').addEventListener('input', recalc)
+    })
+  }
+
+  // GST is 10% of the FULL supply value (pay_to_scout + fee_excluding_gst) — Spekto is
+  // the principal supplier, so GST applies to the whole inspection, not just the fee.
+  function recalcPricingRow(row) {
+    const payToScout = parseFloat(row.querySelector('[data-field="pay_to_scout"]').value) || 0
+    const feeExGst = parseFloat(row.querySelector('[data-field="fee_excluding_gst"]').value) || 0
+    const gst = Math.round((payToScout + feeExGst) * 0.10 * 100) / 100
+    const total = Math.round((payToScout + feeExGst + gst) * 100) / 100
+    row.querySelector('[data-field="gst"]').value = gst.toFixed(2)
+    row.querySelector('[data-field="total"]').value = total.toFixed(2)
   }
 
   window.disconnectXero = async function() {
@@ -438,6 +512,32 @@
     const exGst = price - gst
     document.getElementById('mp_gst').value = gst.toFixed(2)
     document.getElementById('mp_price_ex_gst').value = exGst.toFixed(2)
+  }
+
+  window.saveCompanySettings = async function() {
+    const btn = document.getElementById('saveCompanyBtn')
+    btn.disabled = true
+    btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 0.8s linear infinite"></i> Saving...'
+
+    const trading_name = document.getElementById('cs_trading_name').value.trim() || null
+    const abn = document.getElementById('cs_abn').value.trim() || null
+    const gst_effective_from = document.getElementById('cs_effective_from').value || null
+    const gst_registered = document.getElementById('cs_gst_registered').checked
+
+    const { error } = await supabase
+      .from('company_settings')
+      .update({ trading_name, abn, gst_effective_from, gst_registered, updated_at: new Date().toISOString() })
+      .eq('id', 1)
+
+    btn.disabled = false
+    btn.innerHTML = '<i class="ti ti-device-floppy"></i> Save company settings'
+
+    if (error) {
+      showToast('Failed to save company settings. Please try again.', 'error')
+    } else {
+      showToast(gst_registered ? 'Company settings saved — GST is now live on new bookings' : 'Company settings saved', 'success')
+      await loadData()
+    }
   }
 
   window.savePricing = async function() {

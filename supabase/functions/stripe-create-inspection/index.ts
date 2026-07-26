@@ -1,5 +1,6 @@
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { gatedPricingSnapshot } from '../_shared/pricing.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
   apiVersion: '2024-06-20',
@@ -43,15 +44,34 @@ Deno.serve(async (req: Request) => {
 
   const body = await req.json()
   const {
-    address, inspection_type, date, time, property_link, pricing_snapshot, instructions, latitude, longitude,
+    address, inspection_type, date, time, property_link, instructions, latitude, longitude,
     listing_type, agent_first_name, agent_last_name, agent_phone, agent_email,
   } = body
 
-  if (!address || !inspection_type || !date || !time || !pricing_snapshot) {
+  if (!address || !inspection_type || !date || !time) {
     return err('Missing required fields')
   }
 
-  const totalAud = parseFloat(pricing_snapshot.total)
+  // Pricing is computed server-side from the live pricing table + GST config — never
+  // trust a client-supplied total, since that's the actual dollar amount charged.
+  const [{ data: pricingRow, error: pricingErr }, { data: companySettings }] = await Promise.all([
+    supabase.from('pricing').select('pay_to_scout, fee_excluding_gst, gst, total').eq('id', inspection_type).eq('active', true).single(),
+    supabase.from('company_settings').select('gst_registered, gst_effective_from').eq('id', 1).single(),
+  ])
+
+  if (pricingErr || !pricingRow) return err('Invalid inspection type')
+
+  // Supabase/PostgREST can return `numeric` columns as strings — coerce before any arithmetic.
+  const pricingRowNum = {
+    pay_to_scout: parseFloat(pricingRow.pay_to_scout as unknown as string),
+    fee_excluding_gst: parseFloat(pricingRow.fee_excluding_gst as unknown as string),
+    gst: parseFloat(pricingRow.gst as unknown as string),
+    total: parseFloat(pricingRow.total as unknown as string),
+  }
+  const gated = gatedPricingSnapshot(pricingRowNum, companySettings ?? { gst_registered: false, gst_effective_from: null })
+  const pricing_snapshot = { inspection_type, ...gated }
+
+  const totalAud = pricing_snapshot.total
   if (isNaN(totalAud) || totalAud <= 0) return err('Invalid pricing')
   const amountCents = Math.round(totalAud * 100)
 
