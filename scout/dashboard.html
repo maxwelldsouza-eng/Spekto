@@ -615,6 +615,7 @@
         <div class="tile-meta">
           <div class="tile-meta-row"><i class="ti ti-clock"></i> ${insp.time?.slice(0,5) || ''}</div>
           <div class="tile-meta-row"><i class="ti ti-camera"></i> ${typeLabel}</div>
+          <div class="tile-meta-row"><i class="ti ti-tag"></i> ${insp.listing_type === 'Rent' ? 'For Rent' : 'For Sale'}</div>
           ${payout ? `<div class="tile-meta-row"><i class="ti ti-wallet"></i> <span class="payout-badge">${payout} payout</span></div>` : ''}
         </div>
         <div class="tile-actions">${actionsHtml}</div>`
