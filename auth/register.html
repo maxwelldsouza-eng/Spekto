@@ -442,7 +442,7 @@
                 const { error } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                        redirectTo: 'http://localhost:3000/auth/select-role.html'
+                        redirectTo: 'https://maxwelldsouza-eng.github.io/Spekto/auth/select-role.html'
                     }
                 });
                 if (error) throw error;
