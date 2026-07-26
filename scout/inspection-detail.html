@@ -460,13 +460,18 @@
           acceptBtn.disabled = false
           acceptBtn.innerHTML = '<i class="ti ti-check"></i> Accept Job'
         } else {
-          // Notify the client (non-fatal)
+          // Notify the client and the listing agent (both non-fatal)
           const { data: { session } } = await supabase.auth.getSession()
           if (session && inspection.client_id) {
             fetch('https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/notify', {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
               body: JSON.stringify({ user_id: inspection.client_id, type: 'inspection_accepted', inspection_id: inspectionId }),
+            }).catch(() => {})
+            fetch('https://nyvnvtxhlnjvfhcmnihh.supabase.co/functions/v1/notify-agent', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ inspection_id: inspectionId }),
             }).catch(() => {})
           }
           window.location.reload()
@@ -537,6 +542,7 @@
           <div><div class="det-label">Date</div><div class="det-val">${new Date(inspection.date).toLocaleDateString('en-AU', { day:'numeric', month:'long', year:'numeric' })}</div></div>
           <div><div class="det-label">Time</div><div class="det-val">${inspection.time?.slice(0,5) || '—'}</div></div>
           <div><div class="det-label">Type</div><div class="det-val">${typeLabel}</div></div>
+          <div><div class="det-label">Listing</div><div class="det-val">${inspection.listing_type === 'Rent' ? 'For Rent' : 'For Sale'}</div></div>
           <div><div class="det-label">Status</div><div class="det-val">${inspection.status.replace('PendingPayment','Pending Payment').replace('InProgress','In Progress')}</div></div>
           ${inspection.property_link ? `<div><div class="det-label">Property link</div><a class="det-val link" href="${inspection.property_link}" target="_blank">View listing ↗</a></div>` : '<div></div>'}
         </div>
@@ -546,6 +552,20 @@
           <div class="payout-amount">${payout}</div>
         </div>` : ''}
       </div>`
+
+    const hasAgentDetails = inspection.agent_first_name || inspection.agent_last_name || inspection.agent_phone || inspection.agent_email
+    if (hasAgentDetails) {
+      const agentName = `${inspection.agent_first_name || ''} ${inspection.agent_last_name || ''}`.trim() || '—'
+      html += `
+      <div class="card">
+        <div class="section-label">Agent Details</div>
+        <div class="detail-grid">
+          <div><div class="det-label">Name</div><div class="det-val">${agentName}</div></div>
+          <div><div class="det-label">Phone</div><div class="det-val">${inspection.agent_phone || '—'}</div></div>
+          <div><div class="det-label">Email</div><div class="det-val">${inspection.agent_email || '—'}</div></div>
+        </div>
+      </div>`
+    }
 
     if (inspection.instructions && inspection.instructions.length > 0) {
       html += `
